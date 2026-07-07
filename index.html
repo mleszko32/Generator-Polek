@@ -3,25 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalkulator Podziału Półek (CAD 1:1 + Wypadkowa)</title>
+    <title>Kalkulator Formatek i Półek (CAD + Front + Zawiasy)</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f4f7f6; padding: 20px; color: #333; margin: 0; }
-        .container { max-width: 1500px; margin: auto; display: flex; gap: 20px; flex-wrap: wrap; align-items: stretch; }
+        .container { max-width: 1700px; margin: auto; display: flex; gap: 20px; flex-wrap: wrap; align-items: stretch; }
         .panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #eee; display: flex; flex-direction: column; }
-        .panel-left { flex: 1.2; min-width: 380px; max-width: 450px; }
+        .panel-left { flex: 1.2; min-width: 420px; max-width: 480px; }
         .panel-right { flex: 2.5; min-width: 600px; }
         
         h2 { margin-top: 0; font-size: 1.2rem; color: #1F4E79; border-bottom: 2px solid #E2EFDA; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-        label { display: block; font-size: 0.85rem; font-weight: bold; margin-top: 15px; margin-bottom: 5px; color: #555; }
-        input[type="number"], select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 1rem; background: #f9fbfd; }
+        h3 { font-size: 1rem; color: #555; margin-bottom: 10px; margin-top: 20px; border-bottom: 1px solid #eee; padding-bottom: 5px;}
+        label { display: block; font-size: 0.85rem; font-weight: bold; margin-top: 10px; margin-bottom: 4px; color: #555; }
+        input[type="number"], select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 1rem; background: #f9fbfd; }
         input[type="number"]:focus, select:focus { outline: none; border-color: #1F4E79; background: #fff; }
         input[readonly] { background: #f0f0f0; border-color: #ddd; color: #777; cursor: not-allowed; }
         
+        /* Opcje widoku (Checkboxy) */
+        .view-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #e8f0fe; padding: 12px; border-radius: 6px; border-left: 4px solid #1F4E79; margin-bottom: 15px; }
+        .view-options label { margin: 0; font-weight: bold; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; color: #1F4E79; }
+        .view-options input[type="checkbox"] { width: auto; accent-color: #1F4E79; transform: scale(1.2); margin:0; }
+
         /* Manager Światła */
-        .space-manager { margin-top: 25px; border-top: 2px solid #eee; padding-top: 15px; }
-        .space-row { display: flex; align-items: center; justify-content: space-between; background: #e8f0fe; padding: 8px 12px; margin-bottom: 8px; border-radius: 6px; border-left: 4px solid #1F4E79; transition: 0.2s; }
-        .space-row.locked { border-left-color: #d32f2f; background: #fce8e8; }
-        .space-row.resultant { border-left-color: #f57c00; background: #fff3e0; }
+        .space-row { display: flex; align-items: center; justify-content: space-between; background: #f9fbfd; padding: 8px 12px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #eee; transition: 0.2s; }
+        .space-row.locked { border-left: 4px solid #d32f2f; background: #fce8e8; }
+        .space-row.resultant { border-left: 4px solid #f57c00; background: #fff3e0; }
         .space-row label { margin: 0; font-size: 0.9rem; color: #333; flex: 1; }
         .space-input-group { display: flex; gap: 8px; align-items: center; }
         .space-input-group input { width: 80px; text-align: center; font-weight: bold; padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
@@ -32,15 +37,13 @@
         .lock-btn.locked:hover { background: #b71c1c; }
         .lock-btn[disabled] { opacity: 0.6; cursor: not-allowed; border-color: #f57c00; color: #e65100; background: #ffe0b2; }
         
-        /* Komunikat o błędzie */
         .error-msg { display: none; background: #fce8e8; color: #d32f2f; font-weight: bold; padding: 10px; border-radius: 6px; border: 1px solid #d32f2f; margin-bottom: 15px; text-align: center; font-size: 0.9rem; }
         
         /* Obszar roboczy SVG */
-        .svg-container { position: relative; overflow: hidden; background: #fafafa; border: 1px dashed #ccc; border-radius: 6px; flex: 1; min-height: 700px; cursor: grab; display: flex; justify-content: center; align-items: center; margin-top: 15px; }
+        .svg-container { position: relative; overflow: hidden; background: #fafafa; border: 1px dashed #ccc; border-radius: 6px; flex: 1; min-height: 800px; cursor: grab; display: flex; justify-content: center; align-items: center; margin-top: 15px; }
         .svg-container:active { cursor: grabbing; }
         .svg-wrapper { width: 100%; height: 100%; transform-origin: center center; transition: transform 0.05s linear; pointer-events: none; }
         
-        /* Kontrolki Zoomu */
         .zoom-controls button { background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 5px 12px; cursor: pointer; font-weight: bold; color: #1F4E79; margin-left: 5px; }
         .zoom-controls button:hover { background: #f0f0f0; }
     </style>
@@ -48,37 +51,51 @@
 <body>
     <div class="container">
         <div class="panel panel-left">
-            <h2>Parametry Korpusu</h2>
+            <h2>Opcje i Widoki</h2>
             
-            <label>Typ korpusu</label>
-            <select id="kTyp" onchange="resetLocksAndRun()">
-                <option value="wpuszczane">Boki przelotowe (wieńce wpuszczane)</option>
-                <option value="nakladane">Wieńce przelotowe (wieńce nakładane)</option>
-            </select>
+            <div class="view-options">
+                <label><input type="checkbox" id="sClearance" checked onchange="run()"> Światło (Wymiar)</label>
+                <label><input type="checkbox" id="sShelfAxis" checked onchange="run()"> Oś półki</label>
+                <label><input type="checkbox" id="sShelfHoles" checked onchange="run()"> Otwory podpórki</label>
+                <label><input type="checkbox" id="sDistances" checked onchange="run()"> Dystanse podpórek</label>
+                <label><input type="checkbox" id="sHingeAxis" checked onchange="run()"> Prowadnik (oś)</label>
+                <label><input type="checkbox" id="sHingeHoles" checked onchange="run()"> Prowadnik (otwory)</label>
+                <label><input type="checkbox" id="sFront" checked onchange="run()"> Rzut Frontu (Puszki)</label>
+            </div>
 
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+            <h3>Parametry Korpusu</h3>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                 <div><label>Wysokość (H)</label><input type="number" id="hBox" value="2000" oninput="resetLocksAndRun()"></div>
                 <div><label>Szerokość (W)</label><input type="number" id="wBox" value="600" oninput="run()"></div>
                 <div><label>Głębokość boku (D)</label><input type="number" id="dBox" value="510" oninput="run()"></div>
                 <div><label>Ilość półek</label><input type="number" id="qPol" value="4" oninput="resetLocksAndRun()"></div>
+                <div><label>Typ korpusu</label>
+                    <select id="kTyp" onchange="resetLocksAndRun()">
+                        <option value="wpuszczane">Wpuszczane</option>
+                        <option value="nakladane">Nakładane</option>
+                    </select>
+                </div>
+                <div><label>Offset podpórki (Dół)</label><input type="number" id="offsetPodporki" value="3" oninput="run()"></div>
+                <div style="grid-column: span 2;"><label>Grubość płyty w korpusie</label><input type="number" id="tBoard" value="18" oninput="run()"></div>
             </div>
 
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-                <div><label>Grubość płyty (mm)</label><input type="number" id="tBoard" value="18" oninput="run()"></div>
-                <div><label>Offset podpórki (w dół)</label><input type="number" id="offsetPodporki" value="3" oninput="run()"></div>
+            <h3>Front i Zawiasy (Antykolizja)</h3>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div><label>Ilość zawiasów</label><input type="number" id="qZaw" value="4" min="0" max="8" oninput="run()"></div>
+                <div><label>Skrajny dół (Puszka)</label><input type="number" id="zOffD" value="100" oninput="run()"></div>
+                <div><label>Skrajny góra (Puszka)</label><input type="number" id="zOffG" value="100" oninput="run()"></div>
+                <div><label>Luz frontu (Dół)</label><input type="number" id="fLuzD" value="3" oninput="run()"></div>
+                <div style="grid-column: span 2;"><label>Luz frontu (Góra)</label><input type="number" id="fLuzG" value="3" oninput="run()"></div>
             </div>
 
-            <div class="space-manager">
-                <h2 style="font-size:1.1rem; border:none; margin-bottom:5px;">Manager Przestrzeni (Światło)</h2>
-                <p style="font-size:0.8rem; color:#777; margin-top:0;">Przynajmniej jedna przestrzeń jest zawsze wypadkową.</p>
-                <div id="errorBox" class="error-msg"></div>
-                <div id="spaceControls"></div>
-            </div>
+            <h3>Manager Przestrzeni</h3>
+            <div id="errorBox" class="error-msg"></div>
+            <div id="spaceControls"></div>
         </div>
         
         <div class="panel panel-right">
             <h2>
-                Wizualizacja (CAD 1:1)
+                Widok Warsztatowy (CAD 1:1)
                 <div class="zoom-controls">
                     <button onclick="resetZoom()">⟲ Reset</button>
                     <button onclick="zoomManual(0.2)">+</button>
@@ -93,10 +110,7 @@
     </div>
 
     <script>
-        let zScale = 1;
-        let panX = 0; let panY = 0;
-        let isDragging = false;
-        let startX = 0; let startY = 0;
+        let zScale = 1; let panX = 0; let panY = 0; let isDragging = false; let startX = 0; let startY = 0;
         let spaceLocks = [];
 
         function val(id) { 
@@ -104,89 +118,57 @@
             return isNaN(v) ? 0 : v; 
         }
 
-        // --- OBSŁUGA BŁĘDÓW ---
+        function isChecked(id) {
+            return document.getElementById(id).checked;
+        }
+
         let errorTimeout;
         function showError(msg) {
             let errBox = document.getElementById('errorBox');
-            errBox.innerText = msg;
-            errBox.style.display = 'block';
+            errBox.innerText = msg; errBox.style.display = 'block';
             clearTimeout(errorTimeout);
             errorTimeout = setTimeout(() => { errBox.style.display = 'none'; }, 4000);
         }
-        function hideError() {
-            document.getElementById('errorBox').style.display = 'none';
-        }
+        function hideError() { document.getElementById('errorBox').style.display = 'none'; }
 
         function initZoomPan() {
             const container = document.getElementById('svgContainer');
-            
             container.addEventListener('wheel', (e) => {
                 e.preventDefault();
                 zScale *= Math.exp((e.deltaY < 0 ? 1 : -1) * 0.1);
                 zScale = Math.min(Math.max(0.1, zScale), 10); 
                 applyTransform();
             });
-
             container.addEventListener('mousedown', (e) => {
                 if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
-                isDragging = true;
-                startX = e.clientX - panX;
-                startY = e.clientY - panY;
+                isDragging = true; startX = e.clientX - panX; startY = e.clientY - panY;
             });
-
             window.addEventListener('mousemove', (e) => {
-                if (!isDragging) return;
-                panX = e.clientX - startX;
-                panY = e.clientY - startY;
-                applyTransform();
+                if (!isDragging) return; panX = e.clientX - startX; panY = e.clientY - startY; applyTransform();
             });
-
             window.addEventListener('mouseup', () => { isDragging = false; });
             container.addEventListener('mouseleave', () => { isDragging = false; });
         }
 
-        function zoomManual(amount) {
-            zScale = Math.min(Math.max(0.1, zScale + amount), 10);
-            applyTransform();
-        }
+        function zoomManual(amount) { zScale = Math.min(Math.max(0.1, zScale + amount), 10); applyTransform(); }
+        function resetZoom() { zScale = 1; panX = 0; panY = 0; applyTransform(); }
+        function applyTransform() { document.getElementById('svgWrapper').style.transform = `translate(${panX}px, ${panY}px) scale(${zScale})`; }
 
-        function resetZoom() {
-            zScale = 1; panX = 0; panY = 0;
-            applyTransform();
-        }
-
-        function applyTransform() {
-            document.getElementById('svgWrapper').style.transform = `translate(${panX}px, ${panY}px) scale(${zScale})`;
-        }
-
-
-        // --- LOGIKA KALKULATORA ---
+        // --- LOGIKA KALKULATORA PÓŁEK ---
         function resetLocksAndRun() {
-            let qPol = val('qPol');
-            let totalSpaces = qPol + 1;
-            
+            let qPol = val('qPol'); let totalSpaces = qPol + 1;
             spaceLocks = [];
-            for(let i = 0; i < totalSpaces; i++) {
-                spaceLocks.push({ locked: false, manualVal: 0, currentVal: 0 });
-            }
-            hideError();
-            run();
+            for(let i = 0; i < totalSpaces; i++) spaceLocks.push({ locked: false, manualVal: 0, currentVal: 0 });
+            hideError(); run();
         }
 
         function toggleLock(index) {
             hideError();
-            
             let lockedCount = spaceLocks.filter(s => s.locked).length;
-            
             if(spaceLocks[index].locked) {
-                // Odblokowanie
                 spaceLocks[index].locked = false;
             } else {
-                // Próba zablokowania - sprawdź, czy to nie jest ostatnia wolna przestrzeń
-                if (lockedCount >= spaceLocks.length - 1) {
-                    showError("Ostatnia przestrzeń musi pozostać wypadkową.");
-                    return;
-                }
+                if (lockedCount >= spaceLocks.length - 1) { showError("Ostatnia przestrzeń musi pozostać wypadkową."); return; }
                 spaceLocks[index].locked = true;
                 spaceLocks[index].manualVal = spaceLocks[index].currentVal;
             }
@@ -195,71 +177,49 @@
 
         function handleSpaceInput(index, value) {
             let num = parseFloat(value);
-            if(isNaN(num) || num < 0) {
-                spaceLocks[index].locked = false;
-                hideError();
-                run();
-                return;
-            }
+            if(isNaN(num) || num < 0) { spaceLocks[index].locked = false; hideError(); run(); return; }
             
             let isCurrentlyLocked = spaceLocks[index].locked;
             let lockedCount = spaceLocks.filter(s => s.locked).length;
-
-            // Zabezpieczenie przed próbą wpisania wymiaru w jedyną odblokowaną (wypadkową) przestrzeń
             if (!isCurrentlyLocked && lockedCount >= spaceLocks.length - 1) {
-                showError("To jest przestrzeń wypadkowa. Odblokuj inną, aby ją zmodyfikować.");
-                run(); // Resetuje widok inputa do poprawnej wartości
-                return;
+                showError("Przestrzeń wypadkowa. Odblokuj inną, aby ją zmodyfikować."); run(); return;
             }
 
-            let hBox = val('hBox'); 
-            let tBoard = val('tBoard');
-            let qPol = val('qPol');
-            let innerSpace = hBox - 2*tBoard;
-
+            let hBox = val('hBox'); let tBoard = val('tBoard'); let qPol = val('qPol'); let innerSpace = hBox - 2*tBoard;
             let otherLockedSum = 0;
             for(let i = 0; i < spaceLocks.length; i++) {
-                if(i !== index && spaceLocks[i].locked) {
-                    otherLockedSum += spaceLocks[i].manualVal;
-                }
+                if(i !== index && spaceLocks[i].locked) otherLockedSum += spaceLocks[i].manualVal;
             }
 
             let maxAllowed = innerSpace - (qPol * tBoard) - otherLockedSum;
+            if (num > maxAllowed) { showError(`Za mało miejsca w korpusie! Zostało ${maxAllowed} mm.`); num = maxAllowed; } 
+            else hideError();
 
-            if (num > maxAllowed) {
-                showError(`Za mało miejsca w korpusie! Maksymalnie zostało ${maxAllowed} mm.`);
-                num = maxAllowed; 
-            } else {
-                hideError();
-            }
-
-            spaceLocks[index].locked = true;
-            spaceLocks[index].manualVal = num;
-            run();
+            spaceLocks[index].locked = true; spaceLocks[index].manualVal = num; run();
         }
 
         function run() {
             let kTyp = document.getElementById('kTyp').value;
-            let hBox = val('hBox'); 
-            let wBox = val('wBox');
-            let dBox = val('dBox');
-            let tBoard = val('tBoard');
-            let qPol = val('qPol');
-            let offsetPodporki = val('offsetPodporki');
+            let hBox = val('hBox'); let wBox = val('wBox'); let dBox = val('dBox'); let tBoard = val('tBoard');
+            let qPol = val('qPol'); let offsetPodporki = val('offsetPodporki');
+
+            // Filtry widoku
+            let sClearance = isChecked('sClearance');
+            let sShelfAxis = isChecked('sShelfAxis');
+            let sShelfHoles = isChecked('sShelfHoles');
+            let sDistances = isChecked('sDistances');
+            let sHingeAxis = isChecked('sHingeAxis');
+            let sHingeHoles = isChecked('sHingeHoles');
+            let sFront = isChecked('sFront');
 
             let totalSpaces = qPol + 1;
-            if(spaceLocks.length !== totalSpaces) {
-                resetLocksAndRun();
-                return;
-            }
+            if(spaceLocks.length !== totalSpaces) { resetLocksAndRun(); return; }
 
             let innerSpace = hBox - 2*tBoard;
-
-            let usedSpace = 0;
-            let unlockedCount = 0;
+            let usedSpace = 0; let unlockedCount = 0;
             for(let i = 0; i < totalSpaces; i++) {
-                if(spaceLocks[i].locked) { usedSpace += spaceLocks[i].manualVal; } 
-                else { unlockedCount++; }
+                if(spaceLocks[i].locked) usedSpace += spaceLocks[i].manualVal; 
+                else unlockedCount++;
             }
 
             let remainingForAuto = innerSpace - (qPol * tBoard) - usedSpace;
@@ -267,28 +227,18 @@
             
             let accumulatedAuto = 0;
             for(let i = 0; i < totalSpaces; i++) {
-                if(spaceLocks[i].locked) {
-                    spaceLocks[i].currentVal = spaceLocks[i].manualVal;
-                } else {
-                    if (unlockedCount === 1) {
-                        spaceLocks[i].currentVal = remainingForAuto - accumulatedAuto;
-                    } else {
-                        spaceLocks[i].currentVal = autoVal;
-                        accumulatedAuto += autoVal;
-                        unlockedCount--;
-                    }
+                if(spaceLocks[i].locked) spaceLocks[i].currentVal = spaceLocks[i].manualVal;
+                else {
+                    if (unlockedCount === 1) spaceLocks[i].currentVal = remainingForAuto - accumulatedAuto;
+                    else { spaceLocks[i].currentVal = autoVal; accumulatedAuto += autoVal; unlockedCount--; }
                 }
             }
-            
-            // Ponowne przeliczenie odblokowanych - na wypadek dynamicznych zmian
             unlockedCount = spaceLocks.filter(s => !s.locked).length;
 
             let controlsHtml = '';
             for(let i = 0; i < totalSpaces; i++) {
-                let isTop = (i === totalSpaces - 1);
-                let isBottom = (i === 0);
-                let label = `Przestrzeń ${i+1}` + (isBottom ? ` (DÓŁ)` : (isTop ? ` (GÓRA)` : ``));
-                
+                let isTop = (i === totalSpaces - 1); let isBottom = (i === 0);
+                let label = `Światło ${i+1}` + (isBottom ? ` (Dół)` : (isTop ? ` (Góra)` : ``));
                 let isLocked = spaceLocks[i].locked;
                 let isOnlyUnlocked = (!isLocked && unlockedCount === 1);
                 
@@ -297,8 +247,7 @@
                 
                 let btnClass = isLocked ? 'lock-btn locked' : 'lock-btn';
                 let btnText = isLocked ? '🔒 Odblokuj' : '🔓 Zablokuj';
-                
-                let inputProps = isOnlyUnlocked ? 'readonly title="Wartość wyliczana matematycznie"' : '';
+                let inputProps = isOnlyUnlocked ? 'readonly title="Wypadkowa"' : '';
                 let btnProps = isOnlyUnlocked ? 'disabled' : `onclick="toggleLock(${i})"`;
                 if (isOnlyUnlocked) btnText = '⭐ Wypadkowa';
 
@@ -309,56 +258,88 @@
                             <input type="number" value="${spaceLocks[i].currentVal}" onchange="handleSpaceInput(${i}, this.value)" ${inputProps}>
                             <button class="${btnClass}" ${btnProps}>${btnText}</button>
                         </div>
-                    </div>
-                `;
+                    </div>`;
             }
             document.getElementById('spaceControls').innerHTML = controlsHtml;
 
             let offsetOdDolu = (kTyp === 'nakladane') ? 0 : tBoard;
             let osie = [];
             let currentBottom = offsetOdDolu;
-            
             for(let i = 0; i < qPol; i++) {
                 currentBottom += spaceLocks[i].currentVal; 
                 let osSrodkowa = currentBottom - offsetPodporki;
-                osie.push({ spod: currentBottom, os: osSrodkowa });
+                osie.push({ spod: currentBottom, os: osSrodkowa, osPrawdziwa: currentBottom + tBoard/2 });
                 currentBottom += tBoard; 
+            }
+
+            // --- LOGIKA ZAWIASÓW (ANTYKOLIZJA) ---
+            let qZaw = val('qZaw'); let zOffD = val('zOffD'); let zOffG = val('zOffG'); 
+            let fLuzD = val('fLuzD'); let fLuzG = val('fLuzG');
+            let zawiasy = [];
+            
+            if (qZaw > 0) {
+                let fH = hBox - fLuzD - fLuzG;
+                let zawBaseFront = [];
+                
+                if (qZaw === 1) {
+                    zawBaseFront.push({ y: fH/2, isTop: false });
+                } else {
+                    zawBaseFront.push({ y: zOffD, isTop: false }); // Dolny mierzony od dołu frontu
+                    if (qZaw > 2) {
+                        let step = (fH - zOffG - zOffD) / (qZaw - 1);
+                        for (let i = 1; i < qZaw - 1; i++) zawBaseFront.push({ y: zOffD + i * step, isTop: false });
+                    }
+                    zawBaseFront.push({ y: fH - zOffG, isTop: true }); // Górny z flagą top
+                }
+
+                zawBaseFront.forEach(zaw => {
+                    let mY = fLuzD + zaw.y; // Wysokość prowadnika od dołu korpusu
+                    let collision = true; let attempts = 0; let isShifted = false;
+                    
+                    while(collision && attempts < 10) {
+                        collision = false;
+                        for (let p of osie) {
+                            // Detekcja w strefie +- 25mm od rzeczywistej osi półki
+                            if (Math.abs(mY - p.osPrawdziwa) < 25) {
+                                collision = true; isShifted = true;
+                                mY += 32; // Systemowa korekta o 32mm w górę
+                            }
+                        }
+                        attempts++;
+                    }
+                    zawiasy.push({ 
+                        bodyY: Math.round(mY*10)/10, 
+                        frontY: Math.round((mY - fLuzD)*10)/10, 
+                        shifted: isShifted,
+                        isTop: zaw.isTop
+                    });
+                });
             }
 
             // --- GENEROWANIE SVG W SKALI 1:1 ---
             let sXCab = 0; 
             let sXBok = wBox + 300; 
+            let sXFront = sXBok + dBox + 400; // Pozycja trzeciego rzutu
             
-            let viewTotalW = sXBok + dBox + 500; 
+            let viewTotalW = sFront ? (sXFront + wBox + 500) : (sXBok + dBox + 500); 
             let viewTotalH = hBox + 300;         
             
             let svg = `<svg viewBox="-150 -150 ${viewTotalW} ${viewTotalH}" class="svg-drawing" xmlns="http://www.w3.org/2000/svg">`;
-            
             svg += `<defs>
-                <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-                    <path d="M 0 2 L 10 5 L 0 8 Z" fill="#555" />
-                </marker>
-                <marker id="arrow-red" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-                    <path d="M 0 2 L 10 5 L 0 8 Z" fill="#d32f2f" />
-                </marker>
-                <marker id="arrow-green" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-                    <path d="M 0 2 L 10 5 L 0 8 Z" fill="#2e7d32" />
-                </marker>
+                <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 2 L 10 5 L 0 8 Z" fill="#555" /></marker>
+                <marker id="arrow-red" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 2 L 10 5 L 0 8 Z" fill="#d32f2f" /></marker>
+                <marker id="arrow-green" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 2 L 10 5 L 0 8 Z" fill="#2e7d32" /></marker>
             </defs>`;
 
-            let fontL = 28; 
-            let fontM = 24; 
-            let fontS = 20;
-            let lineW = 3;
+            let fontL = 28; let fontM = 24; let fontS = 20; let lineW = 3;
 
-            svg += `<text x="${sXCab + wBox/2}" y="-80" font-size="36" font-weight="bold" fill="#1F4E79" text-anchor="middle">UKŁAD WNĘTRZA</text>`;
-            svg += `<text x="${sXBok + dBox/2}" y="-80" font-size="36" font-weight="bold" fill="#1F4E79" text-anchor="middle">BOK (Nawierty)</text>`;
+            svg += `<text x="${sXCab + wBox/2}" y="-80" font-size="36" font-weight="bold" fill="#1F4E79" text-anchor="middle">KORPUS WNĘTRZE</text>`;
+            svg += `<text x="${sXBok + dBox/2}" y="-80" font-size="36" font-weight="bold" fill="#1F4E79" text-anchor="middle">BOK SZAFI (Prawy)</text>`;
             svg += `<text x="${sXBok + dBox + 210}" y="-40" font-size="${fontM}" fill="#888" text-anchor="middle">od dołu (od góry)</text>`;
 
-            let innerX = sXCab + tBoard;
-            let innerW = wBox - 2*tBoard;
-            let centerX = sXCab + wBox/2;
+            let innerX = sXCab + tBoard; let innerW = wBox - 2*tBoard; let centerX = sXCab + wBox/2;
             
+            // --- 1. RZUT KORPUSU ---
             if(kTyp === 'wpuszczane') {
                 svg += `<rect x="${sXCab}" y="0" width="${tBoard}" height="${hBox}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/>`;
                 svg += `<rect x="${sXCab + wBox - tBoard}" y="0" width="${tBoard}" height="${hBox}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/>`;
@@ -375,53 +356,49 @@
             
             osie.forEach((data, i) => {
                 let ySpodSVG = hBox - data.spod; 
-                
                 svg += `<rect x="${innerX}" y="${ySpodSVG - tBoard}" width="${innerW}" height="${tBoard}" fill="#2F5597" opacity="0.4" stroke="#1F4E79" stroke-width="2"/>`;
                 
-                let midY = (currentFloorSVG + ySpodSVG) / 2;
-                let isLocked = spaceLocks[i].locked;
-                let strokeColor = isLocked ? "#d32f2f" : "#555";
-                let arrow = isLocked ? "url(#arrow-red)" : "url(#arrow)";
-                
-                svg += `<line x1="${centerX}" y1="${ySpodSVG}" x2="${centerX}" y2="${currentFloorSVG}" stroke="${strokeColor}" stroke-width="3" marker-start="${arrow}" marker-end="${arrow}"/>`;
-                
-                let bgWidth = 80; let bgHeight = 40;
-                svg += `<rect x="${centerX - bgWidth/2}" y="${midY - bgHeight/2}" width="${bgWidth}" height="${bgHeight}" fill="#fff" opacity="0.9" rx="6"/>`;
-                svg += `<text x="${centerX}" y="${midY + fontM/3}" font-size="${fontM}" font-weight="bold" fill="${strokeColor}" text-anchor="middle">${spaceLocks[i].currentVal}</text>`;
-                if(isLocked) svg += `<text x="${centerX + bgWidth/2 + 10}" y="${midY + fontM/3}" font-size="${fontM}" fill="#d32f2f">🔒</text>`;
-                
+                if (sClearance) {
+                    let midY = (currentFloorSVG + ySpodSVG) / 2;
+                    let isLocked = spaceLocks[i].locked;
+                    let strokeColor = isLocked ? "#d32f2f" : "#555";
+                    let arrow = isLocked ? "url(#arrow-red)" : "url(#arrow)";
+                    svg += `<line x1="${centerX}" y1="${ySpodSVG}" x2="${centerX}" y2="${currentFloorSVG}" stroke="${strokeColor}" stroke-width="3" marker-start="${arrow}" marker-end="${arrow}"/>`;
+                    svg += `<rect x="${centerX - 40}" y="${midY - 20}" width="80" height="40" fill="#fff" opacity="0.9" rx="6"/>`;
+                    svg += `<text x="${centerX}" y="${midY + fontM/3}" font-size="${fontM}" font-weight="bold" fill="${strokeColor}" text-anchor="middle">${spaceLocks[i].currentVal}</text>`;
+                    if(isLocked) svg += `<text x="${centerX + 50}" y="${midY + fontM/3}" font-size="${fontM}" fill="#d32f2f">🔒</text>`;
+                }
                 currentFloorSVG = ySpodSVG - tBoard; 
             });
             
             let topCeilingSVG = tBoard;
-            if (currentFloorSVG > topCeilingSVG) {
+            if (currentFloorSVG > topCeilingSVG && sClearance) {
                 let midTopY = (currentFloorSVG + topCeilingSVG) / 2;
                 let isLocked = spaceLocks[qPol].locked;
                 let strokeColor = isLocked ? "#d32f2f" : "#555";
                 let arrow = isLocked ? "url(#arrow-red)" : "url(#arrow)";
                 
                 svg += `<line x1="${centerX}" y1="${topCeilingSVG}" x2="${centerX}" y2="${currentFloorSVG}" stroke="${strokeColor}" stroke-width="3" marker-start="${arrow}" marker-end="${arrow}"/>`;
-                
-                let bgWidth = 80; let bgHeight = 40;
-                svg += `<rect x="${centerX - bgWidth/2}" y="${midTopY - bgHeight/2}" width="${bgWidth}" height="${bgHeight}" fill="#fff" opacity="0.9" rx="6"/>`;
+                svg += `<rect x="${centerX - 40}" y="${midTopY - 20}" width="80" height="40" fill="#fff" opacity="0.9" rx="6"/>`;
                 svg += `<text x="${centerX}" y="${midTopY + fontM/3}" font-size="${fontM}" font-weight="bold" fill="${strokeColor}" text-anchor="middle">${spaceLocks[qPol].currentVal}</text>`;
-                if(isLocked) svg += `<text x="${centerX + bgWidth/2 + 10}" y="${midTopY + fontM/3}" font-size="${fontM}" fill="#d32f2f">🔒</text>`;
+                if(isLocked) svg += `<text x="${centerX + 50}" y="${midTopY + fontM/3}" font-size="${fontM}" fill="#d32f2f">🔒</text>`;
             }
 
+            // --- 2. RZUT BOKU ---
             let hBok = (kTyp === 'nakladane') ? hBox - 2*tBoard : hBox;
             let yBok = (kTyp === 'nakladane') ? tBoard : 0;
 
             svg += `<rect x="${sXBok}" y="${yBok}" width="${dBox}" height="${hBok}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/>`;
-            
             svg += `<text x="${sXBok - 20}" y="${hBox/2}" font-size="${fontM}" font-weight="bold" fill="#888" text-anchor="middle" transform="rotate(-90 ${sXBok - 20} ${hBox/2})">TYŁ BOKU</text>`;
             svg += `<text x="${sXBok + dBox + 20}" y="${hBox/2}" font-size="${fontM}" font-weight="bold" fill="#888" text-anchor="middle" transform="rotate(90 ${sXBok + dBox + 20} ${hBox/2})">PRZÓD BOKU</text>`;
             
-            let topHoleY = yBok - 40;
-            svg += `<line x1="${sXBok}" y1="${topHoleY}" x2="${sXBok + 37}" y2="${topHoleY}" stroke="#d32f2f" stroke-width="2" marker-start="url(#arrow-red)" marker-end="url(#arrow-red)"/>`;
-            svg += `<text x="${sXBok + 18}" y="${topHoleY - 10}" font-size="${fontS}" font-weight="bold" fill="#d32f2f" text-anchor="middle">37</text>`;
-            
-            svg += `<line x1="${sXBok + dBox - 37}" y1="${topHoleY}" x2="${sXBok + dBox}" y2="${topHoleY}" stroke="#d32f2f" stroke-width="2" marker-start="url(#arrow-red)" marker-end="url(#arrow-red)"/>`;
-            svg += `<text x="${sXBok + dBox - 18}" y="${topHoleY - 10}" font-size="${fontS}" font-weight="bold" fill="#d32f2f" text-anchor="middle">37</text>`;
+            if (sShelfHoles) {
+                let topHoleY = yBok - 40;
+                svg += `<line x1="${sXBok}" y1="${topHoleY}" x2="${sXBok + 37}" y2="${topHoleY}" stroke="#d32f2f" stroke-width="2" marker-start="url(#arrow-red)" marker-end="url(#arrow-red)"/>`;
+                svg += `<text x="${sXBok + 18}" y="${topHoleY - 10}" font-size="${fontS}" font-weight="bold" fill="#d32f2f" text-anchor="middle">37</text>`;
+                svg += `<line x1="${sXBok + dBox - 37}" y1="${topHoleY}" x2="${sXBok + dBox}" y2="${topHoleY}" stroke="#d32f2f" stroke-width="2" marker-start="url(#arrow-red)" marker-end="url(#arrow-red)"/>`;
+                svg += `<text x="${sXBok + dBox - 18}" y="${topHoleY - 10}" font-size="${fontS}" font-weight="bold" fill="#d32f2f" text-anchor="middle">37</text>`;
+            }
 
             svg += `<line x1="${sXCab - 50}" y1="${hBox}" x2="${sXBok + dBox + 150}" y2="${hBox}" stroke="#333" stroke-width="3" stroke-dasharray="8,8" opacity="0.6"/>`;
             svg += `<text x="${sXBok + dBox + 160}" y="${hBox + 8}" font-size="${fontL}" font-weight="bold" fill="#333" text-anchor="start">0 mm (DÓŁ BAZY)</text>`;
@@ -438,55 +415,117 @@
                 let osPolki = data.spod + (tBoard / 2);
                 let yOsPolkiSVG = hBox - osPolki;
                 
-                svg += `<line x1="${sXBok - 130}" y1="${yOsPolkiSVG}" x2="${sXBok}" y2="${yOsPolkiSVG}" stroke="#1F4E79" stroke-dasharray="6,6" stroke-width="2"/>`;
-                svg += `<text x="${sXBok - 140}" y="${yOsPolkiSVG + 8}" font-size="${fontL}" font-weight="bold" fill="#1F4E79" text-anchor="end">Oś: ${osPolki}</text>`;
+                if (sShelfAxis) {
+                    svg += `<line x1="${sXBok - 130}" y1="${yOsPolkiSVG}" x2="${sXBok}" y2="${yOsPolkiSVG}" stroke="#1F4E79" stroke-dasharray="6,6" stroke-width="2"/>`;
+                    svg += `<text x="${sXBok - 140}" y="${yOsPolkiSVG + 8}" font-size="${fontL}" font-weight="bold" fill="#1F4E79" text-anchor="end">Oś: ${osPolki}</text>`;
+                }
                 
-                [-32, 0, 32].forEach(offset => {
-                    let drillOs = data.os + offset;
-                    let drillY = hBox - drillOs; 
-                    let dimFromTop = (kTyp === 'nakladane' ? hBox - tBoard : hBox) - drillOs;
-                    
-                    let isCenter = offset === 0;
-                    let color = isCenter ? "#d32f2f" : "#f57c00";
-                    let radius = isCenter ? 5 : 4; 
-                    let weight = isCenter ? "bold" : "normal";
-                    let fSize = isCenter ? fontL : fontM;
-                    
-                    let holeFrontX = sXBok + dBox - 37;
-                    let holeBackX = sXBok + 37;
+                if (sShelfHoles) {
+                    [-32, 0, 32].forEach(offset => {
+                        let drillOs = data.os + offset;
+                        let drillY = hBox - drillOs; 
+                        let dimFromTop = (kTyp === 'nakladane' ? hBox - tBoard : hBox) - drillOs;
+                        
+                        let isCenter = offset === 0;
+                        let color = isCenter ? "#d32f2f" : "#f57c00";
+                        let radius = isCenter ? 5 : 4; 
+                        let weight = isCenter ? "bold" : "normal";
+                        let fSize = isCenter ? fontL : fontM;
+                        
+                        let holeFrontX = sXBok + dBox - 37;
+                        let holeBackX = sXBok + 37;
 
-                    svg += `<circle cx="${holeFrontX}" cy="${drillY}" r="${radius}" fill="${color}"/>`;
-                    svg += `<circle cx="${holeBackX}" cy="${drillY}" r="${radius}" fill="${color}"/>`;
-                    
-                    svg += `<line x1="${holeFrontX}" y1="${drillY}" x2="${sXBok + dBox + 60}" y2="${drillY}" stroke="${color}" stroke-dasharray="4,4" stroke-width="2"/>`;
-                    svg += `<text x="${sXBok + dBox + 70}" y="${drillY + 8}" font-size="${fSize}" font-weight="${weight}" fill="${color}" text-anchor="start">${drillOs} (${dimFromTop})</text>`;
-                });
+                        svg += `<circle cx="${holeFrontX}" cy="${drillY}" r="${radius}" fill="${color}"/>`;
+                        svg += `<circle cx="${holeBackX}" cy="${drillY}" r="${radius}" fill="${color}"/>`;
+                        
+                        svg += `<line x1="${holeFrontX}" y1="${drillY}" x2="${sXBok + dBox + 60}" y2="${drillY}" stroke="${color}" stroke-dasharray="4,4" stroke-width="2"/>`;
+                        svg += `<text x="${sXBok + dBox + 70}" y="${drillY + 8}" font-size="${fSize}" font-weight="${weight}" fill="${color}" text-anchor="start">${drillOs} (${dimFromTop})</text>`;
+                    });
+                }
                 
-                if (i > 0) {
+                if (sDistances && i > 0) {
                     let prevData = osie[i-1];
                     let yPrevHoleSVG = hBox - prevData.os;
                     let yCurrHoleSVG = hBox - data.os;
                     let midDimY = (yPrevHoleSVG + yCurrHoleSVG) / 2;
                     let distHoles = data.os - prevData.os;
                     
-                    let dimX = sXBok + dBox + 300; 
-                    
+                    let dimX = sXBok + dBox + 280; 
                     svg += `<line x1="${dimX}" y1="${yPrevHoleSVG}" x2="${dimX}" y2="${yCurrHoleSVG}" stroke="#2e7d32" stroke-width="3" marker-start="url(#arrow-green)" marker-end="url(#arrow-green)"/>`;
-                    
-                    let bgW = 70; let bgH = 40;
-                    svg += `<rect x="${dimX - bgW/2}" y="${midDimY - bgH/2}" width="${bgW}" height="${bgH}" fill="#fafafa"/>`;
+                    svg += `<rect x="${dimX - 35}" y="${midDimY - 20}" width="70" height="40" fill="#fafafa"/>`;
                     svg += `<text x="${dimX}" y="${midDimY + 10}" font-size="${fontL}" font-weight="bold" fill="#2e7d32" text-anchor="middle">${distHoles}</text>`;
                 }
             });
+
+            // Rysowanie Nawiertów Prowadników na BOKU
+            if ((sHingeAxis || sHingeHoles) && qZaw > 0) {
+                zawiasy.forEach(zaw => {
+                    let drillY = hBox - zaw.bodyY;
+                    let color = zaw.shifted ? "#9c27b0" : "#0288d1"; 
+                    let holeFrontX = sXBok + dBox - 37;
+                    
+                    if (sHingeAxis) {
+                        svg += `<line x1="${holeFrontX - 20}" y1="${drillY}" x2="${sXBok + dBox + 200}" y2="${drillY}" stroke="${color}" stroke-dasharray="2,2" stroke-width="3"/>`;
+                        let dimText = zaw.isTop ? `${hBox - zaw.bodyY} (od góry boku)` : `${zaw.bodyY}`;
+                        if(zaw.shifted) dimText += " (KOREKTA)";
+                        svg += `<text x="${sXBok + dBox + 210}" y="${drillY + 8}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">Prowadnik: ${dimText}</text>`;
+                    }
+                    
+                    if (sHingeHoles) {
+                        [-16, 16].forEach(off => {
+                            let hy = drillY - off; // -16 fizycznie podnosi otwór na rysunku
+                            let valY = zaw.bodyY + off; 
+                            let dimText = zaw.isTop ? `${hBox - valY} od góry` : `${valY}`;
+                            
+                            svg += `<circle cx="${holeFrontX}" cy="${hy}" r="4" fill="${color}"/>`;
+                            svg += `<line x1="${holeFrontX}" y1="${hy}" x2="${sXBok + dBox + 60}" y2="${hy}" stroke="${color}" stroke-dasharray="1,2" stroke-width="1.5"/>`;
+                            svg += `<text x="${sXBok + dBox + 70}" y="${hy + 8}" font-size="${fontM}" fill="${color}" text-anchor="start">${dimText}</text>`;
+                        });
+                    }
+                });
+            }
+
+            // --- 3. RZUT FRONTU ---
+            if (sFront) {
+                let fH = hBox - fLuzD - fLuzG;
+                let fY = fLuzG; // Rzeczywisty start od góry obszaru w CAD
+                
+                svg += `<text x="${sXFront + wBox/2}" y="-80" font-size="36" font-weight="bold" fill="#2e7d32" text-anchor="middle">FRONT (Puszki)</text>`;
+                
+                // Płyta frontu
+                svg += `<rect x="${sXFront}" y="${fY}" width="${wBox}" height="${fH}" fill="#e2efda" stroke="#2e7d32" stroke-width="${lineW}"/>`;
+                
+                // Oś 0 Frontu (Dół)
+                let baseF = hBox - fLuzD;
+                svg += `<line x1="${sXFront - 50}" y1="${baseF}" x2="${sXFront + wBox + 150}" y2="${baseF}" stroke="#2e7d32" stroke-width="3" stroke-dasharray="8,8" opacity="0.6"/>`;
+                svg += `<text x="${sXFront + wBox + 160}" y="${baseF + 8}" font-size="${fontL}" font-weight="bold" fill="#2e7d32" text-anchor="start">0 mm (DÓŁ FRONTU)</text>`;
+                
+                if (qZaw > 0) {
+                    zawiasy.forEach(zaw => {
+                        let cy = hBox - fLuzD - zaw.frontY; // Y na rysunku
+                        let color = zaw.shifted ? "#9c27b0" : "#2e7d32";
+                        let puszkaX = sXFront + 22; // 22mm od lewej (krawędzi)
+                        
+                        svg += `<circle cx="${puszkaX}" cy="${cy}" r="17.5" fill="none" stroke="${color}" stroke-width="3"/>`;
+                        svg += `<circle cx="${puszkaX}" cy="${cy}" r="3" fill="${color}"/>`;
+                        
+                        svg += `<line x1="${puszkaX}" y1="${cy}" x2="${sXFront + wBox + 60}" y2="${cy}" stroke="${color}" stroke-dasharray="4,4" stroke-width="2"/>`;
+                        
+                        let dimText = zaw.isTop ? `${fH - zaw.frontY}` : `${zaw.frontY}`;
+                        if(zaw.shifted) dimText += " (KOREKTA)";
+                        let descText = zaw.isTop ? `od GÓRY frontu` : `od DOŁU frontu`;
+                        
+                        svg += `<text x="${sXFront + wBox + 70}" y="${cy + 5}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">${dimText}</text>`;
+                        svg += `<text x="${sXFront + wBox + 70}" y="${cy - 20}" font-size="${fontS}" fill="${color}" text-anchor="start">${descText}</text>`;
+                    });
+                }
+            }
 
             svg += `</svg>`;
             document.getElementById('svgWrapper').innerHTML = svg;
         }
 
-        window.onload = () => {
-            initZoomPan();
-            resetLocksAndRun();
-        };
+        window.onload = () => { initZoomPan(); resetLocksAndRun(); };
     </script>
 </body>
 </html>
