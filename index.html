@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalkulator Podziału Półek (CAD 1:1 + Blokady + Walidacja)</title>
+    <title>Kalkulator Podziału Półek (CAD 1:1 + Wypadkowa)</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f4f7f6; padding: 20px; color: #333; margin: 0; }
         .container { max-width: 1500px; margin: auto; display: flex; gap: 20px; flex-wrap: wrap; align-items: stretch; }
@@ -15,19 +15,22 @@
         label { display: block; font-size: 0.85rem; font-weight: bold; margin-top: 15px; margin-bottom: 5px; color: #555; }
         input[type="number"], select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 1rem; background: #f9fbfd; }
         input[type="number"]:focus, select:focus { outline: none; border-color: #1F4E79; background: #fff; }
+        input[readonly] { background: #f0f0f0; border-color: #ddd; color: #777; cursor: not-allowed; }
         
         /* Manager Światła */
         .space-manager { margin-top: 25px; border-top: 2px solid #eee; padding-top: 15px; }
         .space-row { display: flex; align-items: center; justify-content: space-between; background: #e8f0fe; padding: 8px 12px; margin-bottom: 8px; border-radius: 6px; border-left: 4px solid #1F4E79; transition: 0.2s; }
         .space-row.locked { border-left-color: #d32f2f; background: #fce8e8; }
+        .space-row.resultant { border-left-color: #f57c00; background: #fff3e0; }
         .space-row label { margin: 0; font-size: 0.9rem; color: #333; flex: 1; }
         .space-input-group { display: flex; gap: 8px; align-items: center; }
         .space-input-group input { width: 80px; text-align: center; font-weight: bold; padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
         
-        .lock-btn { width: 110px; background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 6px 0; cursor: pointer; font-size: 0.85rem; font-weight: bold; color: #555; transition: 0.2s; }
-        .lock-btn:hover { background: #f0f0f0; }
+        .lock-btn { width: 115px; background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 6px 0; cursor: pointer; font-size: 0.85rem; font-weight: bold; color: #555; transition: 0.2s; }
+        .lock-btn:hover:not([disabled]) { background: #f0f0f0; }
         .lock-btn.locked { background: #d32f2f; color: white; border-color: #b71c1c; }
         .lock-btn.locked:hover { background: #b71c1c; }
+        .lock-btn[disabled] { opacity: 0.6; cursor: not-allowed; border-color: #f57c00; color: #e65100; background: #ffe0b2; }
         
         /* Komunikat o błędzie */
         .error-msg { display: none; background: #fce8e8; color: #d32f2f; font-weight: bold; padding: 10px; border-radius: 6px; border: 1px solid #d32f2f; margin-bottom: 15px; text-align: center; font-size: 0.9rem; }
@@ -67,7 +70,7 @@
 
             <div class="space-manager">
                 <h2 style="font-size:1.1rem; border:none; margin-bottom:5px;">Manager Przestrzeni (Światło)</h2>
-                <p style="font-size:0.8rem; color:#777; margin-top:0;">Wpisz wymiar i zamroź go. Reszta dopasuje się automatycznie.</p>
+                <p style="font-size:0.8rem; color:#777; margin-top:0;">Przynajmniej jedna przestrzeń jest zawsze wypadkową.</p>
                 <div id="errorBox" class="error-msg"></div>
                 <div id="spaceControls"></div>
             </div>
@@ -108,7 +111,7 @@
             errBox.innerText = msg;
             errBox.style.display = 'block';
             clearTimeout(errorTimeout);
-            errorTimeout = setTimeout(() => { errBox.style.display = 'none'; }, 5000);
+            errorTimeout = setTimeout(() => { errBox.style.display = 'none'; }, 4000);
         }
         function hideError() {
             document.getElementById('errorBox').style.display = 'none';
@@ -172,9 +175,18 @@
 
         function toggleLock(index) {
             hideError();
+            
+            let lockedCount = spaceLocks.filter(s => s.locked).length;
+            
             if(spaceLocks[index].locked) {
+                // Odblokowanie
                 spaceLocks[index].locked = false;
             } else {
+                // Próba zablokowania - sprawdź, czy to nie jest ostatnia wolna przestrzeń
+                if (lockedCount >= spaceLocks.length - 1) {
+                    showError("Ostatnia przestrzeń musi pozostać wypadkową.");
+                    return;
+                }
                 spaceLocks[index].locked = true;
                 spaceLocks[index].manualVal = spaceLocks[index].currentVal;
             }
@@ -189,13 +201,22 @@
                 run();
                 return;
             }
+            
+            let isCurrentlyLocked = spaceLocks[index].locked;
+            let lockedCount = spaceLocks.filter(s => s.locked).length;
+
+            // Zabezpieczenie przed próbą wpisania wymiaru w jedyną odblokowaną (wypadkową) przestrzeń
+            if (!isCurrentlyLocked && lockedCount >= spaceLocks.length - 1) {
+                showError("To jest przestrzeń wypadkowa. Odblokuj inną, aby ją zmodyfikować.");
+                run(); // Resetuje widok inputa do poprawnej wartości
+                return;
+            }
 
             let hBox = val('hBox'); 
             let tBoard = val('tBoard');
             let qPol = val('qPol');
             let innerSpace = hBox - 2*tBoard;
 
-            // Oblicz sumę pozostałych ZABLOKOWANYCH przestrzeni
             let otherLockedSum = 0;
             for(let i = 0; i < spaceLocks.length; i++) {
                 if(i !== index && spaceLocks[i].locked) {
@@ -203,12 +224,11 @@
                 }
             }
 
-            // Maksymalna dostępna wartość dla tej przestrzeni
             let maxAllowed = innerSpace - (qPol * tBoard) - otherLockedSum;
 
             if (num > maxAllowed) {
-                showError(`Brak miejsca w szafce! Maksymalnie zostało ${maxAllowed} mm.`);
-                num = maxAllowed; // Ucina do bezpiecznego maksa
+                showError(`Za mało miejsca w korpusie! Maksymalnie zostało ${maxAllowed} mm.`);
+                num = maxAllowed; 
             } else {
                 hideError();
             }
@@ -259,6 +279,9 @@
                     }
                 }
             }
+            
+            // Ponowne przeliczenie odblokowanych - na wypadek dynamicznych zmian
+            unlockedCount = spaceLocks.filter(s => !s.locked).length;
 
             let controlsHtml = '';
             for(let i = 0; i < totalSpaces; i++) {
@@ -267,16 +290,24 @@
                 let label = `Przestrzeń ${i+1}` + (isBottom ? ` (DÓŁ)` : (isTop ? ` (GÓRA)` : ``));
                 
                 let isLocked = spaceLocks[i].locked;
+                let isOnlyUnlocked = (!isLocked && unlockedCount === 1);
+                
                 let rowClass = isLocked ? 'space-row locked' : 'space-row';
+                if (isOnlyUnlocked) rowClass += ' resultant';
+                
                 let btnClass = isLocked ? 'lock-btn locked' : 'lock-btn';
                 let btnText = isLocked ? '🔒 Odblokuj' : '🔓 Zablokuj';
+                
+                let inputProps = isOnlyUnlocked ? 'readonly title="Wartość wyliczana matematycznie"' : '';
+                let btnProps = isOnlyUnlocked ? 'disabled' : `onclick="toggleLock(${i})"`;
+                if (isOnlyUnlocked) btnText = '⭐ Wypadkowa';
 
                 controlsHtml += `
                     <div class="${rowClass}">
                         <label>${label}</label>
                         <div class="space-input-group">
-                            <input type="number" value="${spaceLocks[i].currentVal}" onchange="handleSpaceInput(${i}, this.value)">
-                            <button class="${btnClass}" onclick="toggleLock(${i})">${btnText}</button>
+                            <input type="number" value="${spaceLocks[i].currentVal}" onchange="handleSpaceInput(${i}, this.value)" ${inputProps}>
+                            <button class="${btnClass}" ${btnProps}>${btnText}</button>
                         </div>
                     </div>
                 `;
@@ -344,6 +375,7 @@
             
             osie.forEach((data, i) => {
                 let ySpodSVG = hBox - data.spod; 
+                
                 svg += `<rect x="${innerX}" y="${ySpodSVG - tBoard}" width="${innerW}" height="${tBoard}" fill="#2F5597" opacity="0.4" stroke="#1F4E79" stroke-width="2"/>`;
                 
                 let midY = (currentFloorSVG + ySpodSVG) / 2;
@@ -380,12 +412,14 @@
             let yBok = (kTyp === 'nakladane') ? tBoard : 0;
 
             svg += `<rect x="${sXBok}" y="${yBok}" width="${dBox}" height="${hBok}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/>`;
+            
             svg += `<text x="${sXBok - 20}" y="${hBox/2}" font-size="${fontM}" font-weight="bold" fill="#888" text-anchor="middle" transform="rotate(-90 ${sXBok - 20} ${hBox/2})">TYŁ BOKU</text>`;
             svg += `<text x="${sXBok + dBox + 20}" y="${hBox/2}" font-size="${fontM}" font-weight="bold" fill="#888" text-anchor="middle" transform="rotate(90 ${sXBok + dBox + 20} ${hBox/2})">PRZÓD BOKU</text>`;
             
             let topHoleY = yBok - 40;
             svg += `<line x1="${sXBok}" y1="${topHoleY}" x2="${sXBok + 37}" y2="${topHoleY}" stroke="#d32f2f" stroke-width="2" marker-start="url(#arrow-red)" marker-end="url(#arrow-red)"/>`;
             svg += `<text x="${sXBok + 18}" y="${topHoleY - 10}" font-size="${fontS}" font-weight="bold" fill="#d32f2f" text-anchor="middle">37</text>`;
+            
             svg += `<line x1="${sXBok + dBox - 37}" y1="${topHoleY}" x2="${sXBok + dBox}" y2="${topHoleY}" stroke="#d32f2f" stroke-width="2" marker-start="url(#arrow-red)" marker-end="url(#arrow-red)"/>`;
             svg += `<text x="${sXBok + dBox - 18}" y="${topHoleY - 10}" font-size="${fontS}" font-weight="bold" fill="#d32f2f" text-anchor="middle">37</text>`;
 
