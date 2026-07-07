@@ -319,9 +319,11 @@
             // --- GENEROWANIE SVG W SKALI 1:1 ---
             let sXCab = 0; 
             let sXBok = wBox + 300; 
-            let sXFront = sXBok + dBox + 400; // Pozycja trzeciego rzutu
             
-            let viewTotalW = sFront ? (sXFront + wBox + 500) : (sXBok + dBox + 500); 
+            // ZWIĘKSZONO ODSTĘP, aby bardzo długie opisy prowadników ("KOREKTA", "od góry boku" itp.) miały miejsce
+            let sXFront = sXBok + dBox + 1000; 
+            
+            let viewTotalW = sFront ? (sXFront + wBox + 500) : (sXBok + dBox + 1000); 
             let viewTotalH = hBox + 300;         
             
             let svg = `<svg viewBox="-150 -150 ${viewTotalW} ${viewTotalH}" class="svg-drawing" xmlns="http://www.w3.org/2000/svg">`;
@@ -488,7 +490,7 @@
             // --- 3. RZUT FRONTU ---
             if (sFront) {
                 let fH = hBox - fLuzD - fLuzG;
-                let fY = fLuzG; // Rzeczywisty start od góry obszaru w CAD
+                let fY = fLuzG; 
                 
                 svg += `<text x="${sXFront + wBox/2}" y="-80" font-size="36" font-weight="bold" fill="#2e7d32" text-anchor="middle">FRONT (Puszki)</text>`;
                 
@@ -502,9 +504,9 @@
                 
                 if (qZaw > 0) {
                     zawiasy.forEach(zaw => {
-                        let cy = hBox - fLuzD - zaw.frontY; // Y na rysunku
+                        let cy = hBox - fLuzD - zaw.frontY; 
                         let color = zaw.shifted ? "#9c27b0" : "#2e7d32";
-                        let puszkaX = sXFront + 22; // 22mm od lewej (krawędzi)
+                        let puszkaX = sXFront + 22; 
                         
                         svg += `<circle cx="${puszkaX}" cy="${cy}" r="17.5" fill="none" stroke="${color}" stroke-width="3"/>`;
                         svg += `<circle cx="${puszkaX}" cy="${cy}" r="3" fill="${color}"/>`;
