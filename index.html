@@ -37,6 +37,7 @@
 
         button { background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 6px 12px; cursor: pointer; font-size: 0.85rem; font-weight: bold; color: #555; transition: 0.2s; }
         button:hover:not([disabled]) { background: #f0f0f0; }
+        button.btn-shrink:hover { background: #dceafb; }
         
         .lock-btn { width: 115px; }
         .lock-btn.locked { background: #d32f2f; color: white; border-color: #b71c1c; }
@@ -59,7 +60,8 @@
         .btn-load { background: #e2efda; border-color: #2e7d32; color: #2e7d32; flex: 1; }
         .btn-delete { background: #fce8e8; border-color: #d32f2f; color: #d32f2f; }
 
-.svg-container { position: relative; overflow: hidden; background: #fafafa; border: 1px dashed #ccc; border-radius: 6px; flex: 1; min-height: 0; cursor: grab; display: flex; justify-content: center; align-items: center; margin-top: 15px; }        .svg-container:active { cursor: grabbing; }
+        .svg-container { position: relative; overflow: hidden; background: #fafafa; border: 1px dashed #ccc; border-radius: 6px; flex: 1; min-height: 0; cursor: grab; display: flex; justify-content: center; align-items: center; margin-top: 15px; }
+        .svg-container:active { cursor: grabbing; }
         .svg-wrapper { width: 100%; height: 100%; transform-origin: center center; transition: transform 0.05s linear; pointer-events: none; }
         
         #printArea { display: none; }
@@ -129,7 +131,7 @@
                 
                 <div style="grid-column: span 2;">
                     <label>System prowadnic szuflad</label>
-                    <select id="drawerSystem" onchange="updateDrawerFields(); run();">
+                    <select id="drawerSystem" onchange="updateDrawerFields(); updateAllDrawersToDefault(); run();">
                         <option value="44">GTV Axis Pro / Modern Box (Górny: 44mm)</option>
                         <option value="54">Blum Merivobox (Górny: 54mm)</option>
                         <option value="33">Blum Antaro / Tandembox (Górny: 33mm)</option>
@@ -196,17 +198,55 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        let cloudCabinets = []; // Globalna pamięć na projekty z chmury
-        let currentLoadedDocId = null; // Pamięta ID aktualnie wczytanej szafki
+        let cloudCabinets = []; 
+        let currentLoadedDocId = null; 
         let zScale = 1; let panX = 0; let panY = 0; let isDragging = false; let startX = 0; let startY = 0;
         let spaceLocks = [];
         let structuralShelves = [];
 
-        function val(id) { 
-            let v = parseFloat(document.getElementById(id).value); 
-            return isNaN(v) ? 0 : v; 
-        }
+        // BAZA DANYCH SYSTEMÓW SZUFLAD (Minimalne wysokości frontu)
+        const DRAWER_DB = {
+            "44": {
+                name: "GTV Axis Pro / Modern Box",
+                types: [
+                    { id: "A", label: "A (Niska)", minFront: 100 },
+                    { id: "B", label: "B (Średnia)", minFront: 135 },
+                    { id: "C", label: "C (Wysoka)", minFront: 170 },
+                    { id: "D", label: "D (B. Wysoka)", minFront: 200 }
+                ],
+                default: "C"
+            },
+            "54": {
+                name: "Blum Merivobox",
+                types: [
+                    { id: "N", label: "N (B. Niska)", minFront: 90 },
+                    { id: "M", label: "M (Niska)", minFront: 110 },
+                    { id: "K", label: "K (Średnia)", minFront: 150 },
+                    { id: "E", label: "E (Wysoka)", minFront: 210 }
+                ],
+                default: "K"
+            },
+            "33": {
+                name: "Blum Antaro / Tandembox",
+                types: [
+                    { id: "N", label: "N (B. Niska)", minFront: 90 },
+                    { id: "M", label: "M (Niska)", minFront: 105 },
+                    { id: "K", label: "K (Średnia)", minFront: 135 },
+                    { id: "C", label: "C (Wysoka)", minFront: 195 },
+                    { id: "D", label: "D (B. Wysoka)", minFront: 230 }
+                ],
+                default: "D"
+            },
+            "custom": {
+                name: "Inne (Własne)",
+                types: [
+                    { id: "UNI", label: "Uniwersalna", minFront: 60 }
+                ],
+                default: "UNI"
+            }
+        };
 
+        function val(id) { return parseFloat(document.getElementById(id).value) || 0; }
         function isChecked(id) { return document.getElementById(id).checked; }
 
         let errorTimeout;
@@ -242,31 +282,35 @@
         function applyTransform() { document.getElementById('svgWrapper').style.transform = `translate(${panX}px, ${panY}px) scale(${zScale})`; }
 
         function toggleAutoZaw() {
-            let auto = document.getElementById('autoZaw').checked;
-            document.getElementById('qZaw').disabled = auto;
+            document.getElementById('qZaw').disabled = document.getElementById('autoZaw').checked;
             run();
         }
 
         function updateDrawerFields() {
             let system = document.getElementById('drawerSystem').value;
-            let field = document.getElementById('customDrawerField');
-            if(system === 'custom') {
-                field.style.display = 'block';
-            } else {
-                field.style.display = 'none';
-            }
+            document.getElementById('customDrawerField').style.display = system === 'custom' ? 'block' : 'none';
+        }
+
+        function updateAllDrawersToDefault() {
+            let sysId = document.getElementById('drawerSystem').value;
+            let dbSys = DRAWER_DB[sysId];
+            spaceLocks.forEach(space => {
+                if(space.manualFronts) {
+                    space.manualFronts.forEach(mf => {
+                        mf.type = dbSys.default;
+                        let newTypeObj = dbSys.types.find(t => t.id === mf.type);
+                        if(mf.height < newTypeObj.minFront) mf.height = newTypeObj.minFront;
+                    });
+                }
+            });
         }
 
         function getTopHoleOffset() {
             let system = document.getElementById('drawerSystem').value;
-            if(system === 'custom') {
-                return val('customDrawerAxis');
-            }
-            return parseFloat(system);
+            return system === 'custom' ? val('customDrawerAxis') : parseFloat(system);
         }
 
         function saveCabinet() {
-            
             let cab = {
                 id: Date.now(),
                 name: document.getElementById('cabName').value || `Szafka ${val('hBox')}x${val('wBox')}`,
@@ -280,17 +324,11 @@
                 spaceLocks: JSON.parse(JSON.stringify(spaceLocks)),
                 structuralShelves: JSON.parse(JSON.stringify(structuralShelves))
             };
-            
-            db.collection("cabinets").add(cab).then(() => {
-                alert("Projekt zapisany pomyślnie w chmurze!");
-            }).catch((error) => {
-                alert("Błąd zapisu: " + error.message);
-            });
+            db.collection("cabinets").add(cab).then(() => { alert("Projekt zapisany!"); }).catch((error) => { alert("Błąd: " + error.message); });
         }
 
         function updateCabinet() {
             if (!currentLoadedDocId) return;
-            
             let cab = {
                 name: document.getElementById('cabName').value || `Szafka ${val('hBox')}x${val('wBox')}`,
                 kTyp: document.getElementById('kTyp').value,
@@ -303,118 +341,92 @@
                 spaceLocks: JSON.parse(JSON.stringify(spaceLocks)),
                 structuralShelves: JSON.parse(JSON.stringify(structuralShelves))
             };
-            
-            db.collection("cabinets").doc(currentLoadedDocId).update(cab).then(() => {
-                alert("Projekt zaktualizowany pomyślnie w chmurze!");
-            }).catch((error) => {
-                alert("Błąd aktualizacji: " + error.message);
-            });
+            db.collection("cabinets").doc(currentLoadedDocId).update(cab).then(() => { alert("Zaktualizowano!"); }).catch((error) => { alert("Błąd: " + error.message); });
         }
+        
         function loadCabinet(docId) {
             let cab = cloudCabinets.find(c => c.docId === docId);
             if(!cab) return;
 
             document.getElementById('cabName').value = cab.name;
             document.getElementById('kTyp').value = cab.kTyp;
-            document.getElementById('hBox').value = cab.hBox;
-            document.getElementById('wBox').value = cab.wBox;
-            document.getElementById('dBox').value = cab.dBox;
-            document.getElementById('qPol').value = cab.qPol;
-            document.getElementById('tBoard').value = cab.tBoard;
-            document.getElementById('offsetPodporki').value = cab.offsetPodporki;
+            ['hBox','wBox','dBox','qPol','tBoard','offsetPodporki','qZaw','zOffD','zOffG','fLuzG'].forEach(id => {
+                document.getElementById(id).value = cab[id];
+            });
             document.getElementById('cokol').value = cab.cokol !== undefined ? cab.cokol : 100;
-            
             document.getElementById('autoZaw').checked = cab.autoZaw !== undefined ? cab.autoZaw : true;
-            document.getElementById('qZaw').value = cab.qZaw;
             document.getElementById('qZaw').disabled = document.getElementById('autoZaw').checked;
-
-            document.getElementById('zOffD').value = cab.zOffD;
-            document.getElementById('zOffG').value = cab.zOffG;
             document.getElementById('fLuzD').value = cab.fLuzD !== undefined ? cab.fLuzD : 0;
-            document.getElementById('fLuzG').value = cab.fLuzG;
             document.getElementById('cMargin').value = cab.cMargin !== undefined ? cab.cMargin : 35;
             document.getElementById('luzFrontow').value = cab.luzFrontow !== undefined ? cab.luzFrontow : 3;
-            document.getElementById('drawerSystem').value = cab.drawerSystem !== undefined ? cab.drawerSystem : "44";
+            
+            let loadedSys = cab.drawerSystem !== undefined ? cab.drawerSystem : "44";
+            document.getElementById('drawerSystem').value = loadedSys;
             document.getElementById('customDrawerAxis').value = cab.customDrawerAxis !== undefined ? cab.customDrawerAxis : 44;
 
             updateDrawerFields();
+            let sysObj = DRAWER_DB[loadedSys];
 
-            spaceLocks = cab.spaceLocks.map(s => ({
-                locked: s.locked || false,
-                manualVal: s.manualVal || 0,
-                currentVal: s.currentVal || 0,
-                hasDrawers: s.hasDrawers || false,
-                drawerMode: s.drawerMode || 'auto',
-                qDrawers: s.qDrawers || 3,
-                manualFronts: s.manualFronts || [200, 200, 200],
-                topGapToAxis: s.topGapToAxis !== undefined ? s.topGapToAxis : 12
-            }));
+            spaceLocks = cab.spaceLocks.map(s => {
+                let mFronts = s.manualFronts || [200, 200, 200];
+                mFronts = mFronts.map(f => {
+                    if (typeof f === 'number') return { height: f, type: sysObj.default };
+                    return { height: f.height, type: f.type || sysObj.default };
+                });
+
+                return {
+                    locked: s.locked || false,
+                    manualVal: s.manualVal || 0,
+                    currentVal: s.currentVal || 0,
+                    hasDrawers: s.hasDrawers || false,
+                    drawerMode: s.drawerMode || 'auto',
+                    qDrawers: s.qDrawers || 3,
+                    manualFronts: mFronts,
+                    topGapToAxis: s.topGapToAxis !== undefined ? s.topGapToAxis : 12
+                };
+            });
 
             structuralShelves = cab.structuralShelves || new Array(val('qPol')).fill(false);
-            
             currentLoadedDocId = docId;
             document.getElementById('btnUpdate').style.display = 'block';
-            
-            run(); 
-            window.scrollTo(0, 0); 
+            run(); window.scrollTo(0, 0); 
         }
 
         function deleteCabinet(docId) {
-            if(!confirm("Czy na pewno chcesz usunąć ten zapisany szablon z chmury?")) return;
+            if(!confirm("Usunąć ten projekt?")) return;
             db.collection("cabinets").doc(docId).delete();
         }
 
-        // Automatyczny nasłuch zmian na żywo z bazy Firebase
         db.collection("cabinets").onSnapshot((querySnapshot) => {
             cloudCabinets = [];
-            let listHtml = '';
-            
-            if (querySnapshot.empty) {
-                listHtml = '<p style="color:#777;">Brak zapisanych projektów w chmurze Google.</p>';
-            } else {
-                querySnapshot.forEach((doc) => {
-                    let cab = doc.data();
-                    cab.docId = doc.id; 
-                    cloudCabinets.push(cab);
-                    
-                    let locksInfo = cab.spaceLocks ? cab.spaceLocks.filter(s => s.locked).length : 0;
-                    let drawersInfo = cab.spaceLocks ? cab.spaceLocks.filter(s => s.hasDrawers).length : 0;
-                    
-                    listHtml += `
-                        <div class="saved-item">
-                            <h4>${cab.name}</h4>
-                            <p>Gabaryt: ${cab.hBox}x${cab.wBox}x${cab.dBox} mm<br>
-                               Półki: ${cab.qPol} | Przestrzenie z szufladami: ${drawersInfo}<br>
-                               Blokady wymiaru: ${locksInfo}
-                            </p>
-                            <div class="saved-actions">
-                                <button class="btn-load" onclick="loadCabinet('${cab.docId}')">Wczytaj projekt</button>
-                                <button class="btn-delete" onclick="deleteCabinet('${cab.docId}')">Usuń</button>
-                            </div>
+            let listHtml = querySnapshot.empty ? '<p style="color:#777;">Brak zapisanych projektów.</p>' : '';
+            querySnapshot.forEach((doc) => {
+                let cab = doc.data(); cab.docId = doc.id; cloudCabinets.push(cab);
+                let locksInfo = cab.spaceLocks ? cab.spaceLocks.filter(s => s.locked).length : 0;
+                listHtml += `
+                    <div class="saved-item">
+                        <h4>${cab.name}</h4>
+                        <p>Gabaryt: ${cab.hBox}x${cab.wBox}x${cab.dBox} mm<br>Półki: ${cab.qPol} | Blokady: ${locksInfo}</p>
+                        <div class="saved-actions">
+                            <button class="btn-load" onclick="loadCabinet('${cab.docId}')">Wczytaj</button>
+                            <button class="btn-delete" onclick="deleteCabinet('${cab.docId}')">Usuń</button>
                         </div>
-                    `;
-                });
-            }
+                    </div>`;
+            });
             document.getElementById('savedList').innerHTML = listHtml;
         });
 
-        // Pusta funkcja z zachowaną nazwą, aby nie zepsuć okna ładowania programu (window.onload)
         function renderSavedCabinets() {}
+
         function printView() {
             let type = document.getElementById('printType').value;
             let svgNode = document.querySelector('#svgWrapper svg').cloneNode(true);
-            
             let hBox = val('hBox'); let wBox = val('wBox'); let dBox = val('dBox');
-            let sXBok = wBox + 300; 
-            let sXFront = sXBok + dBox + 1200; 
+            let sXBok = wBox + 300; let sXFront = sXBok + dBox + 1200; 
 
-            if (type === 'interior') {
-                svgNode.setAttribute('viewBox', `-100 -120 ${wBox + 200} ${hBox + 250}`);
-            } else if (type === 'side') {
-                svgNode.setAttribute('viewBox', `${sXBok - 200} -120 ${dBox + 900} ${hBox + 250}`);
-            } else if (type === 'front') {
-                svgNode.setAttribute('viewBox', `${sXFront - 100} -120 ${wBox + 300} ${hBox + 250}`);
-            } 
+            if (type === 'interior') svgNode.setAttribute('viewBox', `-100 -120 ${wBox + 200} ${hBox + 250}`);
+            else if (type === 'side') svgNode.setAttribute('viewBox', `${sXBok - 200} -120 ${dBox + 900} ${hBox + 250}`);
+            else if (type === 'front') svgNode.setAttribute('viewBox', `${sXFront - 100} -120 ${wBox + 300} ${hBox + 250}`);
 
             document.getElementById('printArea').innerHTML = '';
             document.getElementById('printArea').appendChild(svgNode);
@@ -423,12 +435,20 @@
 
         function resetLocksAndRun() {
             let qPol = val('qPol'); let totalSpaces = qPol + 1;
+            let sysId = document.getElementById('drawerSystem').value;
+            let dbSys = DRAWER_DB[sysId] || DRAWER_DB["44"];
+
             spaceLocks = [];
             for(let i = 0; i < totalSpaces; i++) {
                 spaceLocks.push({ 
                     locked: false, manualVal: 0, currentVal: 0,
                     hasDrawers: false, drawerMode: 'auto', qDrawers: 3,
-                    manualFronts: [200, 200, 140], topGapToAxis: 12
+                    manualFronts: [
+                        { height: 200, type: dbSys.default },
+                        { height: 200, type: dbSys.default },
+                        { height: 140, type: dbSys.default }
+                    ],
+                    topGapToAxis: 12
                 });
             }
             structuralShelves = new Array(qPol).fill(false);
@@ -437,26 +457,17 @@
 
         function toggleLock(index) {
             hideError();
-            let lockedCount = spaceLocks.filter(s => s.locked).length;
-            if(spaceLocks[index].locked) {
-                spaceLocks[index].locked = false;
-            } else {
-                if (lockedCount >= spaceLocks.length - 1) { showError("Ostatnia wolna przestrzeń musi pozostać jako automatyczna wypadkowa."); return; }
+            if(spaceLocks[index].locked) spaceLocks[index].locked = false;
+            else {
+                if (spaceLocks.filter(s => s.locked).length >= spaceLocks.length - 1) { showError("Zostaw min. 1 wymiar auto."); return; }
                 spaceLocks[index].locked = true;
                 spaceLocks[index].manualVal = spaceLocks[index].currentVal;
             }
             run();
         }
         
-        function toggleDrawers(index) {
-            spaceLocks[index].hasDrawers = !spaceLocks[index].hasDrawers;
-            run();
-        }
-
-        function toggleStructural(index) {
-            structuralShelves[index] = !structuralShelves[index];
-            run();
-        }
+        function toggleDrawers(index) { spaceLocks[index].hasDrawers = !spaceLocks[index].hasDrawers; run(); }
+        function toggleStructural(index) { structuralShelves[index] = !structuralShelves[index]; run(); }
         
         function changeDrawerMode(index, mode) {
             spaceLocks[index].drawerMode = mode;
@@ -465,33 +476,67 @@
         }
 
         function updateDrawerCount(index, value) {
-            let q = parseInt(value);
-            if(!isNaN(q) && q > 0) spaceLocks[index].qDrawers = q;
+            let q = parseInt(value); if(!isNaN(q) && q > 0) spaceLocks[index].qDrawers = q; run();
+        }
+
+        // AKCJA 1: Wpisanie wymiaru frontu ręcznie (Wypycha szufladę na maxa)
+        function updateFrontHeight(spaceIdx, frontIdx, value) {
+            let v = parseFloat(value); if(isNaN(v) || v <= 0) return;
+            
+            let sys = DRAWER_DB[document.getElementById('drawerSystem').value];
+            let front = spaceLocks[spaceIdx].manualFronts[frontIdx];
+            front.height = v;
+            
+            // Auto-maximize drawer type
+            let fittingTypes = sys.types.filter(t => t.minFront <= v);
+            if (fittingTypes.length > 0) front.type = fittingTypes[fittingTypes.length - 1].id;
+            else { front.height = sys.types[0].minFront; front.type = sys.types[0].id; }
+            
             run();
         }
 
-        function updateManualFront(spaceIdx, frontIdx, value) {
-            let v = parseFloat(value);
-            if(!isNaN(v) && v > 0) spaceLocks[spaceIdx].manualFronts[frontIdx] = v;
+        // AKCJA 2: Wybranie innej szuflady z listy (Nie zmienia frontu, chyba że to wymóg bezpieczeństwa)
+        function updateDrawerType(spaceIdx, frontIdx, typeVal) {
+            let sys = DRAWER_DB[document.getElementById('drawerSystem').value];
+            let front = spaceLocks[spaceIdx].manualFronts[frontIdx];
+            let newTypeObj = sys.types.find(t => t.id === typeVal);
+            
+            front.type = typeVal;
+            // Jeżeli nowy typ szuflady jest WIĘKSZY niż obecny front, to trzeba go rozciągnąć
+            if (front.height < newTypeObj.minFront) {
+                front.height = newTypeObj.minFront;
+            }
+            // Jeżeli mniejszy, nic nie robimy z rozmiarem frontu (użytkownik może sam kliknąć "Ściśnij")
+            
             run();
         }
 
-        function addManualFront(spaceIdx) {
-            spaceLocks[spaceIdx].manualFronts.push(200);
-            run();
-        }
-
-        function removeManualFront(spaceIdx) {
-            if(spaceLocks[spaceIdx].manualFronts.length > 1) {
-                spaceLocks[spaceIdx].manualFronts.pop();
+        // AKCJA 3: Przycisk "Ściśnij" (Ucina front do minimum)
+        function shrinkFront(spaceIdx, frontIdx) {
+            let sys = DRAWER_DB[document.getElementById('drawerSystem').value];
+            let front = spaceLocks[spaceIdx].manualFronts[frontIdx];
+            let typeObj = sys.types.find(t => t.id === front.type);
+            if (typeObj) {
+                front.height = typeObj.minFront;
             }
             run();
         }
 
-        function updateTopGap(spaceIdx, value) {
-            let v = parseFloat(value);
-            if(!isNaN(v)) spaceLocks[spaceIdx].topGapToAxis = v;
+        function addManualFront(spaceIdx) {
+            let sysId = document.getElementById('drawerSystem').value;
+            let defType = DRAWER_DB[sysId].default;
+            let defHeight = DRAWER_DB[sysId].types.find(t => t.id === defType).minFront + 20;
+            spaceLocks[spaceIdx].manualFronts.push({ height: defHeight, type: defType });
             run();
+        }
+
+        function removeManualFront(spaceIdx) {
+            if(spaceLocks[spaceIdx].manualFronts.length > 1) spaceLocks[spaceIdx].manualFronts.pop();
+            run();
+        }
+
+        function updateTopGap(spaceIdx, value) {
+            let v = parseFloat(value); if(!isNaN(v)) spaceLocks[spaceIdx].topGapToAxis = v; run();
         }
 
         function handleSpaceInput(index, value) {
@@ -507,12 +552,10 @@
             let hBox = val('hBox'); let tBoard = val('tBoard'); let qPol = val('qPol'); let cokol = val('cokol');
             let innerSpace = hBox - 2*tBoard - cokol;
             let otherLockedSum = 0;
-            for(let i = 0; i < spaceLocks.length; i++) {
-                if(i !== index && spaceLocks[i].locked) otherLockedSum += spaceLocks[i].manualVal;
-            }
+            for(let i = 0; i < spaceLocks.length; i++) if(i !== index && spaceLocks[i].locked) otherLockedSum += spaceLocks[i].manualVal;
 
             let maxAllowed = innerSpace - (qPol * tBoard) - otherLockedSum;
-            if (num > maxAllowed) { showError(`Brak miejsca w świetle korpusu! Maksymalnie dostępno: ${maxAllowed} mm.`); num = maxAllowed; } 
+            if (num > maxAllowed) { showError(`Brak miejsca! Max: ${maxAllowed} mm.`); num = maxAllowed; } 
             else hideError();
 
             spaceLocks[index].locked = true; spaceLocks[index].manualVal = num; run();
@@ -526,43 +569,33 @@
             let sClearance = isChecked('sClearance'); let sShelfAxis = isChecked('sShelfAxis');
             let sShelfHoles = isChecked('sShelfHoles'); let sDistances = isChecked('sDistances');
             let sHingeAxis = isChecked('sHingeAxis'); let sHingeHoles = isChecked('sHingeHoles');
-            let sFront = isChecked('sFront');
-            let sDrawerTopHoles = isChecked('sDrawerTopHoles');
-            let sDrawerBottomHoles = isChecked('sDrawerBottomHoles');
+            let sFront = isChecked('sFront'); let sDrawerTopHoles = isChecked('sDrawerTopHoles'); let sDrawerBottomHoles = isChecked('sDrawerBottomHoles');
 
             let topHoleOffset = getTopHoleOffset();
             let fLuzD = val('fLuzD'); let fLuzG = val('fLuzG'); let luzFrontow = val('luzFrontow');
             
             let globalQZaw = val('qZaw');
             let isAutoZaw = isChecked('autoZaw');
+            let sysDB = DRAWER_DB[document.getElementById('drawerSystem').value];
 
             let totalSpaces = qPol + 1;
             if(spaceLocks.length !== totalSpaces) { resetLocksAndRun(); return; }
 
-            // --- 1. PRE-KALKULACJA "BOTTOM-UP" DLA SZUFLAD WŁASNYCH ---
             let facadeShift = 0;
             for(let i = 0; i < totalSpaces; i++) {
                 if(spaceLocks[i].hasDrawers && spaceLocks[i].drawerMode === 'manual') {
-                    let sumFronts = spaceLocks[i].manualFronts.reduce((a,b)=>a+b, 0);
+                    let sumFronts = spaceLocks[i].manualFronts.reduce((a,b) => a + b.height, 0);
                     let totalLuz = (spaceLocks[i].manualFronts.length - 1) * luzFrontow;
-                    
-                    let reqSpace = 0;
-                    if(i === 0) {
-                        reqSpace = fLuzD + sumFronts + totalLuz + spaceLocks[i].topGapToAxis - 1.5 * tBoard;
-                    } else {
-                        reqSpace = facadeShift + sumFronts + totalLuz + spaceLocks[i].topGapToAxis + (luzFrontow/2) - tBoard;
-                    }
+                    let reqSpace = (i === 0) 
+                        ? fLuzD + sumFronts + totalLuz + spaceLocks[i].topGapToAxis - 1.5 * tBoard
+                        : facadeShift + sumFronts + totalLuz + spaceLocks[i].topGapToAxis + (luzFrontow/2) - tBoard;
                     
                     spaceLocks[i].locked = true;
                     spaceLocks[i].manualVal = Math.round(reqSpace * 10) / 10;
-                    
                     facadeShift = (luzFrontow / 2) - spaceLocks[i].topGapToAxis;
-                } else {
-                    facadeShift = 0; 
-                }
+                } else facadeShift = 0; 
             }
 
-            // --- 2. DYSTRYBUCJA WOLNEGO ŚWIATŁA (TOP-DOWN) ---
             let innerSpace = hBox - 2*tBoard - cokol;
             let usedSpace = 0; let unlockedCount = 0;
             for(let i = 0; i < totalSpaces; i++) {
@@ -583,31 +616,20 @@
             }
             unlockedCount = spaceLocks.filter(s => !s.locked).length;
 
-            // Generowanie HTML Managera Przestrzeni
             let controlsHtml = '';
             for(let i = 0; i < totalSpaces; i++) {
                 let isTop = (i === totalSpaces - 1); let isBottom = (i === 0);
                 let label = `Światło ${i+1}` + (isBottom ? ` (Dół)` : (isTop ? ` (Góra)` : ``));
-                let isLocked = spaceLocks[i].locked;
-                let isOnlyUnlocked = (!isLocked && unlockedCount === 1);
-                let isDrawers = spaceLocks[i].hasDrawers;
-                let drawerMode = spaceLocks[i].drawerMode;
+                let isLocked = spaceLocks[i].locked; let isOnlyUnlocked = (!isLocked && unlockedCount === 1);
+                let isDrawers = spaceLocks[i].hasDrawers; let drawerMode = spaceLocks[i].drawerMode;
                 let isManual = isDrawers && drawerMode === 'manual';
                 
-                let rowClass = 'space-row';
-                if (isLocked) rowClass += ' locked';
-                if (isDrawers) rowClass += ' drawer-active';
-                if (isOnlyUnlocked && !isDrawers) rowClass += ' resultant';
-                
+                let rowClass = 'space-row' + (isLocked ? ' locked' : '') + (isDrawers ? ' drawer-active' : '') + (isOnlyUnlocked && !isDrawers ? ' resultant' : '');
                 let btnClass = isLocked ? 'lock-btn locked' : 'lock-btn';
                 let btnText = isLocked ? '🔒 Odblokuj' : '🔓 Zablokuj';
+                if (isOnlyUnlocked) btnText = '⭐ Wypadkowa'; if (isManual) btnText = '🧱 Bottom-Up';
                 let inputProps = (isOnlyUnlocked || isManual) ? 'readonly' : '';
-                if(isOnlyUnlocked) inputProps += ' title="Wypadkowa (Auto)"';
-                if(isManual) inputProps += ' title="Zablokowane przez fronty (Bottom-Up)"';
-                
                 let btnProps = (isOnlyUnlocked || isManual) ? 'disabled' : `onclick="toggleLock(${i})"`;
-                if (isOnlyUnlocked) btnText = '⭐ Wypadkowa';
-                if (isManual) btnText = '🧱 Bottom-Up';
 
                 let drawerHtml = `
                     <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 4px; background: #fff; padding: 6px; border-radius: 4px; border: 1px solid #ddd;">
@@ -615,33 +637,46 @@
                             <label style="cursor:pointer; display:flex; align-items:center; gap:4px; margin:0; font-weight:normal; color:#1F4E79;">
                                 <input type="checkbox" ${isDrawers ? 'checked' : ''} onchange="toggleDrawers(${i})"> <b>Moduł Szuflad</b>
                             </label>
-                            ${isDrawers ? `
-                                <select onchange="changeDrawerMode(${i}, this.value)" style="padding: 2px 5px; font-size:0.8rem; width:auto;">
+                            ${isDrawers ? `<select onchange="changeDrawerMode(${i}, this.value)" style="padding: 2px 5px; font-size:0.8rem; width:auto;">
                                     <option value="auto" ${drawerMode==='auto'?'selected':''}>Równomiernie (Auto)</option>
                                     <option value="manual" ${drawerMode==='manual'?'selected':''}>Własne fronty (Bottom-Up)</option>
-                                </select>
-                            ` : ''}
-                        </div>
-                `;
+                                </select>` : ''}
+                        </div>`;
 
                 if (isDrawers) {
                     if (drawerMode === 'auto') {
-                        drawerHtml += `
-                        <div style="display:flex; gap: 8px; align-items:center; margin-top:4px;">
-                            <span style="font-size:0.8rem;">Ilość:</span>
-                            <input type="number" value="${spaceLocks[i].qDrawers}" min="1" onchange="updateDrawerCount(${i}, this.value)" style="width: 50px; padding: 2px; text-align:center;">
-                            <span style="font-size:0.8rem;">szt.</span>
-                        </div>`;
+                        drawerHtml += `<div style="display:flex; gap: 8px; align-items:center; margin-top:4px;"><span style="font-size:0.8rem;">Ilość:</span><input type="number" value="${spaceLocks[i].qDrawers}" min="1" onchange="updateDrawerCount(${i}, this.value)" style="width: 50px; padding: 2px; text-align:center;"><span style="font-size:0.8rem;">szt.</span></div>`;
                     } else {
                         drawerHtml += `<div style="font-size:0.8rem; margin-top:6px; border-top: 1px dashed #eee; padding-top:6px;">`;
                         spaceLocks[i].manualFronts.forEach((mf, fIdx) => {
-                            let lbl = (fIdx === 0) ? `Front ${fIdx+1} (Dół)` : `Front ${fIdx+1}`;
+                            let lbl = (fIdx === 0) ? `F${fIdx+1} (Dół)` : `F${fIdx+1}`;
+                            let optionsHtml = '';
+                            
+                            let tObj = sysDB.types.find(t => t.id === mf.type);
+                            let minReq = tObj ? tObj.minFront : 0;
+                            let canShrink = mf.height > minReq;
+
+                            sysDB.types.forEach(t => {
+                                let isDisabled = mf.height < t.minFront ? 'disabled' : '';
+                                let isSelected = mf.type === t.id ? 'selected' : '';
+                                optionsHtml += `<option value="${t.id}" ${isDisabled} ${isSelected}>${t.label} (min.${t.minFront})${isDisabled ? ' ⚠️' : ''}</option>`;
+                            });
+                            
+                            let shrinkBtnHtml = canShrink ? `<button type="button" class="btn-shrink" onclick="shrinkFront(${i}, ${fIdx})" title="Ściśnij front do ${minReq}mm" style="padding:2px 6px; font-size:0.8rem; background:#e8f0fe; border:1px solid #1F4E79; color:#1F4E79; border-radius:4px; cursor:pointer;">>< Ściśnij</button>` : '';
+
                             drawerHtml += `
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                                    <span>${lbl}:</span>
-                                    <input type="number" value="${mf}" onchange="updateManualFront(${i}, ${fIdx}, this.value)" style="width: 60px; padding: 2px; text-align:center;">
-                                </div>
-                            `;
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; background: #fdfdfd; padding: 4px; border: 1px solid #eee; border-radius: 4px;">
+                                    <div style="display:flex; align-items:center; gap: 5px;">
+                                        <span style="font-size:0.8rem; font-weight:bold; color:#555; width:55px;">${lbl}:</span>
+                                        <input type="number" value="${mf.height}" onchange="updateFrontHeight(${i}, ${fIdx}, this.value)" style="width: 65px; padding: 4px; text-align:center; border: 1px solid #ccc; border-radius: 4px;">
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap: 5px;">
+                                        <select onchange="updateDrawerType(${i}, ${fIdx}, this.value)" style="padding: 3px; font-size:0.8rem; border-color:#ccc; border-radius:4px; max-width: 140px;">
+                                            ${optionsHtml}
+                                        </select>
+                                        ${shrinkBtnHtml}
+                                    </div>
+                                </div>`;
                         });
                         drawerHtml += `
                             <div style="display:flex; gap:5px; margin-bottom: 8px;">
@@ -649,154 +684,70 @@
                                 <button type="button" onclick="removeManualFront(${i})" style="flex:1; padding:2px;">- Usuń</button>
                             </div>
                             <div style="display:flex; justify-content:space-between; align-items:center; background:#e8f0fe; padding:4px; border-radius:4px;">
-                                <span title="Dystans od krawędzi najwyższego frontu do osi półki nad szufladami">Luz do osi półki:</span>
-                                <div>
-                                    <input type="number" value="${spaceLocks[i].topGapToAxis}" onchange="updateTopGap(${i}, this.value)" style="width: 50px; padding: 2px; text-align:center;"> mm
-                                </div>
+                                <span>Luz do osi półki:</span>
+                                <div><input type="number" value="${spaceLocks[i].topGapToAxis}" onchange="updateTopGap(${i}, this.value)" style="width: 50px; padding: 2px; text-align:center;"> mm</div>
                             </div>
                         </div>`;
                     }
                 }
                 drawerHtml += `</div>`;
-
-                controlsHtml += `
-                    <div class="${rowClass}">
-                        <div class="space-header">
-                            <div style="flex:1;">
-                                <label class="main-label">${label}</label>
-                                ${drawerHtml}
-                            </div>
-                            <div class="space-input-group" style="align-self: flex-start; margin-top:5px;">
-                                <input type="number" value="${spaceLocks[i].currentVal}" onchange="handleSpaceInput(${i}, this.value)" ${inputProps}>
-                                <button class="${btnClass}" ${btnProps}>${btnText}</button>
-                            </div>
-                        </div>
-                    </div>`;
-
+                controlsHtml += `<div class="${rowClass}"><div class="space-header"><div style="flex:1;"><label class="main-label">${label}</label>${drawerHtml}</div><div class="space-input-group" style="align-self: flex-start; margin-top:5px;"><input type="number" value="${spaceLocks[i].currentVal}" onchange="handleSpaceInput(${i}, this.value)" ${inputProps}><button class="${btnClass}" ${btnProps}>${btnText}</button></div></div></div>`;
                 if (i < totalSpaces - 1) {
-                    let isStruct = structuralShelves[i];
-                    controlsHtml += `
-                    <div class="structural-divider">
-                        <label>
-                            <input type="checkbox" ${isStruct ? 'checked' : ''} onchange="toggleStructural(${i})">
-                            🔩 Półka konstrukcyjna (na stałe - kołek + wkręt)
-                        </label>
-                    </div>`;
+                    controlsHtml += `<div class="structural-divider"><label><input type="checkbox" ${structuralShelves[i] ? 'checked' : ''} onchange="toggleStructural(${i})"> 🔩 Półka konstrukcyjna</label></div>`;
                 }
             }
             document.getElementById('spaceControls').innerHTML = controlsHtml;
 
-            // --- KOORDYNATY WNĘTRZA KORPUSU ---
+            // --- KOORDYNATY ---
             let offsetOdDolu = (kTyp === 'nakladane') ? cokol : tBoard + cokol;
-            let osie = [];
-            let spacesBoundary = []; 
-            
-            let currentBottom = offsetOdDolu;
+            let osie = []; let spacesBoundary = []; let currentBottom = offsetOdDolu;
             for(let i = 0; i < totalSpaces; i++) {
                 let h = spaceLocks[i].currentVal;
-                spacesBoundary.push({
-                    index: i,
-                    hasDrawers: spaceLocks[i].hasDrawers,
-                    drawerMode: spaceLocks[i].drawerMode,
-                    manualFronts: spaceLocks[i].manualFronts,
-                    qDrawers: spaceLocks[i].qDrawers,
-                    yStart: currentBottom, 
-                    yEnd: currentBottom + h 
-                });
+                spacesBoundary.push({ index: i, hasDrawers: spaceLocks[i].hasDrawers, drawerMode: spaceLocks[i].drawerMode, manualFronts: spaceLocks[i].manualFronts, qDrawers: spaceLocks[i].qDrawers, yStart: currentBottom, yEnd: currentBottom + h });
                 currentBottom += h; 
-                
-                if (i < qPol) { 
-                    let osSrodkowa = currentBottom - offsetPodporki;
-                    osie.push({ spod: currentBottom, os: osSrodkowa, osPrawdziwa: currentBottom + tBoard/2 });
-                    currentBottom += tBoard; 
-                }
+                if (i < qPol) { osie.push({ spod: currentBottom, os: currentBottom - offsetPodporki, osPrawdziwa: currentBottom + tBoard/2 }); currentBottom += tBoard; }
             }
 
-            // --- BUDOWANIE CIĄGŁEJ FASADY FRONTÓW ---
-            let frontBlocks = [];
-            let currentDoorBlock = null;
-            let doorZawiasy = [];
-            let drawerGuides = [];
-            let cMargin = val('cMargin') || 35;
-            
-            let facadeY = cokol + fLuzD;
-
+            // --- FRONT BLOCKS ---
+            let frontBlocks = []; let currentDoorBlock = null; let doorZawiasy = []; let drawerGuides = []; let facadeY = cokol + fLuzD;
             for(let i = 0; i < totalSpaces; i++) {
-                let sb = spacesBoundary[i];
-                let isTop = (i === totalSpaces - 1);
-                
+                let sb = spacesBoundary[i]; let isTop = (i === totalSpaces - 1);
                 let defaultEndY = isTop ? hBox - fLuzG : sb.yEnd + (tBoard/2) - (luzFrontow/2);
-                
                 if (sb.hasDrawers) {
                     if (currentDoorBlock) { frontBlocks.push(currentDoorBlock); currentDoorBlock = null; }
-                    
                     let blockEndY = defaultEndY;
-                    if (sb.drawerMode === 'manual') {
-                        let sumF = sb.manualFronts.reduce((a,b)=>a+b, 0);
-                        let totalL = (sb.manualFronts.length - 1) * luzFrontow;
-                        blockEndY = facadeY + sumF + totalL;
-                    }
-                    
-                    frontBlocks.push({ 
-                        type: 'drawers', 
-                        drawerMode: sb.drawerMode,
-                        manualFronts: sb.manualFronts,
-                        qDrawers: sb.qDrawers,
-                        yStart: facadeY, 
-                        yEnd: blockEndY, 
-                        interiorBottom: sb.yStart 
-                    });
+                    if (sb.drawerMode === 'manual') blockEndY = facadeY + sb.manualFronts.reduce((a,b) => a + b.height, 0) + ((sb.manualFronts.length - 1) * luzFrontow);
+                    frontBlocks.push({ type: 'drawers', drawerMode: sb.drawerMode, manualFronts: sb.manualFronts, qDrawers: sb.qDrawers, yStart: facadeY, yEnd: blockEndY, interiorBottom: sb.yStart });
                     facadeY = blockEndY + luzFrontow;
                 } else {
-                    if (!currentDoorBlock) {
-                        currentDoorBlock = { type: 'door', yStart: facadeY, yEnd: defaultEndY };
-                    } else {
-                        currentDoorBlock.yEnd = defaultEndY;
-                    }
+                    if (!currentDoorBlock) currentDoorBlock = { type: 'door', yStart: facadeY, yEnd: defaultEndY };
+                    else currentDoorBlock.yEnd = defaultEndY;
                     facadeY = defaultEndY + luzFrontow;
                 }
             }
             if(currentDoorBlock) frontBlocks.push(currentDoorBlock);
 
-            // Obliczanie detali wewnątrz bloków frontów
             let zOffD = val('zOffD'); let zOffG = val('zOffG'); 
-
             frontBlocks.forEach(fb => {
                 let fH_total = fb.yEnd - fb.yStart;
-                
                 if(fb.type === 'drawers') {
                     fb.drawers = [];
                     if (fb.drawerMode === 'manual') {
                         let currY = fb.yStart;
                         for(let j=0; j < fb.manualFronts.length; j++) {
-                            let fH = fb.manualFronts[j];
-                            let dTop = currY + fH;
-                            
-                            let guideTopY = currY + topHoleOffset;
-                            let guideBottomY = currY + 32;
-                            
-                            if (j === 0) { // Zabezpieczenie pierwszej szuflady względem wieńca
-                                guideTopY = Math.max(guideTopY, fb.interiorBottom + topHoleOffset);
-                                guideBottomY = Math.max(guideBottomY, fb.interiorBottom + 32);
-                            }
+                            let fH = fb.manualFronts[j].height; let dTop = currY + fH;
+                            let guideTopY = currY + topHoleOffset; let guideBottomY = currY + 32;
+                            if (j === 0) { guideTopY = Math.max(guideTopY, fb.interiorBottom + topHoleOffset); guideBottomY = Math.max(guideBottomY, fb.interiorBottom + 32); }
                             fb.drawers.push({ yStart: currY, yEnd: dTop, guideTop: guideTopY, guideBottom: guideBottomY });
                             drawerGuides.push({ axisYTop: guideTopY, axisYBottom: guideBottomY });
                             currY = dTop + luzFrontow;
                         }
-                    } else { // AUTO
-                        let dLuzTotal = (fb.qDrawers - 1) * luzFrontow;
-                        let dFrontH = (fH_total - dLuzTotal) / fb.qDrawers;
-                        
+                    } else { 
+                        let dFrontH = (fH_total - ((fb.qDrawers - 1) * luzFrontow)) / fb.qDrawers;
                         let currY = fb.yStart;
                         for(let j=0; j < fb.qDrawers; j++) {
-                            let dTop = currY + dFrontH;
-                            let guideTopY = currY + topHoleOffset;
-                            let guideBottomY = currY + 32;
-                            
-                            if (j === 0) {
-                                guideTopY = Math.max(guideTopY, fb.interiorBottom + topHoleOffset);
-                                guideBottomY = Math.max(guideBottomY, fb.interiorBottom + 32);
-                            }
+                            let dTop = currY + dFrontH; let guideTopY = currY + topHoleOffset; let guideBottomY = currY + 32;
+                            if (j === 0) { guideTopY = Math.max(guideTopY, fb.interiorBottom + topHoleOffset); guideBottomY = Math.max(guideBottomY, fb.interiorBottom + 32); }
                             fb.drawers.push({ yStart: currY, yEnd: dTop, guideTop: guideTopY, guideBottom: guideBottomY });
                             drawerGuides.push({ axisYTop: guideTopY, axisYBottom: guideBottomY });
                             currY = dTop + luzFrontow;
@@ -804,387 +755,180 @@
                     }
                 } 
                 else if(fb.type === 'door') {
-                    let hinges = [];
-                    let localQZaw = globalQZaw;
-                    
-                    // Dobór automatyczny na podstawie schematu
+                    let hinges = []; let localQZaw = globalQZaw;
                     if (isAutoZaw) {
-                        if (fH_total <= 900) localQZaw = 2;
-                        else if (fH_total <= 1600) localQZaw = 3;
-                        else if (fH_total <= 2000) localQZaw = 4;
-                        else if (fH_total <= 2500) localQZaw = 5;
-                        else localQZaw = 6;
+                        if (fH_total <= 900) localQZaw = 2; else if (fH_total <= 1600) localQZaw = 3; else if (fH_total <= 2000) localQZaw = 4; else if (fH_total <= 2500) localQZaw = 5; else localQZaw = 6;
                     }
-
                     if (localQZaw > 0) {
                         let hgBaseFront = [];
-                        if (localQZaw === 1) {
-                            hgBaseFront.push({ offset: fH_total/2, isTop: false });
-                        } else {
+                        if (localQZaw === 1) hgBaseFront.push({ offset: fH_total/2, isTop: false });
+                        else {
                             hgBaseFront.push({ offset: zOffD, isTop: false }); 
-                            if (localQZaw > 2) {
-                                let step = (fH_total - zOffG - zOffD) / (localQZaw - 1);
-                                for (let k = 1; k < localQZaw - 1; k++) hgBaseFront.push({ offset: zOffD + k * step, isTop: false });
-                            }
+                            if (localQZaw > 2) { let step = (fH_total - zOffG - zOffD) / (localQZaw - 1); for (let k = 1; k < localQZaw - 1; k++) hgBaseFront.push({ offset: zOffD + k * step, isTop: false }); }
                             hgBaseFront.push({ offset: fH_total - zOffG, isTop: true }); 
                         }
-                        
                         hgBaseFront.forEach(hg => {
-                            let mY = fb.yStart + hg.offset; 
-                            let collision = true; let attempts = 0; let isShifted = false;
-                            
+                            let mY = fb.yStart + hg.offset; let collision = true; let attempts = 0; let isShifted = false;
                             while(collision && attempts < 15) {
                                 collision = false;
-                                for (let p of osie) {
-                                    [-32, 0, 32].forEach(off => {
-                                        if (Math.abs(mY - (p.osPrawdziwa + off)) < cMargin) collision = true;
-                                    });
-                                }
-                                for (let dg of drawerGuides) {
-                                    if (Math.abs(mY - dg.axisYTop) < cMargin || Math.abs(mY - dg.axisYBottom) < cMargin) {
-                                        collision = true;
-                                    }
-                                }
-                                if (collision) {
-                                    isShifted = true;
-                                    mY += hg.isTop ? -32 : 32; 
-                                }
+                                for (let p of osie) [-32, 0, 32].forEach(off => { if (Math.abs(mY - (p.osPrawdziwa + off)) < val('cMargin')) collision = true; });
+                                for (let dg of drawerGuides) if (Math.abs(mY - dg.axisYTop) < val('cMargin') || Math.abs(mY - dg.axisYBottom) < val('cMargin')) collision = true;
+                                if (collision) { isShifted = true; mY += hg.isTop ? -32 : 32; }
                                 attempts++;
                             }
-                            let roundedY = Math.round(mY);
-                            hinges.push({ bodyY: roundedY, frontY: Math.round(roundedY - fb.yStart), shifted: isShifted, isTop: hg.isTop });
+                            hinges.push({ bodyY: Math.round(mY), frontY: Math.round(Math.round(mY) - fb.yStart), shifted: isShifted, isTop: hg.isTop });
                         });
                     }
-                    fb.hinges = hinges;
-                    fb.actualZawCount = localQZaw;
-                    doorZawiasy.push(...hinges);
+                    fb.hinges = hinges; fb.actualZawCount = localQZaw; doorZawiasy.push(...hinges);
                 }
             });
 
-            // --- GENEROWANIE SVG ---
+            // --- SVG RENDER ---
             let sXCab = 0; let sXBok = wBox + 300; let sXFront = sXBok + dBox + 1200; 
-            let viewTotalW = sFront ? (sXFront + wBox + 500) : (sXBok + dBox + 1300); 
-            let viewTotalH = hBox + 300;         
-            
+            let viewTotalW = sFront ? (sXFront + wBox + 500) : (sXBok + dBox + 1300); let viewTotalH = hBox + 300;         
             let svg = `<svg viewBox="-150 -150 ${viewTotalW} ${viewTotalH}" class="svg-drawing" xmlns="http://www.w3.org/2000/svg">`;
-            svg += `<defs>
-                <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 2 L 10 5 L 0 8 Z" fill="#555" /></marker>
-                <marker id="arrow-red" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 2 L 10 5 L 0 8 Z" fill="#d32f2f" /></marker>
-                <marker id="arrow-green" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 2 L 10 5 L 0 8 Z" fill="#2e7d32" /></marker>
-            </defs>`;
-
+            svg += `<defs><marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 2 L 10 5 L 0 8 Z" fill="#555" /></marker><marker id="arrow-red" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 2 L 10 5 L 0 8 Z" fill="#d32f2f" /></marker><marker id="arrow-green" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 2 L 10 5 L 0 8 Z" fill="#2e7d32" /></marker></defs>`;
             let fontL = 28; let fontM = 24; let fontS = 20; let lineW = 3;
 
             svg += `<text x="${sXCab + wBox/2}" y="-80" font-size="36" font-weight="bold" fill="#1F4E79" text-anchor="middle">KORPUS WNĘTRZE</text>`;
             svg += `<text x="${sXBok + dBox/2}" y="-80" font-size="36" font-weight="bold" fill="#1F4E79" text-anchor="middle">BOK SZAFY</text>`;
-
-            // Legenda nawiertów konstrukcyjnych na boku szafy
-            svg += `<circle cx="${sXBok + 20}" cy="-120" r="3" fill="#333"/>`;
-            svg += `<text x="${sXBok + 35}" y="-112" font-size="${fontM}" fill="#555">Wkręt (Ø 3 mm)</text>`;
-            svg += `<circle cx="${sXBok + 230}" cy="-120" r="5" fill="#8d6e63"/>`;
-            svg += `<text x="${sXBok + 245}" y="-112" font-size="${fontM}" fill="#555">Kołek (Ø 8 mm)</text>`;
+            svg += `<circle cx="${sXBok + 20}" cy="-120" r="3" fill="#333"/><text x="${sXBok + 35}" y="-112" font-size="${fontM}" fill="#555">Wkręt (Ø 3 mm)</text>`;
+            svg += `<circle cx="${sXBok + 230}" cy="-120" r="5" fill="#8d6e63"/><text x="${sXBok + 245}" y="-112" font-size="${fontM}" fill="#555">Kołek (Ø 8 mm)</text>`;
 
             let innerX = sXCab + tBoard; let innerW = wBox - 2*tBoard; let centerX = sXCab + wBox/2;
-            
-            // --- 1. KORPUS ---
             let yBottomWieniec = hBox - tBoard - cokol;
             if(kTyp === 'wpuszczane') {
-                svg += `<rect x="${sXCab}" y="0" width="${tBoard}" height="${hBox}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/>`;
-                svg += `<rect x="${sXCab + wBox - tBoard}" y="0" width="${tBoard}" height="${hBox}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/>`;
-                svg += `<rect x="${innerX}" y="0" width="${innerW}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/>`;
-                svg += `<rect x="${innerX}" y="${yBottomWieniec}" width="${innerW}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/>`;
+                svg += `<rect x="${sXCab}" y="0" width="${tBoard}" height="${hBox}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/><rect x="${sXCab + wBox - tBoard}" y="0" width="${tBoard}" height="${hBox}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/><rect x="${innerX}" y="0" width="${innerW}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/><rect x="${innerX}" y="${yBottomWieniec}" width="${innerW}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/>`;
             } else {
-                svg += `<rect x="${sXCab}" y="0" width="${wBox}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/>`;
-                svg += `<rect x="${sXCab}" y="${yBottomWieniec}" width="${wBox}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/>`;
-                svg += `<rect x="${sXCab}" y="${tBoard}" width="${tBoard}" height="${hBox - 2*tBoard - cokol}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/>`;
-                svg += `<rect x="${sXCab + wBox - tBoard}" y="${tBoard}" width="${tBoard}" height="${hBox - 2*tBoard - cokol}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/>`;
+                svg += `<rect x="${sXCab}" y="0" width="${wBox}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/><rect x="${sXCab}" y="${yBottomWieniec}" width="${wBox}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/><rect x="${sXCab}" y="${tBoard}" width="${tBoard}" height="${hBox - 2*tBoard - cokol}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/><rect x="${sXCab + wBox - tBoard}" y="${tBoard}" width="${tBoard}" height="${hBox - 2*tBoard - cokol}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/>`;
             }
 
             let currentFloorSVG = yBottomWieniec; 
             osie.forEach((data, i) => {
-                let ySpodSVG = hBox - data.spod;
-                let shelfColor = structuralShelves[i] ? "#2e7d32" : "#2F5597";
+                let ySpodSVG = hBox - data.spod; let shelfColor = structuralShelves[i] ? "#2e7d32" : "#2F5597";
                 svg += `<rect x="${innerX}" y="${ySpodSVG - tBoard}" width="${innerW}" height="${tBoard}" fill="${shelfColor}" opacity="0.4" stroke="#1F4E79" stroke-width="2"/>`;
                 if (sClearance) {
-                    let midY = (currentFloorSVG + ySpodSVG) / 2;
-                    let isLocked = spaceLocks[i].locked;
-                    let strokeColor = isLocked ? "#d32f2f" : "#555";
-                    let arrow = isLocked ? "url(#arrow-red)" : "url(#arrow)";
-                    svg += `<line x1="${centerX}" y1="${ySpodSVG}" x2="${centerX}" y2="${currentFloorSVG}" stroke="${strokeColor}" stroke-width="3" marker-start="${arrow}" marker-end="${arrow}"/>`;
-                    svg += `<rect x="${centerX - 40}" y="${midY - 20}" width="80" height="40" fill="#fff" opacity="0.9" rx="6"/>`;
-                    svg += `<text x="${centerX}" y="${midY + fontM/3}" font-size="${fontM}" font-weight="bold" fill="${strokeColor}" text-anchor="middle">${spaceLocks[i].currentVal}</text>`;
-                    if(isLocked) svg += `<text x="${centerX + 50}" y="${midY + fontM/3}" font-size="${fontM}" fill="#d32f2f">🔒</text>`;
+                    let isLocked = spaceLocks[i].locked; let strokeColor = isLocked ? "#d32f2f" : "#555"; let arrow = isLocked ? "url(#arrow-red)" : "url(#arrow)";
+                    svg += `<line x1="${centerX}" y1="${ySpodSVG}" x2="${centerX}" y2="${currentFloorSVG}" stroke="${strokeColor}" stroke-width="3" marker-start="${arrow}" marker-end="${arrow}"/><rect x="${centerX - 40}" y="${(currentFloorSVG + ySpodSVG)/2 - 20}" width="80" height="40" fill="#fff" opacity="0.9" rx="6"/><text x="${centerX}" y="${(currentFloorSVG + ySpodSVG)/2 + fontM/3}" font-size="${fontM}" font-weight="bold" fill="${strokeColor}" text-anchor="middle">${spaceLocks[i].currentVal}</text>`;
+                    if(isLocked) svg += `<text x="${centerX + 50}" y="${(currentFloorSVG + ySpodSVG)/2 + fontM/3}" font-size="${fontM}" fill="#d32f2f">🔒</text>`;
                 }
                 currentFloorSVG = ySpodSVG - tBoard; 
             });
             
-            let topCeilingSVG = tBoard;
-            if (currentFloorSVG > topCeilingSVG && sClearance) {
-                let midTopY = (currentFloorSVG + topCeilingSVG) / 2;
-                let isLocked = spaceLocks[qPol].locked;
-                let strokeColor = isLocked ? "#d32f2f" : "#555";
-                let arrow = isLocked ? "url(#arrow-red)" : "url(#arrow)";
-                svg += `<line x1="${centerX}" y1="${topCeilingSVG}" x2="${centerX}" y2="${currentFloorSVG}" stroke="${strokeColor}" stroke-width="3" marker-start="${arrow}" marker-end="${arrow}"/>`;
-                svg += `<rect x="${centerX - 40}" y="${midTopY - 20}" width="80" height="40" fill="#fff" opacity="0.9" rx="6"/>`;
-                svg += `<text x="${centerX}" y="${midTopY + fontM/3}" font-size="${fontM}" font-weight="bold" fill="${strokeColor}" text-anchor="middle">${spaceLocks[qPol].currentVal}</text>`;
-                if(isLocked) svg += `<text x="${centerX + 50}" y="${midTopY + fontM/3}" font-size="${fontM}" fill="#d32f2f">🔒</text>`;
+            if (currentFloorSVG > tBoard && sClearance) {
+                let isLocked = spaceLocks[qPol].locked; let strokeColor = isLocked ? "#d32f2f" : "#555"; let arrow = isLocked ? "url(#arrow-red)" : "url(#arrow)";
+                svg += `<line x1="${centerX}" y1="${tBoard}" x2="${centerX}" y2="${currentFloorSVG}" stroke="${strokeColor}" stroke-width="3" marker-start="${arrow}" marker-end="${arrow}"/><rect x="${centerX - 40}" y="${(currentFloorSVG + tBoard)/2 - 20}" width="80" height="40" fill="#fff" opacity="0.9" rx="6"/><text x="${centerX}" y="${(currentFloorSVG + tBoard)/2 + fontM/3}" font-size="${fontM}" font-weight="bold" fill="${strokeColor}" text-anchor="middle">${spaceLocks[qPol].currentVal}</text>`;
+                if(isLocked) svg += `<text x="${centerX + 50}" y="${(currentFloorSVG + tBoard)/2 + fontM/3}" font-size="${fontM}" fill="#d32f2f">🔒</text>`;
             }
 
-            // --- FUNKCJA RYSOWANIA NAWIERTÓW KONSTRUKCYJNYCH (Wkręt + Kołek) ---
             function drawStructuralHoles(yAxisSVG) {
-                let hHtml = "";
-                let rWkret = 3; // Promień rysowania wkręta 3mm
-                let rKolek = 5; // Promień rysowania kołka 8mm
-                let cWkret = "#333";
-                let cKolek = "#8d6e63";
-
-                // Tył (Plecy)
-                let xBackWkret = sXBok + 37;
-                let xBackKolek = sXBok + 69;
-                hHtml += `<circle cx="${xBackWkret}" cy="${yAxisSVG}" r="${rWkret}" fill="${cWkret}"/>`;
-                hHtml += `<circle cx="${xBackKolek}" cy="${yAxisSVG}" r="${rKolek}" fill="${cKolek}"/>`;
-
-                // Przód (Front)
-                let xFrontWkret = sXBok + dBox - 37;
-                let xFrontKolek = sXBok + dBox - 69;
-                hHtml += `<circle cx="${xFrontWkret}" cy="${yAxisSVG}" r="${rWkret}" fill="${cWkret}"/>`;
-                hHtml += `<circle cx="${xFrontKolek}" cy="${yAxisSVG}" r="${rKolek}" fill="${cKolek}"/>`;
-
-                // Środek dla głębokości >= 500 mm
-                if (dBox >= 500) {
-                    let xMidWkret = sXBok + dBox/2 + 16; // Wkręt od strony frontu (większy X)
-                    let xMidKolek = sXBok + dBox/2 - 16;
-                    hHtml += `<circle cx="${xMidWkret}" cy="${yAxisSVG}" r="${rWkret}" fill="${cWkret}"/>`;
-                    hHtml += `<circle cx="${xMidKolek}" cy="${yAxisSVG}" r="${rKolek}" fill="${cKolek}"/>`;
-                }
-                
-                // Linia osi montażowej
+                let hHtml = ""; let rW = 3; let rK = 5;
+                hHtml += `<circle cx="${sXBok + 37}" cy="${yAxisSVG}" r="${rW}" fill="#333"/><circle cx="${sXBok + 69}" cy="${yAxisSVG}" r="${rK}" fill="#8d6e63"/><circle cx="${sXBok + dBox - 37}" cy="${yAxisSVG}" r="${rW}" fill="#333"/><circle cx="${sXBok + dBox - 69}" cy="${yAxisSVG}" r="${rK}" fill="#8d6e63"/>`;
+                if (dBox >= 500) hHtml += `<circle cx="${sXBok + dBox/2 + 16}" cy="${yAxisSVG}" r="${rW}" fill="#333"/><circle cx="${sXBok + dBox/2 - 16}" cy="${yAxisSVG}" r="${rK}" fill="#8d6e63"/>`;
                 hHtml += `<line x1="${sXBok}" y1="${yAxisSVG}" x2="${sXBok + dBox}" y2="${yAxisSVG}" stroke="#2e7d32" stroke-dasharray="8,4" stroke-width="1.5" opacity="0.6"/>`;
                 return hHtml;
             }
 
-            // --- 2. RZUT BOKU ---
-            let sideBottom = (kTyp === 'nakladane') ? cokol + tBoard : 0;
-            let sideTop = (kTyp === 'nakladane') ? hBox - tBoard : hBox;
-            let hBok = sideTop - sideBottom;
-            let yBok = hBox - sideTop;
-
-            svg += `<rect x="${sXBok}" y="${yBok}" width="${dBox}" height="${hBok}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/>`;
-            svg += `<text x="${sXBok - 20}" y="${hBox/2}" font-size="${fontM}" font-weight="bold" fill="#888" text-anchor="middle" transform="rotate(-90 ${sXBok - 20} ${hBox/2})">TYŁ BOKU</text>`;
-            svg += `<text x="${sXBok + dBox + 20}" y="${hBox/2}" font-size="${fontM}" font-weight="bold" fill="#888" text-anchor="middle" transform="rotate(90 ${sXBok + dBox + 20} ${hBox/2})">PRZÓD BOKU</text>`;
+            let sideBottom = (kTyp === 'nakladane') ? cokol + tBoard : 0; let sideTop = (kTyp === 'nakladane') ? hBox - tBoard : hBox;
+            svg += `<rect x="${sXBok}" y="${hBox - sideTop}" width="${dBox}" height="${sideTop - sideBottom}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/>`;
+            svg += `<text x="${sXBok - 20}" y="${hBox/2}" font-size="${fontM}" font-weight="bold" fill="#888" text-anchor="middle" transform="rotate(-90 ${sXBok - 20} ${hBox/2})">TYŁ BOKU</text><text x="${sXBok + dBox + 20}" y="${hBox/2}" font-size="${fontM}" font-weight="bold" fill="#888" text-anchor="middle" transform="rotate(90 ${sXBok + dBox + 20} ${hBox/2})">PRZÓD BOKU</text>`;
             
-            let holeFrontX = sXBok + dBox - 37;
-            let holeBackX = sXBok + 37;
-            let laneHingeHoles = sXBok + dBox + 80;
-            let laneShelfHoles = sXBok + dBox + 300;
-            let laneHingeAxis  = sXBok + dBox + 550;
-            let laneDistances  = sXBok + dBox + 850;
+            let hFrontX = sXBok + dBox - 37; let hBackX = sXBok + 37;
+            let laneHingeHoles = sXBok + dBox + 80; let laneShelfHoles = sXBok + dBox + 300; let laneHingeAxis = sXBok + dBox + 550; let laneDistances = sXBok + dBox + 850;
 
             if (sShelfHoles) {
-                let topHoleY = yBok - 40;
-                svg += `<line x1="${sXBok}" y1="${topHoleY}" x2="${sXBok + 37}" y2="${topHoleY}" stroke="#d32f2f" stroke-width="2" marker-start="url(#arrow-red)" marker-end="url(#arrow-red)"/>`;
-                svg += `<text x="${sXBok + 18}" y="${topHoleY - 10}" font-size="${fontS}" font-weight="bold" fill="#d32f2f" text-anchor="middle">37</text>`;
-                svg += `<line x1="${holeFrontX}" y1="${topHoleY}" x2="${sXBok + dBox}" y2="${topHoleY}" stroke="#d32f2f" stroke-width="2" marker-start="url(#arrow-red)" marker-end="url(#arrow-red)"/>`;
-                svg += `<text x="${sXBok + dBox - 18}" y="${topHoleY - 10}" font-size="${fontS}" font-weight="bold" fill="#d32f2f" text-anchor="middle">37</text>`;
+                let topHoleY = hBox - sideTop - 40;
+                svg += `<line x1="${sXBok}" y1="${topHoleY}" x2="${sXBok + 37}" y2="${topHoleY}" stroke="#d32f2f" stroke-width="2" marker-start="url(#arrow-red)" marker-end="url(#arrow-red)"/><text x="${sXBok + 18}" y="${topHoleY - 10}" font-size="${fontS}" font-weight="bold" fill="#d32f2f" text-anchor="middle">37</text>`;
+                svg += `<line x1="${hFrontX}" y1="${topHoleY}" x2="${sXBok + dBox}" y2="${topHoleY}" stroke="#d32f2f" stroke-width="2" marker-start="url(#arrow-red)" marker-end="url(#arrow-red)"/><text x="${sXBok + dBox - 18}" y="${topHoleY - 10}" font-size="${fontS}" font-weight="bold" fill="#d32f2f" text-anchor="middle">37</text>`;
             }
 
-            svg += `<line x1="${sXCab - 50}" y1="${hBox - sideBottom}" x2="${sXBok + dBox + 150}" y2="${hBox - sideBottom}" stroke="#333" stroke-width="3" stroke-dasharray="8,8" opacity="0.6"/>`;
-            svg += `<text x="${sXBok + dBox + 160}" y="${hBox - sideBottom + 8}" font-size="${fontL}" font-weight="bold" fill="#333" text-anchor="start">0 mm (Baza formatki boku)</text>`;
+            svg += `<line x1="${sXCab - 50}" y1="${hBox - sideBottom}" x2="${sXBok + dBox + 150}" y2="${hBox - sideBottom}" stroke="#333" stroke-width="3" stroke-dasharray="8,8" opacity="0.6"/><text x="${sXBok + dBox + 160}" y="${hBox - sideBottom + 8}" font-size="${fontL}" font-weight="bold" fill="#333" text-anchor="start">0 mm (Baza formatki boku)</text>`;
 
             if(kTyp === 'wpuszczane') {
-                svg += `<rect x="${sXBok}" y="0" width="${dBox}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" opacity="0.6" stroke-width="${lineW}"/>`;
-                svg += `<rect x="${sXBok}" y="${hBox - tBoard - cokol}" width="${dBox}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" opacity="0.6" stroke-width="${lineW}"/>`;
-
-                if (cokol > 0) {
-                    svg += `<line x1="${sXBok - 30}" y1="${hBox}" x2="${sXBok - 30}" y2="${hBox - cokol}" stroke="#1F4E79" stroke-width="2" marker-start="url(#arrow)" marker-end="url(#arrow)"/>`;
-                    svg += `<text x="${sXBok - 40}" y="${hBox - cokol/2 + 8}" font-size="${fontL}" font-weight="bold" fill="#1F4E79" text-anchor="end">Cokół: ${cokol}</text>`;
-                }
-
-                let osWd = cokol + tBoard / 2; 
-                let svgOsWd = hBox - osWd;
-                let dimWdFromBottom = Math.round(osWd - sideBottom);
-                svg += `<line x1="${sXBok - 130}" y1="${svgOsWd}" x2="${sXBok}" y2="${svgOsWd}" stroke="#1F4E79" stroke-dasharray="6,6" stroke-width="2"/>`;
-                svg += `<text x="${sXBok - 140}" y="${svgOsWd + 8}" font-size="${fontL}" font-weight="bold" fill="#1F4E79" text-anchor="end">Oś wieńca: ${dimWdFromBottom}</text>`;
+                svg += `<rect x="${sXBok}" y="0" width="${dBox}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" opacity="0.6" stroke-width="${lineW}"/><rect x="${sXBok}" y="${hBox - tBoard - cokol}" width="${dBox}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" opacity="0.6" stroke-width="${lineW}"/>`;
+                if (cokol > 0) svg += `<line x1="${sXBok - 30}" y1="${hBox}" x2="${sXBok - 30}" y2="${hBox - cokol}" stroke="#1F4E79" stroke-width="2" marker-start="url(#arrow)" marker-end="url(#arrow)"/><text x="${sXBok - 40}" y="${hBox - cokol/2 + 8}" font-size="${fontL}" font-weight="bold" fill="#1F4E79" text-anchor="end">Cokół: ${cokol}</text>`;
                 
-                let osWg = hBox - tBoard / 2;
-                let svgOsWg = hBox - osWg;
-                let dimWgFromBottom = Math.round(osWg - sideBottom);
-                svg += `<line x1="${sXBok - 130}" y1="${svgOsWg}" x2="${sXBok}" y2="${svgOsWg}" stroke="#1F4E79" stroke-dasharray="6,6" stroke-width="2"/>`;
-                svg += `<text x="${sXBok - 140}" y="${svgOsWg + 8}" font-size="${fontL}" font-weight="bold" fill="#1F4E79" text-anchor="end">Oś wieńca: ${dimWgFromBottom}</text>`;
-
-                if (sShelfHoles) {
-                    svg += drawStructuralHoles(svgOsWd);
-                    svg += drawStructuralHoles(svgOsWg);
-                }
+                let svgOsWd = hBox - (cokol + tBoard / 2); svg += `<line x1="${sXBok - 130}" y1="${svgOsWd}" x2="${sXBok}" y2="${svgOsWd}" stroke="#1F4E79" stroke-dasharray="6,6" stroke-width="2"/><text x="${sXBok - 140}" y="${svgOsWd + 8}" font-size="${fontL}" font-weight="bold" fill="#1F4E79" text-anchor="end">Oś wieńca: ${Math.round(cokol + tBoard / 2 - sideBottom)}</text>`;
+                let svgOsWg = tBoard / 2; svg += `<line x1="${sXBok - 130}" y1="${svgOsWg}" x2="${sXBok}" y2="${svgOsWg}" stroke="#1F4E79" stroke-dasharray="6,6" stroke-width="2"/><text x="${sXBok - 140}" y="${svgOsWg + 8}" font-size="${fontL}" font-weight="bold" fill="#1F4E79" text-anchor="end">Oś wieńca: ${Math.round(hBox - tBoard / 2 - sideBottom)}</text>`;
+                if (sShelfHoles) { svg += drawStructuralHoles(svgOsWd); svg += drawStructuralHoles(svgOsWg); }
             }
 
             osie.forEach((data, i) => {
-                let ySpodSVG = hBox - data.spod; 
-                let isStruct = structuralShelves[i];
-                let shelfOpacity = isStruct ? "0.25" : "0.15";
-                let shelfFill = isStruct ? "#2e7d32" : "#2F5597";
-                svg += `<rect x="${sXBok}" y="${ySpodSVG - tBoard}" width="${dBox}" height="${tBoard}" fill="${shelfFill}" opacity="${shelfOpacity}"/>`;
+                let ySpodSVG = hBox - data.spod; let isStruct = structuralShelves[i];
+                svg += `<rect x="${sXBok}" y="${ySpodSVG - tBoard}" width="${dBox}" height="${tBoard}" fill="${isStruct ? "#2e7d32" : "#2F5597"}" opacity="${isStruct ? "0.25" : "0.15"}"/>`;
                 
-                let osPolki = data.spod + (tBoard / 2); 
-                let yOsPolkiSVG = hBox - osPolki;
-                let dimPolkaFromBottom = Math.round(osPolki - sideBottom);
-                
-                if (sShelfAxis) {
-                    svg += `<line x1="${sXBok - 130}" y1="${yOsPolkiSVG}" x2="${sXBok}" y2="${yOsPolkiSVG}" stroke="#1F4E79" stroke-dasharray="6,6" stroke-width="2"/>`;
-                    svg += `<text x="${sXBok - 140}" y="${yOsPolkiSVG + 8}" font-size="${fontL}" font-weight="bold" fill="#1F4E79" text-anchor="end">Oś: ${dimPolkaFromBottom}</text>`;
-                }
+                let yOsPolkiSVG = hBox - (data.spod + tBoard / 2);
+                if (sShelfAxis) { svg += `<line x1="${sXBok - 130}" y1="${yOsPolkiSVG}" x2="${sXBok}" y2="${yOsPolkiSVG}" stroke="#1F4E79" stroke-dasharray="6,6" stroke-width="2"/><text x="${sXBok - 140}" y="${yOsPolkiSVG + 8}" font-size="${fontL}" font-weight="bold" fill="#1F4E79" text-anchor="end">Oś: ${Math.round(data.spod + tBoard / 2 - sideBottom)}</text>`; }
                 
                 if (sShelfHoles) {
-                    if (isStruct) {
-                        svg += drawStructuralHoles(yOsPolkiSVG);
-                    } else {
-                        [-32, 0, 32].forEach(offset => {
-                            let drillOs = data.os + offset;
-                            let drillY = hBox - drillOs; 
-                            let dimFromBottom = Math.round(drillOs - sideBottom);
-                            let dimFromTop = Math.round(sideTop - drillOs);
-                            
-                            let isCenter = offset === 0;
-                            let color = isCenter ? "#d32f2f" : "#f57c00";
-                            let radius = isCenter ? 5 : 4; 
-                            let weight = isCenter ? "bold" : "normal";
-                            let fSize = isCenter ? fontL : fontM;
-
-                            svg += `<circle cx="${holeFrontX}" cy="${drillY}" r="${radius}" fill="${color}"/>`;
-                            svg += `<circle cx="${holeBackX}" cy="${drillY}" r="${radius}" fill="${color}"/>`;
-                            
-                            svg += `<line x1="${holeFrontX}" y1="${drillY}" x2="${laneShelfHoles - 10}" y2="${drillY}" stroke="${color}" stroke-dasharray="4,4" stroke-width="2"/>`;
-                            svg += `<text x="${laneShelfHoles}" y="${drillY + 8}" font-size="${fSize}" font-weight="${weight}" fill="${color}" text-anchor="start">${dimFromBottom} (${dimFromTop})</text>`;
-                        });
-                    }
+                    if (isStruct) svg += drawStructuralHoles(yOsPolkiSVG);
+                    else [-32, 0, 32].forEach(offset => {
+                        let drillY = hBox - (data.os + offset); let isCenter = offset === 0; let color = isCenter ? "#d32f2f" : "#f57c00";
+                        svg += `<circle cx="${hFrontX}" cy="${drillY}" r="${isCenter ? 5 : 4}" fill="${color}"/><circle cx="${hBackX}" cy="${drillY}" r="${isCenter ? 5 : 4}" fill="${color}"/><line x1="${hFrontX}" y1="${drillY}" x2="${laneShelfHoles - 10}" y2="${drillY}" stroke="${color}" stroke-dasharray="4,4" stroke-width="2"/><text x="${laneShelfHoles}" y="${drillY + 8}" font-size="${isCenter ? fontL : fontM}" font-weight="${isCenter ? "bold" : "normal"}" fill="${color}" text-anchor="start">${Math.round(data.os + offset - sideBottom)} (${Math.round(sideTop - (data.os + offset))})</text>`;
+                    });
                 }
-                
                 if (sDistances && i > 0) {
-                    let prevData = osie[i-1];
-                    let yPrevHoleSVG = hBox - prevData.os;
-                    let yCurrHoleSVG = hBox - data.os;
-                    if (structuralShelves[i-1]) yPrevHoleSVG = hBox - (prevData.spod + tBoard/2);
-                    if (isStruct) yCurrHoleSVG = hBox - osPolki;
-
-                    let midDimY = (yPrevHoleSVG + yCurrHoleSVG) / 2;
-                    let distHoles = Math.abs(yPrevHoleSVG - yCurrHoleSVG);
-                    
-                    svg += `<line x1="${laneDistances}" y1="${yPrevHoleSVG}" x2="${laneDistances}" y2="${yCurrHoleSVG}" stroke="#2e7d32" stroke-width="3" marker-start="url(#arrow-green)" marker-end="url(#arrow-green)"/>`;
-                    svg += `<rect x="${laneDistances - 35}" y="${midDimY - 20}" width="70" height="40" fill="#fafafa"/>`;
-                    svg += `<text x="${laneDistances}" y="${midDimY + 10}" font-size="${fontL}" font-weight="bold" fill="#2e7d32" text-anchor="middle">${distHoles}</text>`;
+                    let yPrevHoleSVG = hBox - osie[i-1].os; let yCurrHoleSVG = hBox - data.os;
+                    if (structuralShelves[i-1]) yPrevHoleSVG = hBox - (osie[i-1].spod + tBoard/2);
+                    if (isStruct) yCurrHoleSVG = yOsPolkiSVG;
+                    svg += `<line x1="${laneDistances}" y1="${yPrevHoleSVG}" x2="${laneDistances}" y2="${yCurrHoleSVG}" stroke="#2e7d32" stroke-width="3" marker-start="url(#arrow-green)" marker-end="url(#arrow-green)"/><rect x="${laneDistances - 35}" y="${(yPrevHoleSVG + yCurrHoleSVG)/2 - 20}" width="70" height="40" fill="#fafafa"/><text x="${laneDistances}" y="${(yPrevHoleSVG + yCurrHoleSVG)/2 + 10}" font-size="${fontL}" font-weight="bold" fill="#2e7d32" text-anchor="middle">${Math.abs(yPrevHoleSVG - yCurrHoleSVG)}</text>`;
                 }
             });
 
-            // --- NAWIERTY PROWADNIC SZUFLAD NA BOKU ---
             drawerGuides.forEach((dg) => {
-                let dimTopFromBottom = Math.round(dg.axisYTop - sideBottom);
-                let dimBottomFromBottom = Math.round(dg.axisYBottom - sideBottom);
-                
                 if (sDrawerTopHoles) {
-                    let guideSvgYTop = hBox - dg.axisYTop;
-                    svg += `<line x1="${holeFrontX}" y1="${guideSvgYTop}" x2="${laneHingeAxis - 10}" y2="${guideSvgYTop}" stroke="#1F4E79" stroke-dasharray="2,2" stroke-width="3"/>`;
-                    svg += `<circle cx="${holeFrontX}" cy="${guideSvgYTop}" r="5" fill="#1F4E79"/>`;
-                    svg += `<circle cx="${holeBackX}" cy="${guideSvgYTop}" r="5" fill="#1F4E79"/>`; 
-                    svg += `<text x="${laneHingeAxis}" y="${guideSvgYTop + 8}" font-size="${fontL}" font-weight="bold" fill="#1F4E79" text-anchor="start">Otwór górny: ${dimTopFromBottom}</text>`;
+                    let yT = hBox - dg.axisYTop;
+                    svg += `<line x1="${hFrontX}" y1="${yT}" x2="${laneHingeAxis - 10}" y2="${yT}" stroke="#1F4E79" stroke-dasharray="2,2" stroke-width="3"/><circle cx="${hFrontX}" cy="${yT}" r="5" fill="#1F4E79"/><circle cx="${hBackX}" cy="${yT}" r="5" fill="#1F4E79"/><text x="${laneHingeAxis}" y="${yT + 8}" font-size="${fontL}" font-weight="bold" fill="#1F4E79" text-anchor="start">Otwór górny: ${Math.round(dg.axisYTop - sideBottom)}</text>`;
                 }
-                
                 if (sDrawerBottomHoles) {
-                    let guideSvgYBottom = hBox - dg.axisYBottom;
-                    svg += `<line x1="${holeFrontX}" y1="${guideSvgYBottom}" x2="${laneHingeAxis - 10}" y2="${guideSvgYBottom}" stroke="#e65100" stroke-dasharray="2,2" stroke-width="3"/>`;
-                    svg += `<circle cx="${holeFrontX}" cy="${guideSvgYBottom}" r="5" fill="#e65100"/>`;
-                    svg += `<circle cx="${holeBackX}" cy="${guideSvgYBottom}" r="5" fill="#e65100"/>`; 
-                    svg += `<text x="${laneHingeAxis + 320}" y="${guideSvgYBottom + 8}" font-size="${fontL}" font-weight="bold" fill="#e65100" text-anchor="start">Dolny (32): ${dimBottomFromBottom}</text>`;
+                    let yB = hBox - dg.axisYBottom;
+                    svg += `<line x1="${hFrontX}" y1="${yB}" x2="${laneHingeAxis - 10}" y2="${yB}" stroke="#e65100" stroke-dasharray="2,2" stroke-width="3"/><circle cx="${hFrontX}" cy="${yB}" r="5" fill="#e65100"/><circle cx="${hBackX}" cy="${yB}" r="5" fill="#e65100"/><text x="${laneHingeAxis + 320}" y="${yB + 8}" font-size="${fontL}" font-weight="bold" fill="#e65100" text-anchor="start">Dolny (32): ${Math.round(dg.axisYBottom - sideBottom)}</text>`;
                 }
             });
 
-            // --- ZAWIASY NA BOKU ---
             if ((sHingeAxis || sHingeHoles) && (isAutoZaw || globalQZaw > 0)) {
                 doorZawiasy.forEach(zaw => {
-                    let drillY = hBox - zaw.bodyY; 
-                    let color = zaw.shifted ? "#9c27b0" : "#0288d1"; 
-                    
-                    if (sHingeAxis) {
-                        svg += `<line x1="${holeFrontX - 20}" y1="${drillY}" x2="${laneHingeAxis - 10}" y2="${drillY}" stroke="${color}" stroke-dasharray="2,2" stroke-width="3"/>`;
-                        let dimFromBottom = Math.round(zaw.bodyY - sideBottom);
-                        let dimFromTop = Math.round(sideTop - zaw.bodyY);
-                        let dimText = `${dimFromBottom} (${dimFromTop})`;
-                        if (zaw.shifted) dimText += " [KOREKTA]";
-                        
-                        svg += `<text x="${laneHingeAxis}" y="${drillY + 8}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">Prowadnik: ${dimText}</text>`;
-                    }
-                    
-                    if (sHingeHoles) {
-                        [-16, 16].forEach(off => {
-                            let valY = zaw.bodyY + off; 
-                            let hy = hBox - valY; 
-                            let dimFromBottom = Math.round(valY - sideBottom);
-                            let dimText = `${dimFromBottom}`;
-                            
-                            svg += `<circle cx="${holeFrontX}" cy="${hy}" r="4" fill="${color}"/>`;
-                            svg += `<line x1="${holeFrontX}" y1="${hy}" x2="${laneHingeHoles - 10}" y2="${hy}" stroke="${color}" stroke-dasharray="1,2" stroke-width="1.5"/>`;
-                            svg += `<text x="${laneHingeHoles}" y="${hy + 8}" font-size="${fontM}" fill="${color}" text-anchor="start">${dimText}</text>`;
-                        });
-                    }
+                    let drillY = hBox - zaw.bodyY; let color = zaw.shifted ? "#9c27b0" : "#0288d1"; 
+                    if (sHingeAxis) svg += `<line x1="${hFrontX - 20}" y1="${drillY}" x2="${laneHingeAxis - 10}" y2="${drillY}" stroke="${color}" stroke-dasharray="2,2" stroke-width="3"/><text x="${laneHingeAxis}" y="${drillY + 8}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">Prowadnik: ${Math.round(zaw.bodyY - sideBottom)} (${Math.round(sideTop - zaw.bodyY)})${zaw.shifted ? " [KOREKTA]" : ""}</text>`;
+                    if (sHingeHoles) [-16, 16].forEach(off => {
+                        let hy = hBox - (zaw.bodyY + off);
+                        svg += `<circle cx="${hFrontX}" cy="${hy}" r="4" fill="${color}"/><line x1="${hFrontX}" y1="${hy}" x2="${laneHingeHoles - 10}" y2="${hy}" stroke="${color}" stroke-dasharray="1,2" stroke-width="1.5"/><text x="${laneHingeHoles}" y="${hy + 8}" font-size="${fontM}" fill="${color}" text-anchor="start">${Math.round(zaw.bodyY + off - sideBottom)}</text>`;
+                    });
                 });
             }
 
-            // --- 3. RZUT FRONTU ---
             if (sFront) {
                 svg += `<text x="${sXFront + wBox/2}" y="-80" font-size="36" font-weight="bold" fill="#2e7d32" text-anchor="middle">FRONT (Podział zewnętrzny)</text>`;
-                
                 let baseF = hBox - cokol - fLuzD; 
-                svg += `<line x1="${sXFront - 50}" y1="${baseF}" x2="${sXFront + wBox + 150}" y2="${baseF}" stroke="#2e7d32" stroke-width="3" stroke-dasharray="8,8" opacity="0.6"/>`;
-                svg += `<text x="${sXFront + wBox + 160}" y="${baseF + 8}" font-size="${fontL}" font-weight="bold" fill="#2e7d32" text-anchor="start">0 mm (DÓŁ FRONTU)</text>`;
+                svg += `<line x1="${sXFront - 50}" y1="${baseF}" x2="${sXFront + wBox + 150}" y2="${baseF}" stroke="#2e7d32" stroke-width="3" stroke-dasharray="8,8" opacity="0.6"/><text x="${sXFront + wBox + 160}" y="${baseF + 8}" font-size="${fontL}" font-weight="bold" fill="#2e7d32" text-anchor="start">0 mm (DÓŁ FRONTU)</text>`;
                 
                 frontBlocks.forEach(fb => {
-                    let rectTopY = hBox - fb.yEnd; 
-                    let rectH = fb.yEnd - fb.yStart;
-                    
+                    let rectTopY = hBox - fb.yEnd; let rectH = fb.yEnd - fb.yStart;
                     if(fb.type === 'door') {
-                        svg += `<rect x="${sXFront}" y="${rectTopY}" width="${wBox}" height="${rectH}" fill="#e2efda" stroke="#2e7d32" stroke-width="${lineW}"/>`;
-                        
-                        let fSizeLabel = Math.round(rectH);
-                        let zawText = fb.actualZawCount > 0 ? ` (${fb.actualZawCount} szt. zawiasów)` : ``;
-                        svg += `<text x="${sXFront + wBox/2}" y="${rectTopY + rectH/2 + 8}" font-size="${fontM}" font-weight="bold" fill="#2e7d32" text-anchor="middle">Front: ${fSizeLabel} mm${zawText}</text>`;
-                        
+                        svg += `<rect x="${sXFront}" y="${rectTopY}" width="${wBox}" height="${rectH}" fill="#e2efda" stroke="#2e7d32" stroke-width="${lineW}"/><text x="${sXFront + wBox/2}" y="${rectTopY + rectH/2 + 8}" font-size="${fontM}" font-weight="bold" fill="#2e7d32" text-anchor="middle">Front: ${Math.round(rectH)} mm${fb.actualZawCount > 0 ? ` (${fb.actualZawCount} szt. zawiasów)` : ``}</text>`;
                         fb.hinges.forEach(zaw => {
-                            let cy = hBox - zaw.bodyY; 
-                            let color = zaw.shifted ? "#9c27b0" : "#2e7d32";
-                            let puszkaX = sXFront + 22; 
-                            
-                            svg += `<circle cx="${puszkaX}" cy="${cy}" r="17.5" fill="none" stroke="${color}" stroke-width="3"/>`;
-                            svg += `<circle cx="${puszkaX}" cy="${cy}" r="3" fill="${color}"/>`;
-                            svg += `<line x1="${puszkaX}" y1="${cy}" x2="${sXFront + wBox + 60}" y2="${cy}" stroke="${color}" stroke-dasharray="4,4" stroke-width="2"/>`;
-                            
-                            let dimFromBottomFront = Math.round(zaw.frontY);
-                            let dimFromTopFront = Math.round(rectH - zaw.frontY);
-                            let dimText = `${dimFromBottomFront} (${dimFromTopFront})`;
-                            if(zaw.shifted) dimText += " [KOREKTA]";
-                            svg += `<text x="${sXFront + wBox + 70}" y="${cy + 8}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">${dimText}</text>`;
+                            let cy = hBox - zaw.bodyY; let color = zaw.shifted ? "#9c27b0" : "#2e7d32"; let puszkaX = sXFront + 22; 
+                            svg += `<circle cx="${puszkaX}" cy="${cy}" r="17.5" fill="none" stroke="${color}" stroke-width="3"/><circle cx="${puszkaX}" cy="${cy}" r="3" fill="${color}"/><line x1="${puszkaX}" y1="${cy}" x2="${sXFront + wBox + 60}" y2="${cy}" stroke="${color}" stroke-dasharray="4,4" stroke-width="2"/><text x="${sXFront + wBox + 70}" y="${cy + 8}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">${Math.round(zaw.frontY)} (${Math.round(rectH - zaw.frontY)})${zaw.shifted ? " [KOREKTA]" : ""}</text>`;
                         });
                     } else if(fb.type === 'drawers') {
                         fb.drawers.forEach((dr, idx) => {
-                            let drTopY = hBox - dr.yEnd;
                             let drH = dr.yEnd - dr.yStart;
-                            svg += `<rect x="${sXFront}" y="${drTopY}" width="${wBox}" height="${drH}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/>`;
-                            
-                            let fSizeLabel = Math.round(drH);
-                            svg += `<text x="${sXFront + wBox/2}" y="${drTopY + drH/2 + 8}" font-size="${fontM}" font-weight="bold" fill="#1F4E79" text-anchor="middle">Szuflada ${idx+1} (F: ${fSizeLabel}mm)</text>`;
+                            svg += `<rect x="${sXFront}" y="${hBox - dr.yEnd}" width="${wBox}" height="${drH}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/>`;
+                            let drTypeLabel = "";
+                            if (fb.drawerMode === 'manual' && fb.manualFronts[idx]) {
+                                let tObj = sysDB.types.find(t => t.id === fb.manualFronts[idx].type);
+                                if(tObj) drTypeLabel = ` [Typ: ${tObj.label}]`;
+                            }
+                            svg += `<text x="${sXFront + wBox/2}" y="${hBox - dr.yEnd + drH/2 + 8}" font-size="${fontM}" font-weight="bold" fill="#1F4E79" text-anchor="middle">Szuflada ${idx+1} (F: ${Math.round(drH)}mm)${drTypeLabel}</text>`;
                         });
                     }
                 });
             }
 
-            svg += `</svg>`;
-            document.getElementById('svgWrapper').innerHTML = svg;
+            svg += `</svg>`; document.getElementById('svgWrapper').innerHTML = svg;
         }
 
-        window.onload = () => { 
-            initZoomPan(); 
-            resetLocksAndRun(); 
-            renderSavedCabinets(); 
-            toggleAutoZaw();
-        };
+        window.onload = () => { initZoomPan(); resetLocksAndRun(); renderSavedCabinets(); toggleAutoZaw(); };
     </script>
 </body>
 </html>
