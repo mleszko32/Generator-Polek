@@ -9,7 +9,10 @@
         .container { max-width: 98%; margin: auto; display: flex; gap: 20px; flex-wrap: wrap; align-items: stretch; }
         .panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #eee; display: flex; flex-direction: column; }
         .panel-left { flex: 1.2; min-width: 440px; max-width: 520px; }
+        
+        /* DOMYŚLNIE DLA KOMPUTERA: Włączony sticky panel i sztywna wysokość */
         .panel-right { flex: 2.5; min-width: 600px; position: sticky; top: 20px; align-self: flex-start; height: calc(100vh - 40px); }
+        
         .panel-bottom { flex: 100%; width: 100%; margin-top: 10px; }
         
         h2 { margin-top: 0; font-size: 1.2rem; color: #1F4E79; border-bottom: 2px solid #E2EFDA; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
@@ -72,6 +75,19 @@
             #printArea { display: block !important; position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: white; }
             #printArea svg { width: 100%; height: 100%; max-height: 98vh; }
             @page { margin: 0.5cm; }
+        }
+
+        /* KLUCZOWA NAPRAWA DLA TABLETÓW I TELEFONÓW */
+        @media (max-width: 1024px) {
+            .panel-right {
+                position: static !important; /* Wyłącza sticky */
+                height: auto !important;     /* Usuwa sztywną wysokość okna */
+                align-self: stretch;
+                min-width: 100%;            /* Rysunek rozciąga się na pełną szerokość ekranu pod opcjami */
+            }
+            .svg-container {
+                min-height: 500px;          /* Daje stabilną przestrzeń na rysunek na dotykowym ekranie */
+            }
         }
     </style>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
