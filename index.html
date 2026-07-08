@@ -8,7 +8,7 @@
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f4f7f6; padding: 20px; color: #333; margin: 0; }
         .container { max-width: 98%; margin: auto; display: flex; gap: 20px; flex-wrap: wrap; align-items: stretch; }
         .panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #eee; display: flex; flex-direction: column; }
-        .panel-left { flex: 1.2; min-width: 440px; max-width: 500px; }
+        .panel-left { flex: 1.2; min-width: 440px; max-width: 520px; }
         .panel-right { flex: 2.5; min-width: 600px; position: sticky; top: 20px; align-self: flex-start; height: calc(100vh - 40px); }
         .panel-bottom { flex: 100%; width: 100%; margin-top: 10px; }
         
@@ -109,6 +109,13 @@
                 <div><label>Wysokość cokołu</label><input type="number" id="cokol" value="100" min="0" oninput="resetLocksAndRun()"></div>
                 <div><label>Offset podpórki (Dół)</label><input type="number" id="offsetPodporki" value="3" oninput="run()"></div>
                 <div><label>Grubość płyty (korpus)</label><input type="number" id="tBoard" value="18" min="0" oninput="run()"></div>
+                <div><label>Konstrukcja pleców</label>
+                    <select id="backType" onchange="toggleBackFields(); run();">
+                        <option value="nakladane">Nakładane od tyłu</option>
+                        <option value="nut">Wpuszczane w nut</option>
+                    </select>
+                </div>
+                <div id="nutDepthField" style="display:none;"><label>Głębokość nutu (mm)</label><input type="number" id="nutDepth" value="12" min="0" oninput="run()"></div>
             </div>
 
             <h3>Fronty, Zawiasy i Okucia</h3>
@@ -207,6 +214,8 @@
         const DRAWER_DB = {
             "44": {
                 name: "GTV Axis Pro / Modern Box",
+                lengths: [250, 300, 350, 400, 450, 500, 550],
+                ltRequired: 5,
                 types: [
                     { id: "A", label: "A (Niska)", minFront: 105 },
                     { id: "B", label: "B (Średnia)", minFront: 160 },
@@ -217,6 +226,8 @@
             },
             "54": {
                 name: "Blum Merivobox",
+                lengths: [270, 300, 350, 400, 450, 500, 550, 600],
+                ltRequired: 3,
                 types: [
                     { id: "N", label: "N (B. Niska)", minFront: 85.5 },
                     { id: "M", label: "M (Niska)", minFront: 108 },
@@ -227,6 +238,8 @@
             },
             "33": {
                 name: "Blum Antaro / Tandembox",
+                lengths: [270, 300, 350, 400, 450, 500, 550, 600, 650],
+                ltRequired: 3,
                 types: [
                     { id: "N", label: "N (B. Niska)", minFront: 82.5 },
                     { id: "M", label: "M (Niska)", minFront: 98.5 },
@@ -238,6 +251,8 @@
             },
             "custom": {
                 name: "Inne (Własne)",
+                lengths: [250, 300, 350, 400, 450, 500, 550, 600],
+                ltRequired: 3,
                 types: [
                     { id: "UNI", label: "Uniwersalna", minFront: 60 }
                 ],
@@ -248,12 +263,16 @@
         function val(id) { return parseFloat(document.getElementById(id).value) || 0; }
         function isChecked(id) { return document.getElementById(id).checked; }
 
+        function toggleBackFields() {
+            document.getElementById('nutDepthField').style.display = document.getElementById('backType').value === 'nut' ? 'block' : 'none';
+        }
+
         let errorTimeout;
         function showError(msg) {
             let errBox = document.getElementById('errorBox');
             errBox.innerText = msg; errBox.style.display = 'block';
             clearTimeout(errorTimeout);
-            errorTimeout = setTimeout(() => { errBox.style.display = 'none'; }, 4000);
+            errorTimeout = setTimeout(() => { errBox.style.display = 'none'; }, 5000);
         }
         function hideError() { document.getElementById('errorBox').style.display = 'none'; }
 
@@ -320,6 +339,8 @@
                 fLuzD: val('fLuzD'), fLuzG: val('fLuzG'), cMargin: val('cMargin'),
                 luzFrontow: val('luzFrontow'), drawerSystem: document.getElementById('drawerSystem').value,
                 customDrawerAxis: val('customDrawerAxis'),
+                backType: document.getElementById('backType').value,
+                nutDepth: val('nutDepth'),
                 spaceLocks: JSON.parse(JSON.stringify(spaceLocks)),
                 structuralShelves: JSON.parse(JSON.stringify(structuralShelves))
             };
@@ -337,6 +358,8 @@
                 fLuzD: val('fLuzD'), fLuzG: val('fLuzG'), cMargin: val('cMargin'),
                 luzFrontow: val('luzFrontow'), drawerSystem: document.getElementById('drawerSystem').value,
                 customDrawerAxis: val('customDrawerAxis'),
+                backType: document.getElementById('backType').value,
+                nutDepth: val('nutDepth'),
                 spaceLocks: JSON.parse(JSON.stringify(spaceLocks)),
                 structuralShelves: JSON.parse(JSON.stringify(structuralShelves))
             };
@@ -358,7 +381,11 @@
             document.getElementById('fLuzD').value = cab.fLuzD !== undefined ? cab.fLuzD : 0;
             document.getElementById('cMargin').value = cab.cMargin !== undefined ? cab.cMargin : 35;
             document.getElementById('luzFrontow').value = cab.luzFrontow !== undefined ? cab.luzFrontow : 3;
+            document.getElementById('backType').value = cab.backType !== undefined ? cab.backType : 'nakladane';
+            document.getElementById('nutDepth').value = cab.nutDepth !== undefined ? cab.nutDepth : 12;
             
+            toggleBackFields();
+
             let loadedSys = cab.drawerSystem !== undefined ? cab.drawerSystem : "44";
             document.getElementById('drawerSystem').value = loadedSys;
             document.getElementById('customDrawerAxis').value = cab.customDrawerAxis !== undefined ? cab.customDrawerAxis : 44;
@@ -381,7 +408,8 @@
                     drawerMode: s.drawerMode || 'auto',
                     qDrawers: s.qDrawers || 3,
                     manualFronts: mFronts,
-                    topGapToAxis: s.topGapToAxis !== undefined ? s.topGapToAxis : 12
+                    topGapToAxis: s.topGapToAxis !== undefined ? s.topGapToAxis : 12,
+                    manualDrawerNL: s.manualDrawerNL || {} // obiekt z mapowaniem indeks_szuflady -> NL
                 };
             });
 
@@ -415,8 +443,6 @@
             document.getElementById('savedList').innerHTML = listHtml;
         });
 
-        function renderSavedCabinets() {}
-
         function printView() {
             let type = document.getElementById('printType').value;
             let svgNode = document.querySelector('#svgWrapper svg').cloneNode(true);
@@ -447,7 +473,8 @@
                         { height: 200, type: dbSys.default },
                         { height: 140, type: dbSys.default }
                     ],
-                    topGapToAxis: 12
+                    topGapToAxis: 12,
+                    manualDrawerNL: {}
                 });
             }
             structuralShelves = new Array(qPol).fill(false);
@@ -476,6 +503,12 @@
 
         function updateDrawerCount(index, value) {
             let q = parseInt(value); if(!isNaN(q) && q > 0) spaceLocks[index].qDrawers = q; run();
+        }
+
+        function updateDrawerNL(spaceIdx, drawerIdx, value) {
+            if(!spaceLocks[spaceIdx].manualDrawerNL) spaceLocks[spaceIdx].manualDrawerNL = {};
+            spaceLocks[spaceIdx].manualDrawerNL[drawerIdx] = value;
+            run();
         }
 
         function updateFrontHeight(spaceIdx, frontIdx, value) {
@@ -558,6 +591,8 @@
             let kTyp = document.getElementById('kTyp').value;
             let hBox = val('hBox'); let wBox = val('wBox'); let dBox = val('dBox'); let tBoard = val('tBoard');
             let qPol = val('qPol'); let offsetPodporki = val('offsetPodporki'); let cokol = val('cokol');
+            let backType = document.getElementById('backType').value;
+            let nutDepth = val('nutDepth');
 
             let sClearance = isChecked('sClearance'); let sShelfAxis = isChecked('sShelfAxis');
             let sShelfHoles = isChecked('sShelfHoles'); let sDistances = isChecked('sDistances');
@@ -570,6 +605,10 @@
             let globalQZaw = val('qZaw');
             let isAutoZaw = isChecked('autoZaw');
             let sysDB = DRAWER_DB[document.getElementById('drawerSystem').value];
+
+            // 1. OBLICZANIE ŚWIATŁA GŁĘBOKOŚCI KORPUSU (LOGIKA WARSZTATOWA)
+            let currentLInternal = (backType === 'nut') ? (dBox - 18 - nutDepth) : (dBox - 18);
+            hideError();
 
             let totalSpaces = qPol + 1;
             if(spaceLocks.length !== totalSpaces) { resetLocksAndRun(); return; }
@@ -657,17 +696,61 @@
                             
                             let shrinkBtnHtml = canShrink ? `<button type="button" class="btn-shrink" onclick="shrinkFront(${i}, ${fIdx})" title="Ściśnij front do ${minReq}mm" style="padding:2px 6px; font-size:0.8rem; background:#e8f0fe; border:1px solid #1F4E79; color:#1F4E79; border-radius:4px; cursor:pointer;">>< Ściśnij</button>` : '';
 
+                            // 2. LOGIKA GENEROWANIA SELEKTORA DŁUGOŚCI PROWADNIC (OPCJA B)
+                            if(!spaceLocks[i].manualDrawerNL) spaceLocks[i].manualDrawerNL = {};
+                            let currentSavedNL = spaceLocks[i].manualDrawerNL[fIdx];
+                            
+                            // Wyliczamy najwyższy pasujący wymiar automatyczny
+                            let autoSelectedNL = sysDB.lengths[0];
+                            sysDB.lengths.forEach(len => {
+                                if(currentLInternal >= (len + sysDB.ltRequired)) {
+                                    autoSelectedNL = len;
+                                }
+                            });
+                            
+                            let finalActiveNL = currentSavedNL === undefined || currentSavedNL === 'auto' ? autoSelectedNL : parseFloat(currentSavedNL);
+                            
+                            let selectNLHtml = `<select onchange="updateDrawerNL(${i}, ${fIdx}, this.value)" style="padding: 3px; font-size:0.8rem; border-color:#ccc; border-radius:4px; width:110px;">`;
+                            selectNLHtml += `<option value="auto">Auto (${autoSelectedNL}mm)</option>`;
+                            
+                            sysDB.lengths.forEach(len => {
+                                let isSel = (currentSavedNL !== undefined && currentSavedNL !== 'auto' && parseFloat(currentSavedNL) === len) ? 'selected' : '';
+                                selectNLHtml += `<option value="${len}" ${isSel}>${len} mm</option>`;
+                            });
+                            selectNLHtml += `</select>`;
+
+                            // Sprawdzenie kolizji i wyliczenie wolnego miejsca z tyłu
+                            let alertSpan = '';
+                            if(currentLInternal < (finalActiveNL + sysDB.ltRequired)) {
+                                alertSpan = `<span style="color:#d32f2f; font-weight:bold; display:block; font-size:0.75rem; margin-top:2px;">⚠️ Za długa! Wymaga min. ${finalActiveNL + sysDB.ltRequired}mm</span>`;
+                                showError(`Błąd konfiguracji! Szuflada w świetle ${i+1} (F${fIdx+1}) jest zbyt długa dla wybranej głębokości korpusu.`);
+                            } else {
+                                let freeSpace = currentLInternal - (finalActiveNL + sysDB.ltRequired);
+                                if(freeSpace > 0) {
+                                    alertSpan = `<span style="color:#2e7d32; display:block; font-size:0.75rem; margin-top:2px;">Luz z tyłu: +${Math.round(freeSpace)}mm</span>`;
+                                }
+                            }
+
                             drawerHtml += `
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; background: #fdfdfd; padding: 4px; border: 1px solid #eee; border-radius: 4px;">
-                                    <div style="display:flex; align-items:center; gap: 5px;">
-                                        <span style="font-size:0.8rem; font-weight:bold; color:#555; width:55px;">${lbl}:</span>
-                                        <input type="number" value="${mf.height}" onchange="updateFrontHeight(${i}, ${fIdx}, this.value)" style="width: 65px; padding: 4px; text-align:center; border: 1px solid #ccc; border-radius: 4px;">
+                                <div style="display:flex; flex-direction:column; margin-bottom:6px; background: #fdfdfd; padding: 6px; border: 1px solid #eee; border-radius: 4px;">
+                                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                                        <div style="display:flex; align-items:center; gap: 5px;">
+                                            <span style="font-size:0.8rem; font-weight:bold; color:#555; width:55px;">${lbl}:</span>
+                                            <input type="number" value="${mf.height}" onchange="updateFrontHeight(${i}, ${fIdx}, this.value)" style="width: 65px; padding: 4px; text-align:center; border: 1px solid #ccc; border-radius: 4px;">
+                                        </div>
+                                        <div style="display:flex; align-items:center; gap: 5px;">
+                                            <select onchange="updateDrawerType(${i}, ${fIdx}, this.value)" style="padding: 3px; font-size:0.8rem; border-color:#ccc; border-radius:4px; max-width: 140px;">
+                                                ${optionsHtml}
+                                            </select>
+                                            ${shrinkBtnHtml}
+                                        </div>
                                     </div>
-                                    <div style="display:flex; align-items:center; gap: 5px;">
-                                        <select onchange="updateDrawerType(${i}, ${fIdx}, this.value)" style="padding: 3px; font-size:0.8rem; border-color:#ccc; border-radius:4px; max-width: 140px;">
-                                            ${optionsHtml}
-                                        </select>
-                                        ${shrinkBtnHtml}
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; border-top:1px dotted #eee; padding-top:4px;">
+                                        <span style="font-size:0.8rem; color:#666;">Prowadnica:</span>
+                                        <div>
+                                            ${selectNLHtml}
+                                            ${alertSpan}
+                                        </div>
                                     </div>
                                 </div>`;
                         });
@@ -708,7 +791,7 @@
                     if (currentDoorBlock) { frontBlocks.push(currentDoorBlock); currentDoorBlock = null; }
                     let blockEndY = defaultEndY;
                     if (sb.drawerMode === 'manual') blockEndY = facadeY + sb.manualFronts.reduce((a,b) => a + b.height, 0) + ((sb.manualFronts.length - 1) * luzFrontow);
-                    frontBlocks.push({ type: 'drawers', drawerMode: sb.drawerMode, manualFronts: sb.manualFronts, qDrawers: sb.qDrawers, yStart: facadeY, yEnd: blockEndY, interiorBottom: sb.yStart });
+                    frontBlocks.push({ type: 'drawers', drawerMode: sb.drawerMode, manualFronts: sb.manualFronts, qDrawers: sb.qDrawers, spaceIdx: i, yStart: facadeY, yEnd: blockEndY, interiorBottom: sb.yStart });
                     facadeY = blockEndY + luzFrontow;
                 } else {
                     if (!currentDoorBlock) currentDoorBlock = { type: 'door', yStart: facadeY, yEnd: defaultEndY };
@@ -729,8 +812,17 @@
                             let fH = fb.manualFronts[j].height; let dTop = currY + fH;
                             let guideTopY = currY + topHoleOffset; let guideBottomY = currY + 32;
                             if (j === 0) { guideTopY = Math.max(guideTopY, fb.interiorBottom + topHoleOffset); guideBottomY = Math.max(guideBottomY, fb.interiorBottom + 32); }
-                            fb.drawers.push({ yStart: currY, yEnd: dTop, guideTop: guideTopY, guideBottom: guideBottomY });
-                            drawerGuides.push({ axisYTop: guideTopY, axisYBottom: guideBottomY });
+                            
+                            // Pobieranie aktywnego NL do przypisania rysunkowego boku
+                            let currentSavedNL = spaceLocks[fb.spaceIdx].manualDrawerNL ? spaceLocks[fb.spaceIdx].manualDrawerNL[j] : 'auto';
+                            let autoSelectedNL = sysDB.lengths[0];
+                            sysDB.lengths.forEach(len => {
+                                if(currentLInternal >= (len + sysDB.ltRequired)) autoSelectedNL = len;
+                            });
+                            let activeNL = currentSavedNL === undefined || currentSavedNL === 'auto' ? autoSelectedNL : parseFloat(currentSavedNL);
+
+                            fb.drawers.push({ yStart: currY, yEnd: dTop, guideTop: guideTopY, guideBottom: guideBottomY, currentNL: activeNL });
+                            drawerGuides.push({ axisYTop: guideTopY, axisYBottom: guideBottomY, currentNL: activeNL });
                             currY = dTop + luzFrontow;
                         }
                     } else { 
@@ -739,8 +831,14 @@
                         for(let j=0; j < fb.qDrawers; j++) {
                             let dTop = currY + dFrontH; let guideTopY = currY + topHoleOffset; let guideBottomY = currY + 32;
                             if (j === 0) { guideTopY = Math.max(guideTopY, fb.interiorBottom + topHoleOffset); guideBottomY = Math.max(guideBottomY, fb.interiorBottom + 32); }
-                            fb.drawers.push({ yStart: currY, yEnd: dTop, guideTop: guideTopY, guideBottom: guideBottomY });
-                            drawerGuides.push({ axisYTop: guideTopY, axisYBottom: guideBottomY });
+                            
+                            let autoSelectedNL = sysDB.lengths[0];
+                            sysDB.lengths.forEach(len => {
+                                if(currentLInternal >= (len + sysDB.ltRequired)) autoSelectedNL = len;
+                            });
+
+                            fb.drawers.push({ yStart: currY, yEnd: dTop, guideTop: guideTopY, guideBottom: guideBottomY, currentNL: autoSelectedNL });
+                            drawerGuides.push({ axisYTop: guideTopY, axisYBottom: guideBottomY, currentNL: autoSelectedNL });
                             currY = dTop + luzFrontow;
                         }
                     }
@@ -754,7 +852,7 @@
                         let hgBaseFront = [];
                         if (localQZaw === 1) hgBaseFront.push({ offset: fH_total/2, isTop: false });
                         else {
-                            boxX = zOffD; hgBaseFront.push({ offset: zOffD, isTop: false }); 
+                            hgBaseFront.push({ offset: zOffD, isTop: false }); 
                             if (localQZaw > 2) { let step = (fH_total - zOffG - zOffD) / (localQZaw - 1); for (let k = 1; k < localQZaw - 1; k++) hgBaseFront.push({ offset: zOffD + k * step, isTop: false }); }
                             hgBaseFront.push({ offset: fH_total - zOffG, isTop: true }); 
                         }
@@ -774,6 +872,7 @@
                 }
             });
 
+            // --- SVG RENDER ---
             let sXCab = 0; let sXBok = wBox + 300; let sXFront = sXBok + dBox + 1200; 
             let viewTotalW = sFront ? (sXFront + wBox + 500) : (sXBok + dBox + 1300); let viewTotalH = hBox + 300;         
             let svg = `<svg viewBox="-150 -150 ${viewTotalW} ${viewTotalH}" class="svg-drawing" xmlns="http://www.w3.org/2000/svg">`;
@@ -790,7 +889,7 @@
             if(kTyp === 'wpuszczane') {
                 svg += `<rect x="${sXCab}" y="0" width="${tBoard}" height="${hBox}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/><rect x="${sXCab + wBox - tBoard}" y="0" width="${tBoard}" height="${hBox}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/><rect x="${innerX}" y="0" width="${innerW}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/><rect x="${innerX}" y="${yBottomWieniec}" width="${innerW}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/>`;
             } else {
-                svg += `<rect x="${sXCab}" y="0" width="${wBox}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/><rect x="${sXCab}" y="${yBottomWieniec}" width="${wBox}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/><rect x="${sXCab}" y="${tBoard}" width="${tBoard}" height="${hBox - 2*tBoard - cokol}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/><rect x="${sXCab + wBox - tBoard}" y="${tBoard}" width="${tBoard}" height="${hBox - 2*tBoard - cokol}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/>`;
+                svg += `<rect x="${sXCab}" y="0" width="${wBox}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/><rect x="${sXCab}" y="${yBottomWieniec}" width="${wBox}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/><rect x="${sXCab}" y="${tBoard}" width="${tBoard}" height="${hBox - 2*tBoard - cokol}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/><rect x="${sXCab + wBox - tBoard}" y="${tBoard}" width="${tBoard}" height="${hBox - 2*tBoard - cokol}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/> desert`;
             }
 
             let currentFloorSVG = yBottomWieniec; 
@@ -865,14 +964,15 @@
                 }
             });
 
+            // 3. REPREZENTACJA WIZUALNA DŁUGOŚCI PROWADNIC NA RZUCIE BOKU KORPUSU
             drawerGuides.forEach((dg) => {
                 if (sDrawerTopHoles) {
                     let yT = hBox - dg.axisYTop;
-                    svg += `<line x1="${hFrontX}" y1="${yT}" x2="${laneHingeAxis - 10}" y2="${yT}" stroke="#1F4E79" stroke-dasharray="2,2" stroke-width="3"/><circle cx="${hFrontX}" cy="${yT}" r="5" fill="#1F4E79"/><circle cx="${hBackX}" cy="${yT}" r="5" fill="#1F4E79"/><text x="${laneHingeAxis}" y="${yT + 8}" font-size="${fontL}" font-weight="bold" fill="#1F4E79" text-anchor="start">Otwór górny: ${Math.round(dg.axisYTop - sideBottom)}</text>`;
+                    svg += `<line x1="${hFrontX}" y1="${yT}" x2="${hFrontX - dg.currentNL}" y2="${yT}" stroke="#1F4E79" stroke-width="4"/><line x1="${hFrontX - dg.currentNL}" y1="${yT}" x2="${laneHingeAxis - 10}" y2="${yT}" stroke="#1F4E79" stroke-dasharray="2,2" stroke-width="1.5"/><circle cx="${hFrontX}" cy="${yT}" r="5" fill="#1F4E79"/><circle cx="${hBackX}" cy="${yT}" r="5" fill="#1F4E79"/><text x="${laneHingeAxis}" y="${yT + 8}" font-size="${fontL}" font-weight="bold" fill="#1F4E79" text-anchor="start">Otwór górny: ${Math.round(dg.axisYTop - sideBottom)} [NL: ${dg.currentNL}mm]</text>`;
                 }
                 if (sDrawerBottomHoles) {
                     let yB = hBox - dg.axisYBottom;
-                    svg += `<line x1="${hFrontX}" y1="${yB}" x2="${laneHingeAxis - 10}" y2="${yB}" stroke="#e65100" stroke-dasharray="2,2" stroke-width="3"/><circle cx="${hFrontX}" cy="${yB}" r="5" fill="#e65100"/><circle cx="${hBackX}" cy="${yB}" r="5" fill="#e65100"/><text x="${laneHingeAxis + 320}" y="${yB + 8}" font-size="${fontL}" font-weight="bold" fill="#e65100" text-anchor="start">Dolny (32): ${Math.round(dg.axisYBottom - sideBottom)}</text>`;
+                    svg += `<line x1="${hFrontX}" y1="${yB}" x2="${laneHingeAxis - 10}" y2="${yB}" stroke="#e65100" stroke-dasharray="2,2" stroke-width="1.5"/><circle cx="${hFrontX}" cy="${yB}" r="5" fill="#e65100"/><circle cx="${hBackX}" cy="${yB}" r="5" fill="#e65100"/><text x="${laneHingeAxis + 420}" y="${yB + 8}" font-size="${fontL}" font-weight="bold" fill="#e65100" text-anchor="start">Dolny (32): ${Math.round(dg.axisYBottom - sideBottom)}</text>`;
                 }
             });
 
@@ -909,7 +1009,7 @@
                                 let tObj = sysDB.types.find(t => t.id === fb.manualFronts[idx].type);
                                 if(tObj) drTypeLabel = ` [Typ: ${tObj.label}]`;
                             }
-                            svg += `<text x="${sXFront + wBox/2}" y="${hBox - dr.yEnd + drH/2 + 8}" font-size="${fontM}" font-weight="bold" fill="#1F4E79" text-anchor="middle">Szuflada ${idx+1} (F: ${Math.round(drH)}mm)${drTypeLabel}</text>`;
+                            svg += `<text x="${sXFront + wBox/2}" y="${hBox - dr.yEnd + drH/2 + 8}" font-size="${fontM}" font-weight="bold" fill="#1F4E79" text-anchor="middle">Szuflada ${idx+1} (F: ${Math.round(drH)}mm)${drTypeLabel} [NL: ${dr.currentNL}mm]</text>`;
                         });
                     }
                 });
@@ -918,7 +1018,7 @@
             svg += `</svg>`; document.getElementById('svgWrapper').innerHTML = svg;
         }
 
-        window.onload = () => { initZoomPan(); resetLocksAndRun(); renderSavedCabinets(); toggleAutoZaw(); };
+        window.onload = () => { initZoomPan(); resetLocksAndRun(); renderSavedCabinets(); toggleAutoZaw(); toggleBackFields(); };
     </script>
 </body>
 </html>
