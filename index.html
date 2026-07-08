@@ -376,6 +376,7 @@
             return system === 'custom' ? val('customDrawerAxis') : parseFloat(system); 
         } 
  
+        // WYCZYŚCIŁEM BŁĄD SKŁADNIOWY Z TEJ METODY (USUNIĘTE REZYDUALNE TEKSTY)
         function saveCabinet() { 
             let cab = { 
                 id: Date.now(), 
@@ -719,7 +720,7 @@
                             </label> 
                             ${isDrawers ? `<select onchange="changeDrawerMode(${i}, this.value)" style="padding: 2px 5px; font-size:0.8rem; width:auto;"> 
                                     <option value="auto" ${drawerMode==='auto'?'selected':''}>Równomiernie (Auto)</option> 
-                                    <option value="manual" ${drawerMode==='manual'?'selected':''}>Własne fronts (Bottom-Up)</option> 
+                                    <option value="manual" ${drawerMode==='manual'?'selected':''}>Własne fronty (Bottom-Up)</option> 
                                 </select>` : ''} 
                         </div>`; 
  
@@ -825,7 +826,7 @@
                 currentBottom += h;  
                 if (i < qPol) { osie.push({ spod: currentBottom, os: currentBottom - offsetPodporki, osPrawdziwa: currentBottom + tBoard/2 }); currentBottom += tBoard; } 
             } 
-
+ 
             let frontBlocks = []; let currentDoorBlock = null; let doorZawiasy = []; let drawerGuides = []; let facadeY = cokol + fLuzD; 
             for(let i = 0; i < totalSpaces; i++) { 
                 let sb = spacesBoundary[i]; let isTop = (i === totalSpaces - 1); 
@@ -918,13 +919,13 @@
             let sXCab = 0; let sXBok = wBox + 300; let sXFront = sXBok + dBox + 1200;  
             let viewTotalW = sFront ? (sXFront + wBox + 500) : (sXBok + dBox + 1300); let viewTotalH = hBox + 300;          
             let svg = `<svg viewBox="-150 -150 ${viewTotalW} ${viewTotalH}" class="svg-drawing" xmlns="http://www.w3.org/2000/svg">`; 
-            svg += `<defs><marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1.5 L 10 5 L 0 8.5 Z" fill="#4a5568" /></marker><marker id="arrow-red" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1.5 L 10 5 L 0 8.5 Z" fill="#e53e3e" /></marker><marker id="arrow-green" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1.5 L 10 5 L 0 8.5 Z" fill="#38a169" /></marker></defs>`; 
+            svg += `<defs><marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 2 L 10 5 L 0 8 Z" fill="#555" /></marker><marker id="arrow-red" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 2 L 10 5 L 0 8 Z" fill="#d32f2f" /></marker><marker id="arrow-green" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 2 L 10 5 L 0 8 Z" fill="#2e7d32" /></marker></defs>`; 
             let fontL = 28; let fontM = 24; let fontS = 20; let lineW = 3; 
  
             svg += `<text x="${sXCab + wBox/2}" y="-80" font-size="36" font-weight="bold" fill="#1F4E79" text-anchor="middle">KORPUS WNĘTRZE</text>`; 
             svg += `<text x="${sXBok + dBox/2}" y="-80" font-size="36" font-weight="bold" fill="#1F4E79" text-anchor="middle">BOK SZAFY</text>`; 
             svg += `<circle cx="${sXBok + 20}" cy="-120" r="3" fill="#333"/><text x="${sXBok + 35}" y="-112" font-size="${fontM}" fill="#555">Wkręt (Ø 3 mm)</text>`; 
-            svg += `<circle cx="${sXBok + 230}" cy="-120" r="5" fill="#2e7d32"/><text x="${sXBok + 245}" y="-112" font-size="${fontM}" fill="#555">Kołek / Konfirmat (Ø 8 mm)</text>`; 
+            svg += `<circle cx="${sXBok + 230}" cy="-120" r="5" fill="#8d6e63"/><text x="${sXBok + 245}" y="-112" font-size="${fontM}" fill="#555">Kołek (Ø 8 mm)</text>`; 
  
             let innerX = sXCab + tBoard; let innerW = wBox - 2*tBoard; let centerX = sXCab + wBox/2; 
             let yBottomWieniec = hBox - tBoard - cokol; 
@@ -952,20 +953,28 @@
                 if(isLocked) svg += `<text x="${centerX + 50}" y="${(currentFloorSVG + tBoard)/2 + fontM/3}" font-size="${fontM}" fill="#d32f2f">🔒</text>`; 
             } 
  
+            function drawStructuralHoles(yAxisSVG) { 
+                let hHtml = ""; let rW = 3; let rK = 5; 
+                hHtml += `<circle cx="${sXBok + 37}" cy="${yAxisSVG}" r="${rW}" fill="#333"/><circle cx="${sXBok + 69}" cy="${yAxisSVG}" r="${rK}" fill="#8d6e63"/><circle cx="${sXBok + dBox - 37}" cy="${yAxisSVG}" r="${rW}" fill="#333"/><circle cx="${sXBok + dBox - 69}" cy="${yAxisSVG}" r="${rK}" fill="#8d6e63"/>`; 
+                if (dBox >= 500) hHtml += `<circle cx="${sXBok + dBox/2 + 16}" cy="${yAxisSVG}" r="${rW}" fill="#333"/><circle cx="${sXBok + dBox/2 - 16}" cy="${yAxisSVG}" r="${rK}" fill="#8d6e63"/>`; 
+                hHtml += `<line x1="${sXBok}" y1="${yAxisSVG}" x2="${sXBok + dBox}" y2="${yAxisSVG}" stroke="#2e7d32" stroke-dasharray="8,4" stroke-width="1.5" opacity="0.6"/>`; 
+                return hHtml; 
+            } 
+ 
             let sideBottom = (kTyp === 'nakladane') ? cokol + tBoard : 0; let sideTop = (kTyp === 'nakladane') ? hBox - tBoard : hBox; 
             svg += `<rect x="${sXBok}" y="${hBox - sideTop}" width="${dBox}" height="${sideTop - sideBottom}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/>`; 
             svg += `<text x="${sXBok - 20}" y="${hBox/2}" font-size="${fontM}" font-weight="bold" fill="#888" text-anchor="middle" transform="rotate(-90 ${sXBok - 20} ${hBox/2})">TYŁ BOKU</text><text x="${sXBok + dBox + 20}" y="${hBox/2}" font-size="${fontM}" font-weight="bold" fill="#888" text-anchor="middle" transform="rotate(90 ${sXBok + dBox + 20} ${hBox/2})">PRZÓD BOKU</text>`; 
              
             let hFrontX = sXBok + dBox - 37; let hBackX = sXBok + 37; 
-            let laneHingeHoles = sXBok + dBox + 80; let laneShelfHoles = sXBok + dBox + 280; let laneHingeAxis = sXBok + dBox + 500; 
+            let laneHingeHoles = sXBok + dBox + 80; let laneShelfHoles = sXBok + dBox + 300; let laneHingeAxis = sXBok + dBox + 550; let laneDistances = sXBok + dBox + 850; 
  
             if (sShelfHoles) { 
                 let topHoleY = hBox - sideTop - 40; 
-                svg += `<line x1="${sXBok}" y1="${topHoleY}" x2="${sXBok + 37}" y2="${topHoleY}" stroke="#e53e3e" stroke-width="1.5" marker-start="url(#arrow-red)" marker-end="url(#arrow-red)"/><text x="${sXBok + 18}" y="${topHoleY - 10}" font-size="${fontS}" font-weight="bold" fill="#e53e3e" text-anchor="middle">37</text>`; 
-                svg += `<line x1="${hFrontX}" y1="${topHoleY}" x2="${sXBok + dBox}" y2="${topHoleY}" stroke="#e53e3e" stroke-width="1.5" marker-start="url(#arrow-red)" marker-end="url(#arrow-red)"/><text x="${sXBok + dBox - 18}" y="${topHoleY - 10}" font-size="${fontS}" font-weight="bold" fill="#e53e3e" text-anchor="middle">37</text>`; 
+                svg += `<line x1="${sXBok}" y1="${topHoleY}" x2="${sXBok + 37}" y2="${topHoleY}" stroke="#d32f2f" stroke-width="2" marker-start="url(#arrow-red)" marker-end="url(#arrow-red)"/><text x="${sXBok + 18}" y="${topHoleY - 10}" font-size="${fontS}" font-weight="bold" fill="#d32f2f" text-anchor="middle">37</text>`; 
+                svg += `<line x1="${hFrontX}" y1="${topHoleY}" x2="${sXBok + dBox}" y2="${topHoleY}" stroke="#d32f2f" stroke-width="2" marker-start="url(#arrow-red)" marker-end="url(#arrow-red)"/><text x="${sXBok + dBox - 18}" y="${topHoleY - 10}" font-size="${fontS}" font-weight="bold" fill="#d32f2f" text-anchor="middle">37</text>`; 
             } 
  
-            svg += `<line x1="${sXCab - 50}" y1="${hBox - sideBottom}" x2="${sXBok + dBox + 150}" y2="${hBox - sideBottom}" stroke="#333" stroke-width="2" stroke-dasharray="8,8" opacity="0.6"/><text x="${sXBok + dBox + 160}" y="${hBox - sideBottom + 8}" font-size="${fontL}" font-weight="bold" fill="#333" text-anchor="start">0 mm (Baza formatki boku)</text>`; 
+            svg += `<line x1="${sXCab - 50}" y1="${hBox - sideBottom}" x2="${sXBok + dBox + 150}" y2="${hBox - sideBottom}" stroke="#333" stroke-width="3" stroke-dasharray="8,8" opacity="0.6"/><text x="${sXBok + dBox + 160}" y="${hBox - sideBottom + 8}" font-size="${fontL}" font-weight="bold" fill="#333" text-anchor="start">0 mm (Baza formatki boku)</text>`; 
  
             if(kTyp === 'wpuszczane') { 
                 svg += `<rect x="${sXBok}" y="0" width="${dBox}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" opacity="0.6" stroke-width="${lineW}"/><rect x="${sXBok}" y="${hBox - tBoard - cokol}" width="${dBox}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" opacity="0.6" stroke-width="${lineW}"/>`; 
@@ -986,20 +995,17 @@
                 if (sShelfHoles) { 
                     if (isStruct) svg += drawStructuralHoles(yOsPolkiSVG); 
                     else [-32, 0, 32].forEach(offset => { 
-                        let drillY = hBox - (data.os + offset); let isCenter = offset === 0; let color = isCenter ? "#f57c00" : "#b0bec5"; 
-                        svg += `<circle cx="${hFrontX}" cy="${drillY}" r="${isCenter ? 5 : 4}" fill="${color}"/><circle cx="${hBackX}" cy="${drillY}" r="${isCenter ? 5 : 4}" fill="${color}"/><line x1="${hFrontX}" y1="${drillY}" x2="${laneShelfHoles - 10}" y2="${drillY}" stroke="${color}" stroke-dasharray="4,4" stroke-width="1.5"/><text x="${laneShelfHoles}" y="${drillY + 8}" font-size="${isCenter ? fontL : fontM}" font-weight="${isCenter ? "bold" : "normal"}" fill="${color}" text-anchor="start">${Math.round(data.os + offset - sideBottom)} (${Math.round(sideTop - (data.os + offset))})</text>`; 
+                        let drillY = hBox - (data.os + offset); let isCenter = offset === 0; let color = isCenter ? "#d32f2f" : "#f57c00"; 
+                        svg += `<circle cx="${hFrontX}" cy="${drillY}" r="${isCenter ? 5 : 4}" fill="${color}"/><circle cx="${hBackX}" cy="${drillY}" r="${isCenter ? 5 : 4}" fill="${color}"/><line x1="${hFrontX}" y1="${drillY}" x2="${laneShelfHoles - 10}" y2="${drillY}" stroke="${color}" stroke-dasharray="4,4" stroke-width="2"/><text x="${laneShelfHoles}" y="${drillY + 8}" font-size="${isCenter ? fontL : fontM}" font-weight="${isCenter ? "bold" : "normal"}" fill="${color}" text-anchor="start">${Math.round(data.os + offset - sideBottom)} (${Math.round(sideTop - (data.os + offset))})</text>`; 
                     }); 
                 } 
                 
-                // NOWA LOGIKA ESTETYCZNA: Pionowe strzałki przeniesione w linię nawiertów (37mm od brzegu), ignorujące półki konstrukcyjne
-                if (sDistances && i > 0 && !isStruct && !structuralShelves[i-1]) { 
-                    let yPrevHoleSVG = hBox - osie[i-1].os; 
-                    let yCurrHoleSVG = hBox - data.os; 
-                    let freeDimLineX = hFrontX - 25; // 25mm na lewo od otworu montażowego, bezpiecznie na boku
+                // POPRAWIONY ALGORYTM DYSTANSOWANIA: Dynamicznie gasi dystans podpórek i mierzy odległość do osi płyty konstrukcyjnej
+                if (sDistances && i > 0) { 
+                    let yPrevHoleSVG = structuralShelves[i-1] ? (hBox - (osie[i-1].spod + tBoard/2)) : (hBox - osie[i-1].os); 
+                    let yCurrHoleSVG = isStruct ? yOsPolkiSVG : (hBox - data.os); 
                     
-                    svg += `<line x1="${freeDimLineX}" y1="${yPrevHoleSVG}" x2="${freeDimLineX}" y2="${yCurrHoleSVG}" stroke="#38a169" stroke-width="1.5" marker-start="url(#arrow-green)" marker-end="url(#arrow-green)"/>`; 
-                    svg += `<rect x="${freeDimLineX - 25}" y="${(yPrevHoleSVG + yCurrHoleSVG)/2 - 14}" width="50" height="28" fill="#ffffff" stroke="#38a169" stroke-width="1" rx="4"/>`; 
-                    svg += `<text x="${freeDimLineX}" y="${(yPrevHoleSVG + yCurrHoleSVG)/2 + 7}" font-size="${fontS}" font-weight="bold" fill="#38a169" text-anchor="middle">${Math.abs(yPrevHoleSVG - yCurrHoleSVG)}</text>`; 
+                    svg += `<line x1="${laneDistances}" y1="${yPrevHoleSVG}" x2="${laneDistances}" y2="${yCurrHoleSVG}" stroke="#2e7d32" stroke-width="3" marker-start="url(#arrow-green)" marker-end="url(#arrow-green)"/><rect x="${laneDistances - 35}" y="${(yPrevHoleSVG + yCurrHoleSVG)/2 - 20}" width="70" height="40" fill="#fafafa"/><text x="${laneDistances}" y="${(yPrevHoleSVG + yCurrHoleSVG)/2 + 10}" font-size="${fontL}" font-weight="bold" fill="#2e7d32" text-anchor="middle">${Math.abs(Math.round(yPrevHoleSVG - yCurrHoleSVG))}</text>`; 
                 } 
             }); 
  
@@ -1007,19 +1013,15 @@
                 let yT = hBox - dg.axisYTop; 
                  
                 if (sDrawerTopHoles) { 
-                    // Elegancki głęboki niebieski dla szuflad, opisy schowane w bezpieczne chmurki tekstowe z lewej strony prowadnika
-                    svg += `<line x1="${hFrontX}" y1="${yT}" x2="${hFrontX - dg.currentNL}" y2="${yT}" stroke="#1F4E79" stroke-width="4"/><line x1="${hFrontX - dg.currentNL}" y1="${yT}" x2="${laneHingeAxis - 10}" y2="${yT}" stroke="#1F4E79" stroke-dasharray="2,2" stroke-width="1.5"/><circle cx="${hFrontX}" cy="${yT}" r="5" fill="#1F4E79"/><circle cx="${hBackX}" cy="${yT}" r="5" fill="#1F4E79"/>`;
-                    
-                    svg += `<rect x="${laneHingeAxis}" y="${yT - 20}" width="430" height="38" fill="#f0f4f8" stroke="#1F4E79" stroke-width="1.5" rx="6"/>`;
-                    svg += `<text x="${laneHingeAxis + 15}" y="${yT + 7}" font-size="${fontM}" font-weight="bold" fill="#1F4E79" text-anchor="start">Otwór prowadnicy: ${Math.round(dg.axisYTop - sideBottom)} [NL: ${dg.currentNL}mm]</text>`; 
+                    svg += `<line x1="${hFrontX}" y1="${yT}" x2="${hFrontX - dg.currentNL}" y2="${yT}" stroke="#1F4E79" stroke-width="4"/><line x1="${hFrontX - dg.currentNL}" y1="${yT}" x2="${laneHingeAxis - 10}" y2="${yT}" stroke="#1F4E79" stroke-dasharray="2,2" stroke-width="1.5"/><circle cx="${hFrontX}" cy="${yT}" r="5" fill="#1F4E79"/><circle cx="${hBackX}" cy="${yT}" r="5" fill="#1F4E79"/><text x="${laneHingeAxis}" y="${yT + 8}" font-size="${fontL}" font-weight="bold" fill="#1F4E79" text-anchor="start">Otwór montażowy: ${Math.round(dg.axisYTop - sideBottom)} [NL: ${dg.currentNL}mm]</text>`; 
                      
                     let holesArray = sysDB.yHolesMap[dg.currentNL] || []; 
                     let firstHoleX = sXBok + dBox - 37; 
                     svg += `<circle cx="${firstHoleX}" cy="${yT}" r="4.5" fill="#ffeb3b" stroke="#1F4E79" stroke-width="1.5"/>`; 
                      
                     if (sDrawerYDim) { 
-                        svg += `<line x1="${sXBok + dBox}" y1="${yT - 25}" x2="${firstHoleX}" y2="${yT - 25}" stroke="#e53e3e" stroke-width="1.2" marker-end="url(#arrow-red)" marker-start="url(#arrow-red)"/>`; 
-                        svg += `<text x="${firstHoleX + 18}" y="${yT - 33}" font-size="${fontS}" font-weight="bold" fill="#e53e3e" text-anchor="middle">37</text>`; 
+                        svg += `<line x1="${sXBok + dBox}" y1="${yT - 30}" x2="${firstHoleX}" y2="${yT - 30}" stroke="#d32f2f" stroke-width="1.5" marker-end="url(#arrow-red)" marker-start="url(#arrow-red)"/>`; 
+                        svg += `<text x="${firstHoleX + 18}" y="${yT - 38}" font-size="${fontS}" font-weight="bold" fill="#d32f2f" text-anchor="middle">37</text>`; 
                     } 
  
                     let prevHoleX = firstHoleX; 
@@ -1028,8 +1030,8 @@
                         svg += `<circle cx="${holeX}" cy="${yT}" r="4.5" fill="#ffeb3b" stroke="#1F4E79" stroke-width="1.5"/>`; 
                          
                         if (sDrawerYDim) { 
-                            svg += `<line x1="${prevHoleX}" y1="${yT - 25}" x2="${holeX}" y2="${yT - 25}" stroke="#1F4E79" stroke-width="1.2" marker-end="url(#arrow)" marker-start="url(#arrow)"/>`; 
-                            svg += `<text x="${(prevHoleX + holeX)/2}" y="${yT - 33}" font-size="${fontS}" font-weight="bold" fill="#1F4E79" text-anchor="middle">${step}</text>`; 
+                            svg += `<line x1="${prevHoleX}" y1="${yT - 30}" x2="${holeX}" y2="${yT - 30}" stroke="#1F4E79" stroke-width="1.5" marker-end="url(#arrow)" marker-start="url(#arrow)"/>`; 
+                            svg += `<text x="${(prevHoleX + holeX)/2}" y="${yT - 38}" font-size="${fontS}" font-weight="bold" fill="#1F4E79" text-anchor="middle">${step}</text>`; 
                         } 
                         prevHoleX = holeX; 
                     }); 
@@ -1039,7 +1041,7 @@
             if ((sHingeAxis || sHingeHoles) && (isAutoZaw || globalQZaw > 0)) { 
                 doorZawiasy.forEach(zaw => { 
                     let drillY = hBox - zaw.bodyY; let color = zaw.shifted ? "#9c27b0" : "#0288d1";  
-                    if (sHingeAxis) svg += `<line x1="${hFrontX - 20}" y1="${drillY}" x2="${laneHingeAxis - 10}" y2="${drillY}" stroke="${color}" stroke-dasharray="2,2" stroke-width="2"/><text x="${laneHingeAxis}" y="${drillY + 8}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">Prowadnik: ${Math.round(zaw.bodyY - sideBottom)} (${Math.round(sideTop - zaw.bodyY)})${zaw.shifted ? " [KOREKTA]" : ""}</text>`; 
+                    if (sHingeAxis) svg += `<line x1="${hFrontX - 20}" y1="${drillY}" x2="${laneHingeAxis - 10}" y2="${drillY}" stroke="${color}" stroke-dasharray="2,2" stroke-width="3"/><text x="${laneHingeAxis}" y="${drillY + 8}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">Prowadnik: ${Math.round(zaw.bodyY - sideBottom)} (${Math.round(sideTop - zaw.bodyY)})${zaw.shifted ? " [KOREKTA]" : ""}</text>`; 
                     if (sHingeHoles) [-16, 16].forEach(off => { 
                         let hy = hBox - (zaw.bodyY + off); 
                         svg += `<circle cx="${hFrontX}" cy="${hy}" r="4" fill="${color}"/><line x1="${hFrontX}" y1="${hy}" x2="${laneHingeHoles - 10}" y2="${hy}" stroke="${color}" stroke-dasharray="1,2" stroke-width="1.5"/><text x="${laneHingeHoles}" y="${hy + 8}" font-size="${fontM}" fill="${color}" text-anchor="start">${Math.round(zaw.bodyY + off - sideBottom)}</text>`; 
