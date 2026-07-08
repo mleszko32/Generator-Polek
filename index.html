@@ -3,7 +3,7 @@ html_content = """<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalkulator Formatek i Półek (Precyzyjne Nawierty Szuflad)</title>
+    <title>Kalkulator Formatek i Półek (Korekta Wieńca Szuflad)</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f4f7f6; padding: 20px; color: #333; margin: 0; }
         .container { max-width: 1800px; margin: auto; display: flex; gap: 20px; flex-wrap: wrap; align-items: stretch; }
@@ -111,7 +111,7 @@ html_content = """<!DOCTYPE html>
                 <div><label>Strefa ochrony zawiasu</label><input type="number" id="cMargin" value="35" min="0" oninput="run()"></div>
                 <div><label>Puszka (od dołu drzwi)</label><input type="number" id="zOffD" value="100" min="0" oninput="run()"></div>
                 <div><label>Puszka (od góry drzwi)</label><input type="number" id="zOffG" value="100" min="0" oninput="run()"></div>
-                <div><label>Luz frontu (Dół)</label><input type="number" id="fLuzD" value="3" min="0" oninput="run()"></div>
+                <div><label>Luz frontu (Dół)</label><input type="number" id="fLuzD" value="0" min="0" oninput="run()"></div>
                 <div><label>Luz frontu (Góra)</label><input type="number" id="fLuzG" value="3" min="0" oninput="run()"></div>
                 <div style="grid-column: span 2;"><label>Szczelina między frontami</label><input type="number" id="luzFrontow" value="3" min="0" oninput="run()"></div>
                 
@@ -245,15 +245,15 @@ html_content = """<!DOCTYPE html>
                 spaceLocks: JSON.parse(JSON.stringify(spaceLocks))
             };
             
-            let saved = JSON.parse(localStorage.getItem('cad_cabinets_v3')) || [];
+            let saved = JSON.parse(localStorage.getItem('cad_cabinets_v4')) || [];
             saved.push(cab);
-            localStorage.setItem('cad_cabinets_v3', JSON.stringify(saved));
+            localStorage.setItem('cad_cabinets_v4', JSON.stringify(saved));
             renderSavedCabinets();
             alert("Projekt zapisany pomyślnie w bazie lokalnej!");
         }
 
         function loadCabinet(id) {
-            let saved = JSON.parse(localStorage.getItem('cad_cabinets_v3')) || [];
+            let saved = JSON.parse(localStorage.getItem('cad_cabinets_v4')) || [];
             let cab = saved.find(c => c.id === id);
             if(!cab) return;
 
@@ -269,7 +269,7 @@ html_content = """<!DOCTYPE html>
             document.getElementById('qZaw').value = cab.qZaw;
             document.getElementById('zOffD').value = cab.zOffD;
             document.getElementById('zOffG').value = cab.zOffG;
-            document.getElementById('fLuzD').value = cab.fLuzD;
+            document.getElementById('fLuzD').value = cab.fLuzD !== undefined ? cab.fLuzD : 0;
             document.getElementById('fLuzG').value = cab.fLuzG;
             document.getElementById('cMargin').value = cab.cMargin !== undefined ? cab.cMargin : 35;
             document.getElementById('luzFrontow').value = cab.luzFrontow !== undefined ? cab.luzFrontow : 3;
@@ -292,14 +292,14 @@ html_content = """<!DOCTYPE html>
 
         function deleteCabinet(id) {
             if(!confirm("Czy na pewno chcesz usunąć ten zapisany szablon?")) return;
-            let saved = JSON.parse(localStorage.getItem('cad_cabinets_v3')) || [];
+            let saved = JSON.parse(localStorage.getItem('cad_cabinets_v4')) || [];
             saved = saved.filter(c => c.id !== id);
-            localStorage.setItem('cad_cabinets_v3', JSON.stringify(saved));
+            localStorage.setItem('cad_cabinets_v4', JSON.stringify(saved));
             renderSavedCabinets();
         }
 
         function renderSavedCabinets() {
-            let saved = JSON.parse(localStorage.getItem('cad_cabinets_v3')) || [];
+            let saved = JSON.parse(localStorage.getItem('cad_cabinets_v4')) || [];
             let listHtml = '';
             
             if (saved.length === 0) {
@@ -532,7 +532,13 @@ html_content = """<!DOCTYPE html>
                 
                 if(sb.hasDrawers) {
                     if(currentDoorBlock) { frontBlocks.push(currentDoorBlock); currentDoorBlock = null; }
-                    frontBlocks.push({ type: 'drawers', yStart: fStartY, yEnd: fEndY, qDrawers: sb.qDrawers });
+                    frontBlocks.push({ 
+                        type: 'drawers', 
+                        yStart: fStartY, 
+                        yEnd: fEndY, 
+                        qDrawers: sb.qDrawers,
+                        interiorBottom: sb.yStart 
+                    });
                 } else {
                     if(!currentDoorBlock) {
                         currentDoorBlock = { type: 'door', yStart: fStartY, yEnd: fEndY };
@@ -555,8 +561,19 @@ html_content = """<!DOCTYPE html>
                     for(let j=0; j < fb.qDrawers; j++) {
                         let dBottom = fb.yStart + j * (dFrontH + luzFrontow); 
                         let dTop = dBottom + dFrontH;
-                        fb.drawers.push({ yStart: dBottom, yEnd: dTop, guideTop: dBottom + topHoleOffset, guideBottom: dBottom + 32 });
-                        drawerGuides.push({ axisYTop: dBottom + topHoleOffset, axisYBottom: dBottom + 32 });
+                        
+                        let guideTopY = dBottom + topHoleOffset;
+                        let guideBottomY = dBottom + 32;
+                        
+                        // KOREKTA WIEŃCA: Prowadnica fizycznie stoi na/odnosi się do wieńca (wnętrza szafki).
+                        // Pierwsza szuflada nie może mieć prowadnicy niżej niż pozwala na to grubość wieńca.
+                        if (j === 0) {
+                            guideTopY = Math.max(guideTopY, fb.interiorBottom + topHoleOffset);
+                            guideBottomY = Math.max(guideBottomY, fb.interiorBottom + 32);
+                        }
+                        
+                        fb.drawers.push({ yStart: dBottom, yEnd: dTop, guideTop: guideTopY, guideBottom: guideBottomY });
+                        drawerGuides.push({ axisYTop: guideTopY, axisYBottom: guideBottomY });
                     }
                 } 
                 else if(fb.type === 'door') {
@@ -672,7 +689,7 @@ html_content = """<!DOCTYPE html>
             }
 
             // --- 2. RZUT BOKU ---
-            let sideBottom = (kTyp === 'nakladane') ? tBoard : 0;
+            let sideBottom = (kTyp === 'nakladane') ? cokol + tBoard : 0;
             let sideTop = (kTyp === 'nakladane') ? hBox - tBoard : hBox;
             let hBok = sideTop - sideBottom;
             let yBok = hBox - sideTop;
@@ -696,8 +713,8 @@ html_content = """<!DOCTYPE html>
                 svg += `<text x="${sXBok + dBox - 18}" y="${topHoleY - 10}" font-size="${fontS}" font-weight="bold" fill="#d32f2f" text-anchor="middle">37</text>`;
             }
 
-            svg += `<line x1="${sXCab - 50}" y1="${hBox}" x2="${sXBok + dBox + 150}" y2="${hBox}" stroke="#333" stroke-width="3" stroke-dasharray="8,8" opacity="0.6"/>`;
-            svg += `<text x="${sXBok + dBox + 160}" y="${hBox + 8}" font-size="${fontL}" font-weight="bold" fill="#333" text-anchor="start">0 mm (Baza Posadzki / Dół Korpusu)</text>`;
+            svg += `<line x1="${sXCab - 50}" y1="${hBox - sideBottom}" x2="${sXBok + dBox + 150}" y2="${hBox - sideBottom}" stroke="#333" stroke-width="3" stroke-dasharray="8,8" opacity="0.6"/>`;
+            svg += `<text x="${sXBok + dBox + 160}" y="${hBox - sideBottom + 8}" font-size="${fontL}" font-weight="bold" fill="#333" text-anchor="start">0 mm (Baza formatki boku)</text>`;
 
             if(kTyp === 'wpuszczane') {
                 svg += `<rect x="${sXBok}" y="0" width="${dBox}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" opacity="0.6" stroke-width="${lineW}"/>`;
@@ -884,6 +901,6 @@ html_content = """<!DOCTYPE html>
 </body>
 </html>"""
 
-with open("kalkulator_szuflad.html", "w", encoding="utf-8") as f:
+with open("kalkulator_szuflad_v2.html", "w", encoding="utf-8") as f:
     f.write(html_content)
 print("File generated successfully.")
