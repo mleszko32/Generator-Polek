@@ -204,7 +204,6 @@
         let spaceLocks = [];
         let structuralShelves = [];
 
-        // BAZA DANYCH SYSTEMÓW SZUFLAD (Minimalne wysokości frontu)
         const DRAWER_DB = {
             "44": {
                 name: "GTV Axis Pro / Modern Box",
@@ -479,7 +478,6 @@
             let q = parseInt(value); if(!isNaN(q) && q > 0) spaceLocks[index].qDrawers = q; run();
         }
 
-        // AKCJA 1: Wpisanie wymiaru frontu ręcznie (Wypycha szufladę na maxa)
         function updateFrontHeight(spaceIdx, frontIdx, value) {
             let v = parseFloat(value); if(isNaN(v) || v <= 0) return;
             
@@ -487,7 +485,6 @@
             let front = spaceLocks[spaceIdx].manualFronts[frontIdx];
             front.height = v;
             
-            // Auto-maximize drawer type
             let fittingTypes = sys.types.filter(t => t.minFront <= v);
             if (fittingTypes.length > 0) front.type = fittingTypes[fittingTypes.length - 1].id;
             else { front.height = sys.types[0].minFront; front.type = sys.types[0].id; }
@@ -495,23 +492,19 @@
             run();
         }
 
-        // AKCJA 2: Wybranie innej szuflady z listy (Nie zmienia frontu, chyba że to wymóg bezpieczeństwa)
         function updateDrawerType(spaceIdx, frontIdx, typeVal) {
             let sys = DRAWER_DB[document.getElementById('drawerSystem').value];
             let front = spaceLocks[spaceIdx].manualFronts[frontIdx];
             let newTypeObj = sys.types.find(t => t.id === typeVal);
             
             front.type = typeVal;
-            // Jeżeli nowy typ szuflady jest WIĘKSZY niż obecny front, to trzeba go rozciągnąć
             if (front.height < newTypeObj.minFront) {
                 front.height = newTypeObj.minFront;
             }
-            // Jeżeli mniejszy, nic nie robimy z rozmiarem frontu (użytkownik może sam kliknąć "Ściśnij")
             
             run();
         }
 
-        // AKCJA 3: Przycisk "Ściśnij" (Ucina front do minimum)
         function shrinkFront(spaceIdx, frontIdx) {
             let sys = DRAWER_DB[document.getElementById('drawerSystem').value];
             let front = spaceLocks[spaceIdx].manualFronts[frontIdx];
@@ -698,7 +691,6 @@
             }
             document.getElementById('spaceControls').innerHTML = controlsHtml;
 
-            // --- KOORDYNATY ---
             let offsetOdDolu = (kTyp === 'nakladane') ? cokol : tBoard + cokol;
             let osie = []; let spacesBoundary = []; let currentBottom = offsetOdDolu;
             for(let i = 0; i < totalSpaces; i++) {
@@ -708,7 +700,6 @@
                 if (i < qPol) { osie.push({ spod: currentBottom, os: currentBottom - offsetPodporki, osPrawdziwa: currentBottom + tBoard/2 }); currentBottom += tBoard; }
             }
 
-            // --- FRONT BLOCKS ---
             let frontBlocks = []; let currentDoorBlock = null; let doorZawiasy = []; let drawerGuides = []; let facadeY = cokol + fLuzD;
             for(let i = 0; i < totalSpaces; i++) {
                 let sb = spacesBoundary[i]; let isTop = (i === totalSpaces - 1);
@@ -763,7 +754,7 @@
                         let hgBaseFront = [];
                         if (localQZaw === 1) hgBaseFront.push({ offset: fH_total/2, isTop: false });
                         else {
-                            hgBaseFront.push({ offset: zOffD, isTop: false }); 
+                            boxX = zOffD; hgBaseFront.push({ offset: zOffD, isTop: false }); 
                             if (localQZaw > 2) { let step = (fH_total - zOffG - zOffD) / (localQZaw - 1); for (let k = 1; k < localQZaw - 1; k++) hgBaseFront.push({ offset: zOffD + k * step, isTop: false }); }
                             hgBaseFront.push({ offset: fH_total - zOffG, isTop: true }); 
                         }
@@ -783,7 +774,6 @@
                 }
             });
 
-            // --- SVG RENDER ---
             let sXCab = 0; let sXBok = wBox + 300; let sXFront = sXBok + dBox + 1200; 
             let viewTotalW = sFront ? (sXFront + wBox + 500) : (sXBok + dBox + 1300); let viewTotalH = hBox + 300;         
             let svg = `<svg viewBox="-150 -150 ${viewTotalW} ${viewTotalH}" class="svg-drawing" xmlns="http://www.w3.org/2000/svg">`;
