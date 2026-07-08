@@ -34,7 +34,7 @@
         .space-input-group input { width: 80px; text-align: center; font-weight: bold; padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
         
         .structural-divider { text-align: center; padding: 6px; background: #e2efda; border: 1px dashed #2e7d32; border-radius: 4px; margin-bottom: 8px; }
-        .structural-divider label { margin: 0; cursor: pointer; font-size: 0.8rem; color: #2e7d32; display: flex; justify-content: center; align-items: center; gap: 5px; }
+        .structural-divider label { margin: 0; cursor: pointer; font-size: 0.8rem; color: #2e7d32; display: center; justify-content: center; align-items: center; gap: 5px; }
 
         button { background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 6px 12px; cursor: pointer; font-size: 0.85rem; font-weight: bold; color: #555; transition: 0.2s; }
         button:hover:not([disabled]) { background: #f0f0f0; }
@@ -990,7 +990,6 @@
                     });
                 }
                 
-                // CRITICAL FIX: DYNAMICZNE USUWANIE DYSTANSU JEŚLI JEST TO PÓŁKA KONSTRUKCYJNA LUB PODPÓRKA
                 if (sDistances && i > 0) {
                     let yPrevHoleSVG = structuralShelves[i-1] ? (hBox - (osie[i-1].spod + tBoard/2)) : (hBox - osie[i-1].os);
                     let yCurrHoleSVG = isStruct ? yOsPolkiSVG : (hBox - data.os);
