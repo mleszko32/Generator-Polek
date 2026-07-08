@@ -72,6 +72,8 @@
             @page { margin: 0.5cm; }
         }
     </style>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
     <div class="container">
@@ -181,6 +183,17 @@
     <div id="printArea"></div>
 
     <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAYIhS-8GDN8K3hXZLelH-B0OoXOzlyFIo",
+            authDomain: "generator-stolarski.firebaseapp.com",
+            projectId: "generator-stolarski",
+            storageBucket: "generator-stolarski.firebasestorage.app",
+            messagingSenderId: "94537532682",
+            appId: "1:94537532682:web:0dbb7053686a891c6c26f3"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        let cloudCabinets = []; // Globalna pamięć na projekty z chmury
         let zScale = 1; let panX = 0; let panY = 0; let isDragging = false; let startX = 0; let startY = 0;
         let spaceLocks = [];
         let structuralShelves = [];
@@ -263,16 +276,15 @@
                 structuralShelves: JSON.parse(JSON.stringify(structuralShelves))
             };
             
-            let saved = JSON.parse(localStorage.getItem('cad_cabinets_v5')) || [];
-            saved.push(cab);
-            localStorage.setItem('cad_cabinets_v5', JSON.stringify(saved));
-            renderSavedCabinets();
-            alert("Projekt zapisany pomyślnie w bazie lokalnej!");
+            db.collection("cabinets").add(cab).then(() => {
+                alert("Projekt zapisany pomyślnie w chmurze!");
+            }).catch((error) => {
+                alert("Błąd zapisu: " + error.message);
+            });
         }
 
-        function loadCabinet(id) {
-            let saved = JSON.parse(localStorage.getItem('cad_cabinets_v5')) || [];
-            let cab = saved.find(c => c.id === id);
+        function loadCabinet(docId) {
+            let cab = cloudCabinets.find(c => c.docId === docId);
             if(!cab) return;
 
             document.getElementById('cabName').value = cab.name;
@@ -317,24 +329,27 @@
             window.scrollTo(0, 0); 
         }
 
-        function deleteCabinet(id) {
-            if(!confirm("Czy na pewno chcesz usunąć ten zapisany szablon?")) return;
-            let saved = JSON.parse(localStorage.getItem('cad_cabinets_v5')) || [];
-            saved = saved.filter(c => c.id !== id);
-            localStorage.setItem('cad_cabinets_v5', JSON.stringify(saved));
-            renderSavedCabinets();
+        function deleteCabinet(docId) {
+            if(!confirm("Czy na pewno chcesz usunąć ten zapisany szablon z chmury?")) return;
+            db.collection("cabinets").doc(docId).delete();
         }
 
-        function renderSavedCabinets() {
-            let saved = JSON.parse(localStorage.getItem('cad_cabinets_v5')) || [];
+        // Automatyczny nasłuch zmian na żywo z bazy Firebase
+        db.collection("cabinets").onSnapshot((querySnapshot) => {
+            cloudCabinets = [];
             let listHtml = '';
             
-            if (saved.length === 0) {
-                listHtml = '<p style="color:#777;">Brak zapisanych projektów w bazie przeglądarki.</p>';
+            if (querySnapshot.empty) {
+                listHtml = '<p style="color:#777;">Brak zapisanych projektów w chmurze Google.</p>';
             } else {
-                saved.forEach(cab => {
-                    let locksInfo = cab.spaceLocks.filter(s => s.locked).length;
-                    let drawersInfo = cab.spaceLocks.filter(s => s.hasDrawers).length;
+                querySnapshot.forEach((doc) => {
+                    let cab = doc.data();
+                    cab.docId = doc.id; 
+                    cloudCabinets.push(cab);
+                    
+                    let locksInfo = cab.spaceLocks ? cab.spaceLocks.filter(s => s.locked).length : 0;
+                    let drawersInfo = cab.spaceLocks ? cab.spaceLocks.filter(s => s.hasDrawers).length : 0;
+                    
                     listHtml += `
                         <div class="saved-item">
                             <h4>${cab.name}</h4>
@@ -343,16 +358,18 @@
                                Blokady wymiaru: ${locksInfo}
                             </p>
                             <div class="saved-actions">
-                                <button class="btn-load" onclick="loadCabinet(${cab.id})">Wczytaj projekt</button>
-                                <button class="btn-delete" onclick="deleteCabinet(${cab.id})">Usuń</button>
+                                <button class="btn-load" onclick="loadCabinet('${cab.docId}')">Wczytaj projekt</button>
+                                <button class="btn-delete" onclick="deleteCabinet('${cab.docId}')">Usuń</button>
                             </div>
                         </div>
                     `;
                 });
             }
             document.getElementById('savedList').innerHTML = listHtml;
-        }
+        });
 
+        // Pusta funkcja z zachowaną nazwą, aby nie zepsuć okna ładowania programu (window.onload)
+        function renderSavedCabinets() {}
         function printView() {
             let type = document.getElementById('printType').value;
             let svgNode = document.querySelector('#svgWrapper svg').cloneNode(true);
