@@ -92,6 +92,7 @@
                 <label><input type="checkbox" id="sFront" checked onchange="run()"> Rzut Frontu</label>
                 <label><input type="checkbox" id="sDrawerTopHoles" checked onchange="run()"> Szuflada - Otwór górny</label>
                 <label><input type="checkbox" id="sDrawerBottomHoles" checked onchange="run()"> Szuflada - Otwór dolny (32)</label>
+                <label><input type="checkbox" id="sDrawerYDim" checked onchange="run()"> Szuflada - Rozstawy w poziomie (Y)</label>
             </div>
 
             <h3>Parametry Korpusu</h3>
@@ -211,11 +212,23 @@
         let spaceLocks = [];
         let structuralShelves = [];
 
+        // ROZBUDOWANA BAZA SYSTEMÓW SZUFLAD O UKŁAD OTWORÓW W OSI Y (GŁĘBOKOŚCI)
         const DRAWER_DB = {
             "44": {
                 name: "GTV Axis Pro / Modern Box",
-                lengths: [250, 300, 350, 400, 450, 500, 550],
+                lengths: [250, 300, 350, 400, 450, 500, 550, 600],
                 ltRequired: 5,
+                // Skoki otworów montażowych liczone od pierwszego otworu (37mm)
+                yHolesMap: {
+                    250: [96],
+                    300: [128],
+                    350: [128],
+                    400: [192],
+                    450: [192],
+                    500: [224],
+                    550: [224],
+                    600: [224, 352] // 224 + 128 = 352
+                },
                 types: [
                     { id: "A", label: "A (Niska)", minFront: 105 },
                     { id: "B", label: "B (Średnia)", minFront: 160 },
@@ -228,6 +241,16 @@
                 name: "Blum Merivobox",
                 lengths: [270, 300, 350, 400, 450, 500, 550, 600],
                 ltRequired: 3,
+                yHolesMap: {
+                    270: [96],
+                    300: [128],
+                    350: [128],
+                    400: [192],
+                    450: [192, 256],
+                    500: [224, 288],
+                    550: [224, 352],
+                    600: [224, 384]
+                },
                 types: [
                     { id: "N", label: "N (B. Niska)", minFront: 85.5 },
                     { id: "M", label: "M (Niska)", minFront: 108 },
@@ -240,6 +263,17 @@
                 name: "Blum Antaro / Tandembox",
                 lengths: [270, 300, 350, 400, 450, 500, 550, 600, 650],
                 ltRequired: 3,
+                yHolesMap: {
+                    270: [96],
+                    300: [128],
+                    350: [128],
+                    400: [192],
+                    450: [192, 288],
+                    500: [224, 288],
+                    550: [224, 384],
+                    600: [224, 384],
+                    650: [224, 384, 480]
+                },
                 types: [
                     { id: "N", label: "N (B. Niska)", minFront: 82.5 },
                     { id: "M", label: "M (Niska)", minFront: 98.5 },
@@ -253,6 +287,9 @@
                 name: "Inne (Własne)",
                 lengths: [250, 300, 350, 400, 450, 500, 550, 600],
                 ltRequired: 3,
+                yHolesMap: {
+                    250: [96], 300: [128], 350: [128], 400: [192], 450: [192], 500: [224], 550: [224], 600: [224]
+                },
                 types: [
                     { id: "UNI", label: "Uniwersalna", minFront: 60 }
                 ],
@@ -409,7 +446,7 @@
                     qDrawers: s.qDrawers || 3,
                     manualFronts: mFronts,
                     topGapToAxis: s.topGapToAxis !== undefined ? s.topGapToAxis : 12,
-                    manualDrawerNL: s.manualDrawerNL || {} // obiekt z mapowaniem indeks_szuflady -> NL
+                    manualDrawerNL: s.manualDrawerNL || {}
                 };
             });
 
@@ -598,6 +635,7 @@
             let sShelfHoles = isChecked('sShelfHoles'); let sDistances = isChecked('sDistances');
             let sHingeAxis = isChecked('sHingeAxis'); let sHingeHoles = isChecked('sHingeHoles');
             let sFront = isChecked('sFront'); let sDrawerTopHoles = isChecked('sDrawerTopHoles'); let sDrawerBottomHoles = isChecked('sDrawerBottomHoles');
+            let sDrawerYDim = isChecked('sDrawerYDim');
 
             let topHoleOffset = getTopHoleOffset();
             let fLuzD = val('fLuzD'); let fLuzG = val('fLuzG'); let luzFrontow = val('luzFrontow');
@@ -606,7 +644,6 @@
             let isAutoZaw = isChecked('autoZaw');
             let sysDB = DRAWER_DB[document.getElementById('drawerSystem').value];
 
-            // 1. OBLICZANIE ŚWIATŁA GŁĘBOKOŚCI KORPUSU (LOGIKA WARSZTATOWA)
             let currentLInternal = (backType === 'nut') ? (dBox - 18 - nutDepth) : (dBox - 18);
             hideError();
 
@@ -696,16 +733,12 @@
                             
                             let shrinkBtnHtml = canShrink ? `<button type="button" class="btn-shrink" onclick="shrinkFront(${i}, ${fIdx})" title="Ściśnij front do ${minReq}mm" style="padding:2px 6px; font-size:0.8rem; background:#e8f0fe; border:1px solid #1F4E79; color:#1F4E79; border-radius:4px; cursor:pointer;">>< Ściśnij</button>` : '';
 
-                            // 2. LOGIKA GENEROWANIA SELEKTORA DŁUGOŚCI PROWADNIC (OPCJA B)
                             if(!spaceLocks[i].manualDrawerNL) spaceLocks[i].manualDrawerNL = {};
                             let currentSavedNL = spaceLocks[i].manualDrawerNL[fIdx];
                             
-                            // Wyliczamy najwyższy pasujący wymiar automatyczny
                             let autoSelectedNL = sysDB.lengths[0];
                             sysDB.lengths.forEach(len => {
-                                if(currentLInternal >= (len + sysDB.ltRequired)) {
-                                    autoSelectedNL = len;
-                                }
+                                if(currentLInternal >= (len + sysDB.ltRequired)) autoSelectedNL = len;
                             });
                             
                             let finalActiveNL = currentSavedNL === undefined || currentSavedNL === 'auto' ? autoSelectedNL : parseFloat(currentSavedNL);
@@ -719,7 +752,6 @@
                             });
                             selectNLHtml += `</select>`;
 
-                            // Sprawdzenie kolizji i wyliczenie wolnego miejsca z tyłu
                             let alertSpan = '';
                             if(currentLInternal < (finalActiveNL + sysDB.ltRequired)) {
                                 alertSpan = `<span style="color:#d32f2f; font-weight:bold; display:block; font-size:0.75rem; margin-top:2px;">⚠️ Za długa! Wymaga min. ${finalActiveNL + sysDB.ltRequired}mm</span>`;
@@ -732,7 +764,7 @@
                             }
 
                             drawerHtml += `
-                                <div style="display:flex; flex-direction:column; margin-bottom:6px; background: #fdfdfd; padding: 6px; border: 1px solid #eee; border-radius: 4px;">
+                                <div style="display:flex; flex-content:column; margin-bottom:6px; background: #fdfdfd; padding: 6px; border: 1px solid #eee; border-radius: 4px;">
                                     <div style="display:flex; justify-content:space-between; align-items:center;">
                                         <div style="display:flex; align-items:center; gap: 5px;">
                                             <span style="font-size:0.8rem; font-weight:bold; color:#555; width:55px;">${lbl}:</span>
@@ -778,7 +810,7 @@
             let osie = []; let spacesBoundary = []; let currentBottom = offsetOdDolu;
             for(let i = 0; i < totalSpaces; i++) {
                 let h = spaceLocks[i].currentVal;
-                spacesBoundary.push({ index: i, hasDrawers: spaceLocks[i].hasDrawers, drawerMode: spaceLocks[i].drawerMode, manualFronts: spaceLocks[i].manualFronts, qDrawers: spaceLocks[i].qDrawers, yStart: currentBottom, yEnd: currentBottom + h });
+                spacesBoundary.push({ index: i, hasDrawers: spaceLocks[i].hasDrawers, drawerMode: spaceLocks[i].drawerMode, manualFronts: spaceLocks[i].manualFronts, qDrawers: spaceLocks[i].qDrawers, spaceIdx: i, yStart: currentBottom, yEnd: currentBottom + h });
                 currentBottom += h; 
                 if (i < qPol) { osie.push({ spod: currentBottom, os: currentBottom - offsetPodporki, osPrawdziwa: currentBottom + tBoard/2 }); currentBottom += tBoard; }
             }
@@ -813,7 +845,6 @@
                             let guideTopY = currY + topHoleOffset; let guideBottomY = currY + 32;
                             if (j === 0) { guideTopY = Math.max(guideTopY, fb.interiorBottom + topHoleOffset); guideBottomY = Math.max(guideBottomY, fb.interiorBottom + 32); }
                             
-                            // Pobieranie aktywnego NL do przypisania rysunkowego boku
                             let currentSavedNL = spaceLocks[fb.spaceIdx].manualDrawerNL ? spaceLocks[fb.spaceIdx].manualDrawerNL[j] : 'auto';
                             let autoSelectedNL = sysDB.lengths[0];
                             sysDB.lengths.forEach(len => {
@@ -889,7 +920,7 @@
             if(kTyp === 'wpuszczane') {
                 svg += `<rect x="${sXCab}" y="0" width="${tBoard}" height="${hBox}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/><rect x="${sXCab + wBox - tBoard}" y="0" width="${tBoard}" height="${hBox}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/><rect x="${innerX}" y="0" width="${innerW}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/><rect x="${innerX}" y="${yBottomWieniec}" width="${innerW}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/>`;
             } else {
-                svg += `<rect x="${sXCab}" y="0" width="${wBox}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/><rect x="${sXCab}" y="${yBottomWieniec}" width="${wBox}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/><rect x="${sXCab}" y="${tBoard}" width="${tBoard}" height="${hBox - 2*tBoard - cokol}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/><rect x="${sXCab + wBox - tBoard}" y="${tBoard}" width="${tBoard}" height="${hBox - 2*tBoard - cokol}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/> desert`;
+                svg += `<rect x="${sXCab}" y="0" width="${wBox}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/><rect x="${sXCab}" y="${yBottomWieniec}" width="${wBox}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/><rect x="${sXCab}" y="${tBoard}" width="${tBoard}" height="${hBox - 2*tBoard - cokol}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/><rect x="${sXCab + wBox - tBoard}" y="${tBoard}" width="${tBoard}" height="${hBox - 2*tBoard - cokol}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/>`;
             }
 
             let currentFloorSVG = yBottomWieniec; 
@@ -964,12 +995,40 @@
                 }
             });
 
-            // 3. REPREZENTACJA WIZUALNA DŁUGOŚCI PROWADNIC NA RZUCIE BOKU KORPUSU
+            // RENDOWANIE PROWADNIC ORAZ PRECYZYJNEGO UKŁADU OTWORÓW W OSI Y (GŁĘBOKOŚCI)
             drawerGuides.forEach((dg) => {
+                let yT = hBox - dg.axisYTop;
+                
                 if (sDrawerTopHoles) {
-                    let yT = hBox - dg.axisYTop;
                     svg += `<line x1="${hFrontX}" y1="${yT}" x2="${hFrontX - dg.currentNL}" y2="${yT}" stroke="#1F4E79" stroke-width="4"/><line x1="${hFrontX - dg.currentNL}" y1="${yT}" x2="${laneHingeAxis - 10}" y2="${yT}" stroke="#1F4E79" stroke-dasharray="2,2" stroke-width="1.5"/><circle cx="${hFrontX}" cy="${yT}" r="5" fill="#1F4E79"/><circle cx="${hBackX}" cy="${yT}" r="5" fill="#1F4E79"/><text x="${laneHingeAxis}" y="${yT + 8}" font-size="${fontL}" font-weight="bold" fill="#1F4E79" text-anchor="start">Otwór górny: ${Math.round(dg.axisYTop - sideBottom)} [NL: ${dg.currentNL}mm]</text>`;
+                    
+                    // RYSOWANIE SIATKI NAWIERTÓW POZIOMYCH (OSI Y)
+                    let holesArray = sysDB.yHolesMap[dg.currentNL] || [];
+                    
+                    // Pierwszy otwór na 37mm od przodu boku szafy
+                    let firstHoleX = sXBok + dBox - 37;
+                    svg += `<circle cx="${firstHoleX}" cy="${yT}" r="4.5" fill="#ffeb3b" stroke="#1F4E79" stroke-width="1.5"/>`;
+                    
+                    if (sDrawerYDim) {
+                        // Linia wymiarowa 37mm od krawędzi przodu
+                        svg += `<line x1="${sXBok + dBox}" y1="${yT - 30}" x2="${firstHoleX}" y2="${yT - 30}" stroke="#d32f2f" stroke-width="1.5" marker-end="url(#arrow-red)" marker-start="url(#arrow-red)"/>`;
+                        svg += `<text x="${firstHoleX + 18}" y="${yT - 38}" font-size="${fontS}" font-weight="bold" fill="#d32f2f" text-anchor="middle">37</text>`;
+                    }
+
+                    let prevHoleX = firstHoleX;
+                    holesArray.forEach((step) => {
+                        let holeX = firstHoleX - step;
+                        svg += `<circle cx="${holeX}" cy="${yT}" r="4.5" fill="#ffeb3b" stroke="#1F4E79" stroke-width="1.5"/>`;
+                        
+                        if (sDrawerYDim) {
+                            // Linie pomocnicze rozstawu międzyotworowego (wielokrotności 32mm)
+                            svg += `<line x1="${prevHoleX}" y1="${yT - 30}" x2="${holeX}" y2="${yT - 30}" stroke="#1F4E79" stroke-width="1.5" marker-end="url(#arrow)" marker-start="url(#arrow)"/>`;
+                            svg += `<text x="${(prevHoleX + holeX)/2}" y="${yT - 38}" font-size="${fontS}" font-weight="bold" fill="#1F4E79" text-anchor="middle">${step}</text>`;
+                        }
+                        prevHoleX = holeX;
+                    });
                 }
+                
                 if (sDrawerBottomHoles) {
                     let yB = hBox - dg.axisYBottom;
                     svg += `<line x1="${hFrontX}" y1="${yB}" x2="${laneHingeAxis - 10}" y2="${yB}" stroke="#e65100" stroke-dasharray="2,2" stroke-width="1.5"/><circle cx="${hFrontX}" cy="${yB}" r="5" fill="#e65100"/><circle cx="${hBackX}" cy="${yB}" r="5" fill="#e65100"/><text x="${laneHingeAxis + 420}" y="${yB + 8}" font-size="${fontL}" font-weight="bold" fill="#e65100" text-anchor="start">Dolny (32): ${Math.round(dg.axisYBottom - sideBottom)}</text>`;
