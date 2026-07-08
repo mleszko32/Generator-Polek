@@ -266,28 +266,7 @@
         }
 
         function saveCabinet() {
-            function updateCabinet() {
-            if (!currentLoadedDocId) return;
             
-            let cab = {
-                name: document.getElementById('cabName').value || `Szafka ${val('hBox')}x${val('wBox')}`,
-                kTyp: document.getElementById('kTyp').value,
-                hBox: val('hBox'), wBox: val('wBox'), dBox: val('dBox'),
-                qPol: val('qPol'), tBoard: val('tBoard'), offsetPodporki: val('offsetPodporki'), cokol: val('cokol'),
-                qZaw: val('qZaw'), autoZaw: document.getElementById('autoZaw').checked, zOffD: val('zOffD'), zOffG: val('zOffG'),
-                fLuzD: val('fLuzD'), fLuzG: val('fLuzG'), cMargin: val('cMargin'),
-                luzFrontow: val('luzFrontow'), drawerSystem: document.getElementById('drawerSystem').value,
-                customDrawerAxis: val('customDrawerAxis'),
-                spaceLocks: JSON.parse(JSON.stringify(spaceLocks)),
-                structuralShelves: JSON.parse(JSON.stringify(structuralShelves))
-            };
-            
-            db.collection("cabinets").doc(currentLoadedDocId).update(cab).then(() => {
-                alert("Projekt zaktualizowany pomyślnie w chmurze!");
-            }).catch((error) => {
-                alert("Błąd aktualizacji: " + error.message);
-            });
-        }
             let cab = {
                 id: Date.now(),
                 name: document.getElementById('cabName').value || `Szafka ${val('hBox')}x${val('wBox')}`,
@@ -309,6 +288,28 @@
             });
         }
 
+        function updateCabinet() {
+            if (!currentLoadedDocId) return;
+            
+            let cab = {
+                name: document.getElementById('cabName').value || `Szafka ${val('hBox')}x${val('wBox')}`,
+                kTyp: document.getElementById('kTyp').value,
+                hBox: val('hBox'), wBox: val('wBox'), dBox: val('dBox'),
+                qPol: val('qPol'), tBoard: val('tBoard'), offsetPodporki: val('offsetPodporki'), cokol: val('cokol'),
+                qZaw: val('qZaw'), autoZaw: document.getElementById('autoZaw').checked, zOffD: val('zOffD'), zOffG: val('zOffG'),
+                fLuzD: val('fLuzD'), fLuzG: val('fLuzG'), cMargin: val('cMargin'),
+                luzFrontow: val('luzFrontow'), drawerSystem: document.getElementById('drawerSystem').value,
+                customDrawerAxis: val('customDrawerAxis'),
+                spaceLocks: JSON.parse(JSON.stringify(spaceLocks)),
+                structuralShelves: JSON.parse(JSON.stringify(structuralShelves))
+            };
+            
+            db.collection("cabinets").doc(currentLoadedDocId).update(cab).then(() => {
+                alert("Projekt zaktualizowany pomyślnie w chmurze!");
+            }).catch((error) => {
+                alert("Błąd aktualizacji: " + error.message);
+            });
+        }
         function loadCabinet(docId) {
             let cab = cloudCabinets.find(c => c.docId === docId);
             if(!cab) return;
