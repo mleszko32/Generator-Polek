@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalkulator Formatek i Półek (CAD + Cokół)</title>
+    <title>Kalkulator Formatek i Półek (Otwory Wieńców)</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f4f7f6; padding: 20px; color: #333; margin: 0; }
         .container { max-width: 1700px; margin: auto; display: flex; gap: 20px; flex-wrap: wrap; align-items: stretch; }
@@ -96,17 +96,17 @@
                         <option value="nakladane">Nakładane</option>
                     </select>
                 </div>
-                <div><label>Wysokość cokołu</label><input type="number" id="cokol" value="0" oninput="resetLocksAndRun()" title="Podnosi dolny wieniec"></div>
+                <div><label>Wysokość cokołu</label><input type="number" id="cokol" value="100" oninput="resetLocksAndRun()" title="Podnosi dolny wieniec"></div>
                 <div><label>Offset podpórki (Dół)</label><input type="number" id="offsetPodporki" value="3" oninput="run()"></div>
                 <div><label>Grubość płyty (korpus)</label><input type="number" id="tBoard" value="18" oninput="run()"></div>
             </div>
 
-            <h3>Front i Zawiasy (Antykolizja)</h3>
+            <h3>Front i Zawiasy (Prowadnik od spodu wieńca)</h3>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                 <div><label>Ilość zawiasów</label><input type="number" id="qZaw" value="4" min="0" max="8" oninput="run()"></div>
                 <div><label>Strefa ochrony (mm)</label><input type="number" id="cMargin" value="35" oninput="run()" title="Minimalna odległość od otworów półki"></div>
-                <div><label>Skrajny dół (Puszka)</label><input type="number" id="zOffD" value="100" oninput="run()"></div>
-                <div><label>Skrajny góra (Puszka)</label><input type="number" id="zOffG" value="100" oninput="run()"></div>
+                <div><label>Oś prowadnika (od dołu korpusu)</label><input type="number" id="zOffD" value="100" oninput="run()"></div>
+                <div><label>Oś prowadnika (od góry korpusu)</label><input type="number" id="zOffG" value="100" oninput="run()"></div>
                 <div><label>Luz frontu (Dół)</label><input type="number" id="fLuzD" value="3" oninput="run()"></div>
                 <div><label>Luz frontu (Góra)</label><input type="number" id="fLuzG" value="3" oninput="run()"></div>
             </div>
@@ -411,29 +411,29 @@
                 currentBottom += tBoard; 
             }
 
-            // --- LOGIKA ZAWIASÓW Z UWZGLĘDNIENIEM COKOŁU ---
+            // --- LOGIKA ZAWIASÓW - BAZA W KORPUSIE ---
             let qZaw = val('qZaw'); let zOffD = val('zOffD'); let zOffG = val('zOffG'); 
             let fLuzD = val('fLuzD'); let fLuzG = val('fLuzG');
             let cMargin = val('cMargin') || 35;
             let zawiasy = [];
             
             if (qZaw > 0) {
-                let fH = hBox - cokol - fLuzD - fLuzG;
-                let zawBaseFront = [];
+                let hKorpus = hBox - cokol; 
+                let zawBaseKorpus = [];
                 
                 if (qZaw === 1) {
-                    zawBaseFront.push({ y: fH/2, isTop: false });
+                    zawBaseKorpus.push({ y: hKorpus/2, isTop: false });
                 } else {
-                    zawBaseFront.push({ y: zOffD, isTop: false }); 
+                    zawBaseKorpus.push({ y: zOffD, isTop: false }); 
                     if (qZaw > 2) {
-                        let step = (fH - zOffG - zOffD) / (qZaw - 1);
-                        for (let i = 1; i < qZaw - 1; i++) zawBaseFront.push({ y: zOffD + i * step, isTop: false });
+                        let step = (hKorpus - zOffG - zOffD) / (qZaw - 1);
+                        for (let i = 1; i < qZaw - 1; i++) zawBaseKorpus.push({ y: zOffD + i * step, isTop: false });
                     }
-                    zawBaseFront.push({ y: fH - zOffG, isTop: true }); 
+                    zawBaseKorpus.push({ y: hKorpus - zOffG, isTop: true }); 
                 }
 
-                zawBaseFront.forEach(zaw => {
-                    let mY = fLuzD + cokol + zaw.y; 
+                zawBaseKorpus.forEach(zaw => {
+                    let mY = cokol + zaw.y; 
                     let collision = true; let attempts = 0; let isShifted = false;
                     
                     while(collision && attempts < 15) {
@@ -445,7 +445,6 @@
                                 }
                             });
                         }
-                        
                         if (collision) {
                             isShifted = true;
                             mY += zaw.isTop ? -32 : 32; 
@@ -455,8 +454,9 @@
                     
                     let roundedBodyY = Math.round(mY);
                     zawiasy.push({ 
-                        bodyY: roundedBodyY, 
-                        frontY: Math.round(roundedBodyY - fLuzD - cokol), 
+                        bodyY: roundedBodyY, // Od podłogi
+                        corpusY: Math.round(roundedBodyY - cokol), // Od spodu korpusu
+                        frontY: Math.round(roundedBodyY - cokol - fLuzD), // Od spodu frontu
                         shifted: isShifted,
                         isTop: zaw.isTop
                     });
@@ -535,7 +535,6 @@
             
             let holeFrontX = sXBok + dBox - 37;
             let holeBackX = sXBok + 37;
-            
             let laneHingeHoles = sXBok + dBox + 80;
             let laneShelfHoles = sXBok + dBox + 300;
             let laneHingeAxis  = sXBok + dBox + 550;
@@ -550,11 +549,41 @@
             }
 
             svg += `<line x1="${sXCab - 50}" y1="${hBox}" x2="${sXBok + dBox + 150}" y2="${hBox}" stroke="#333" stroke-width="3" stroke-dasharray="8,8" opacity="0.6"/>`;
-            svg += `<text x="${sXBok + dBox + 160}" y="${hBox + 8}" font-size="${fontL}" font-weight="bold" fill="#333" text-anchor="start">0 mm (DÓŁ BAZY)</text>`;
+            svg += `<text x="${sXBok + dBox + 160}" y="${hBox + 8}" font-size="${fontL}" font-weight="bold" fill="#333" text-anchor="start">0 mm (DÓŁ BOKU)</text>`;
 
             if(kTyp === 'wpuszczane') {
                 svg += `<rect x="${sXBok}" y="0" width="${dBox}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" opacity="0.6" stroke-width="${lineW}"/>`;
                 svg += `<rect x="${sXBok}" y="${hBox - tBoard - cokol}" width="${dBox}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" opacity="0.6" stroke-width="${lineW}"/>`;
+
+                // Wymiary WIEŃCA i COKOŁU na rzucie boku
+                if (cokol > 0) {
+                    svg += `<line x1="${sXBok - 30}" y1="${hBox}" x2="${sXBok - 30}" y2="${hBox - cokol}" stroke="#1F4E79" stroke-width="2" marker-start="url(#arrow)" marker-end="url(#arrow)"/>`;
+                    svg += `<text x="${sXBok - 40}" y="${hBox - cokol/2 + 8}" font-size="${fontL}" font-weight="bold" fill="#1F4E79" text-anchor="end">Cokół: ${cokol}</text>`;
+                }
+
+                // Oś WIEŃCA DOLNEGO (Konfirmaty/Kołki)
+                let osWd = cokol + tBoard / 2;
+                let svgOsWd = hBox - osWd;
+                svg += `<line x1="${sXBok - 130}" y1="${svgOsWd}" x2="${sXBok}" y2="${svgOsWd}" stroke="#1F4E79" stroke-dasharray="6,6" stroke-width="2"/>`;
+                svg += `<text x="${sXBok - 140}" y="${svgOsWd + 8}" font-size="${fontL}" font-weight="bold" fill="#1F4E79" text-anchor="end">Oś wieńca: ${osWd}</text>`;
+                
+                // Oś WIEŃCA GÓRNEGO
+                let osWg = hBox - tBoard / 2;
+                let svgOsWg = tBoard / 2;
+                svg += `<line x1="${sXBok - 130}" y1="${svgOsWg}" x2="${sXBok}" y2="${svgOsWg}" stroke="#1F4E79" stroke-dasharray="6,6" stroke-width="2"/>`;
+                svg += `<text x="${sXBok - 140}" y="${svgOsWg + 8}" font-size="${fontL}" font-weight="bold" fill="#1F4E79" text-anchor="end">Oś wieńca: ${osWg}</text>`;
+
+                // Nawierty montażowe wieńców w boku
+                if (sShelfHoles) {
+                    [37, dBox - 37].forEach(x => {
+                        svg += `<circle cx="${sXBok + x}" cy="${svgOsWd}" r="5" fill="#1F4E79"/>`;
+                        svg += `<circle cx="${sXBok + x}" cy="${svgOsWg}" r="5" fill="#1F4E79"/>`;
+                    });
+                    if (dBox >= 400) { // Srodkowy wkręt przy głębokich szafkach
+                        svg += `<circle cx="${sXBok + dBox/2}" cy="${svgOsWd}" r="5" fill="#1F4E79"/>`;
+                        svg += `<circle cx="${sXBok + dBox/2}" cy="${svgOsWg}" r="5" fill="#1F4E79"/>`;
+                    }
+                }
             }
 
             osie.forEach((data, i) => {
@@ -603,15 +632,20 @@
 
             if ((sHingeAxis || sHingeHoles) && qZaw > 0) {
                 zawiasy.forEach(zaw => {
-                    let drillY = hBox - zaw.bodyY;
+                    let drillY = hBox - zaw.bodyY; // Rzeczywisty Y w SVG na rysunku boku
                     let color = zaw.shifted ? "#9c27b0" : "#0288d1"; 
-                    let holeFrontX = sXBok + dBox - 37;
-                    let dimFromTop = hBox - zaw.bodyY;
                     
                     if (sHingeAxis) {
                         svg += `<line x1="${holeFrontX - 20}" y1="${drillY}" x2="${laneHingeAxis - 10}" y2="${drillY}" stroke="${color}" stroke-dasharray="2,2" stroke-width="3"/>`;
-                        let dimText = `${zaw.bodyY} (${dimFromTop})`;
-                        if(zaw.shifted) dimText += " (KOREKTA)";
+                        
+                        // ZMIANA: Pokazujemy wymiar do spodu / góry wieńca (oraz pomocniczo do podłogi)
+                        let hKorpus = hBox - cokol;
+                        let dimFromTop = hKorpus - zaw.corpusY;
+                        
+                        let dimText = zaw.isTop ? `${dimFromTop} (od góry wieńca)` : `${zaw.corpusY} (od spodu wieńca)`;
+                        if (cokol > 0) dimText += ` | ${zaw.bodyY} od boku`;
+                        if (zaw.shifted) dimText += " [KOREKTA]";
+                        
                         svg += `<text x="${laneHingeAxis}" y="${drillY + 8}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">Prowadnik: ${dimText}</text>`;
                     }
                     
@@ -619,8 +653,11 @@
                         [-16, 16].forEach(off => {
                             let hy = drillY - off; 
                             let valY = zaw.bodyY + off; 
-                            let holeFromTop = hBox - valY;
-                            let dimText = `${valY} (${holeFromTop})`;
+                            let valCorpusY = zaw.corpusY + off; 
+                            let hKorpus = hBox - cokol;
+                            let holeFromTop = hKorpus - valCorpusY;
+                            
+                            let dimText = zaw.isTop ? `${holeFromTop} od góry wieńca` : `${valCorpusY} od spodu wieńca`;
                             
                             svg += `<circle cx="${holeFrontX}" cy="${hy}" r="4" fill="${color}"/>`;
                             svg += `<line x1="${holeFrontX}" y1="${hy}" x2="${laneHingeHoles - 10}" y2="${hy}" stroke="${color}" stroke-dasharray="1,2" stroke-width="1.5"/>`;
@@ -633,7 +670,7 @@
             // --- 3. RZUT FRONTU ---
             if (sFront) {
                 let fH = hBox - cokol - fLuzD - fLuzG;
-                let fY = fLuzG; 
+                let fY = fLuzG; // Odległość od góry korpusu do początku frontu
                 
                 svg += `<text x="${sXFront + wBox/2}" y="-80" font-size="36" font-weight="bold" fill="#2e7d32" text-anchor="middle">FRONT (Puszki)</text>`;
                 svg += `<rect x="${sXFront}" y="${fY}" width="${wBox}" height="${fH}" fill="#e2efda" stroke="#2e7d32" stroke-width="${lineW}"/>`;
@@ -644,7 +681,7 @@
                 
                 if (qZaw > 0) {
                     zawiasy.forEach(zaw => {
-                        let cy = hBox - cokol - fLuzD - zaw.frontY; 
+                        let cy = hBox - zaw.bodyY; // Rzeczywiste umiejscowienie na osi Y w SVG
                         let color = zaw.shifted ? "#9c27b0" : "#2e7d32";
                         let puszkaX = sXFront + 22; 
                         let dimFromTopFront = fH - zaw.frontY;
@@ -653,8 +690,9 @@
                         svg += `<circle cx="${puszkaX}" cy="${cy}" r="3" fill="${color}"/>`;
                         svg += `<line x1="${puszkaX}" y1="${cy}" x2="${sXFront + wBox + 60}" y2="${cy}" stroke="${color}" stroke-dasharray="4,4" stroke-width="2"/>`;
                         
-                        let dimText = `${zaw.frontY} (${dimFromTopFront})`;
-                        if(zaw.shifted) dimText += " (KOREKTA)";
+                        // ZMIANA: Pokazujemy tylko wynikowy wymiar puszki mierzony od odpowiedniej krawędzi frontu!
+                        let dimText = zaw.isTop ? `${dimFromTopFront} (od góry frontu)` : `${zaw.frontY} (od dołu frontu)`;
+                        if(zaw.shifted) dimText += " [KOREKTA]";
                         svg += `<text x="${sXFront + wBox + 70}" y="${cy + 8}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">${dimText}</text>`;
                     });
                 }
