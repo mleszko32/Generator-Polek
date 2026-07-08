@@ -3,22 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalkulator Formatek i Półek (CAD + Front + Zawiasy)</title>
+    <title>Kalkulator Formatek i Półek (CAD + Baza + Smart Print)</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f4f7f6; padding: 20px; color: #333; margin: 0; }
         .container { max-width: 1700px; margin: auto; display: flex; gap: 20px; flex-wrap: wrap; align-items: stretch; }
         .panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #eee; display: flex; flex-direction: column; }
         .panel-left { flex: 1.2; min-width: 420px; max-width: 480px; }
         .panel-right { flex: 2.5; min-width: 600px; }
+        .panel-bottom { flex: 100%; width: 100%; margin-top: 10px; }
         
         h2 { margin-top: 0; font-size: 1.2rem; color: #1F4E79; border-bottom: 2px solid #E2EFDA; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
         h3 { font-size: 1rem; color: #555; margin-bottom: 10px; margin-top: 20px; border-bottom: 1px solid #eee; padding-bottom: 5px;}
         label { display: block; font-size: 0.85rem; font-weight: bold; margin-top: 10px; margin-bottom: 4px; color: #555; }
-        input[type="number"], select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 1rem; background: #f9fbfd; }
-        input[type="number"]:focus, select:focus { outline: none; border-color: #1F4E79; background: #fff; }
+        input[type="number"], input[type="text"], select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 1rem; background: #f9fbfd; }
+        input:focus, select:focus { outline: none; border-color: #1F4E79; background: #fff; }
         input[readonly] { background: #f0f0f0; border-color: #ddd; color: #777; cursor: not-allowed; }
         
-        /* Opcje widoku (Checkboxy) */
+        /* Opcje widoku */
         .view-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #e8f0fe; padding: 12px; border-radius: 6px; border-left: 4px solid #1F4E79; margin-bottom: 15px; }
         .view-options label { margin: 0; font-weight: bold; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; color: #1F4E79; }
         .view-options input[type="checkbox"] { width: auto; accent-color: #1F4E79; transform: scale(1.2); margin:0; }
@@ -31,21 +32,46 @@
         .space-input-group { display: flex; gap: 8px; align-items: center; }
         .space-input-group input { width: 80px; text-align: center; font-weight: bold; padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
         
-        .lock-btn { width: 115px; background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 6px 0; cursor: pointer; font-size: 0.85rem; font-weight: bold; color: #555; transition: 0.2s; }
-        .lock-btn:hover:not([disabled]) { background: #f0f0f0; }
+        button { background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 6px 12px; cursor: pointer; font-size: 0.85rem; font-weight: bold; color: #555; transition: 0.2s; }
+        button:hover:not([disabled]) { background: #f0f0f0; }
+        
+        .lock-btn { width: 115px; }
         .lock-btn.locked { background: #d32f2f; color: white; border-color: #b71c1c; }
         .lock-btn.locked:hover { background: #b71c1c; }
         .lock-btn[disabled] { opacity: 0.6; cursor: not-allowed; border-color: #f57c00; color: #e65100; background: #ffe0b2; }
         
+        .btn-primary { background: #1F4E79; color: white; border-color: #153a5b; padding: 10px 15px; width: 100%; font-size: 1rem; margin-top: 15px; }
+        .btn-primary:hover { background: #153a5b; }
+        
+        .btn-print { background: #2e7d32; color: white; border-color: #1b5e20; }
+        .btn-print:hover { background: #1b5e20; }
+        
         .error-msg { display: none; background: #fce8e8; color: #d32f2f; font-weight: bold; padding: 10px; border-radius: 6px; border: 1px solid #d32f2f; margin-bottom: 15px; text-align: center; font-size: 0.9rem; }
         
+        /* Lista Szafek */
+        .saved-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; margin-top: 15px; }
+        .saved-item { background: #f9fbfd; border: 1px solid #ddd; padding: 15px; border-radius: 6px; border-left: 4px solid #f57c00; }
+        .saved-item h4 { margin: 0 0 10px 0; color: #1F4E79; }
+        .saved-item p { margin: 0 0 10px 0; font-size: 0.85rem; color: #555; }
+        .saved-actions { display: flex; gap: 10px; }
+        .btn-load { background: #e2efda; border-color: #2e7d32; color: #2e7d32; flex: 1; }
+        .btn-delete { background: #fce8e8; border-color: #d32f2f; color: #d32f2f; }
+
         /* Obszar roboczy SVG */
         .svg-container { position: relative; overflow: hidden; background: #fafafa; border: 1px dashed #ccc; border-radius: 6px; flex: 1; min-height: 800px; cursor: grab; display: flex; justify-content: center; align-items: center; margin-top: 15px; }
         .svg-container:active { cursor: grabbing; }
         .svg-wrapper { width: 100%; height: 100%; transform-origin: center center; transition: transform 0.05s linear; pointer-events: none; }
         
-        .zoom-controls button { background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 5px 12px; cursor: pointer; font-weight: bold; color: #1F4E79; margin-left: 5px; }
-        .zoom-controls button:hover { background: #f0f0f0; }
+        /* Print Container (ukryty domyślnie) */
+        #printArea { display: none; }
+
+        @media print {
+            body { background: white; margin: 0; padding: 0; }
+            .container { display: none !important; }
+            #printArea { display: block !important; position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: white; }
+            #printArea svg { width: 100%; height: 100%; max-height: 98vh; }
+            @page { margin: 0.5cm; }
+        }
     </style>
 </head>
 <body>
@@ -91,12 +117,25 @@
             <h3>Manager Przestrzeni</h3>
             <div id="errorBox" class="error-msg"></div>
             <div id="spaceControls"></div>
+
+            <hr style="border: 0; border-top: 1px solid #ddd; margin: 20px 0;">
+            <label>Nazwa do zapisu projektu:</label>
+            <input type="text" id="cabName" value="Szafka 2000x600" placeholder="np. Szafka kuchenna lewa">
+            <button class="btn-primary" onclick="saveCabinet()">💾 Zapisz do Bazy</button>
         </div>
         
         <div class="panel panel-right">
             <h2>
                 Widok Warsztatowy (CAD 1:1)
-                <div class="zoom-controls">
+                <div style="display:flex; gap: 5px; align-items:center;">
+                    <select id="printType" style="width:auto; padding:5px; font-size:0.85rem; margin-right:5px;">
+                        <option value="all">Drukuj: Wszystko</option>
+                        <option value="interior">Drukuj: Tylko Wnętrze</option>
+                        <option value="side">Drukuj: Tylko Bok</option>
+                        <option value="front">Drukuj: Tylko Front</option>
+                    </select>
+                    <button class="btn-print" onclick="printView()">🖨️ Drukuj</button>
+                    <span style="color:#ddd; margin: 0 5px;">|</span>
                     <button onclick="resetZoom()">⟲ Reset</button>
                     <button onclick="zoomManual(0.2)">+</button>
                     <button onclick="zoomManual(-0.2)">-</button>
@@ -107,7 +146,15 @@
                     </div>
             </div>
         </div>
+
+        <div class="panel panel-bottom">
+            <h2>Baza zapisanych projektów</h2>
+            <div id="savedList" class="saved-list">
+                </div>
+        </div>
     </div>
+
+    <div id="printArea"></div>
 
     <script>
         let zScale = 1; let panX = 0; let panY = 0; let isDragging = false; let startX = 0; let startY = 0;
@@ -118,9 +165,7 @@
             return isNaN(v) ? 0 : v; 
         }
 
-        function isChecked(id) {
-            return document.getElementById(id).checked;
-        }
+        function isChecked(id) { return document.getElementById(id).checked; }
 
         let errorTimeout;
         function showError(msg) {
@@ -131,6 +176,7 @@
         }
         function hideError() { document.getElementById('errorBox').style.display = 'none'; }
 
+        // --- ZOOM & PAN ---
         function initZoomPan() {
             const container = document.getElementById('svgContainer');
             container.addEventListener('wheel', (e) => {
@@ -140,7 +186,7 @@
                 applyTransform();
             });
             container.addEventListener('mousedown', (e) => {
-                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return;
                 isDragging = true; startX = e.clientX - panX; startY = e.clientY - panY;
             });
             window.addEventListener('mousemove', (e) => {
@@ -153,6 +199,110 @@
         function zoomManual(amount) { zScale = Math.min(Math.max(0.1, zScale + amount), 10); applyTransform(); }
         function resetZoom() { zScale = 1; panX = 0; panY = 0; applyTransform(); }
         function applyTransform() { document.getElementById('svgWrapper').style.transform = `translate(${panX}px, ${panY}px) scale(${zScale})`; }
+
+        // --- SYSTEM ZAPISU / ODCZYTU (LOCAL STORAGE) ---
+        function saveCabinet() {
+            let cab = {
+                id: Date.now(),
+                name: document.getElementById('cabName').value || `Szafka ${val('hBox')}x${val('wBox')}x${val('dBox')}`,
+                kTyp: document.getElementById('kTyp').value,
+                hBox: val('hBox'), wBox: val('wBox'), dBox: val('dBox'),
+                qPol: val('qPol'), tBoard: val('tBoard'), offsetPodporki: val('offsetPodporki'),
+                qZaw: val('qZaw'), zOffD: val('zOffD'), zOffG: val('zOffG'),
+                fLuzD: val('fLuzD'), fLuzG: val('fLuzG'),
+                spaceLocks: JSON.parse(JSON.stringify(spaceLocks)) // Głęboka kopia ustawień przestrzeni
+            };
+            
+            let saved = JSON.parse(localStorage.getItem('cad_cabinets')) || [];
+            saved.push(cab);
+            localStorage.setItem('cad_cabinets', JSON.stringify(saved));
+            renderSavedCabinets();
+            alert("Projekt zapisany poprawnie!");
+        }
+
+        function loadCabinet(id) {
+            let saved = JSON.parse(localStorage.getItem('cad_cabinets')) || [];
+            let cab = saved.find(c => c.id === id);
+            if(!cab) return;
+
+            document.getElementById('cabName').value = cab.name;
+            document.getElementById('kTyp').value = cab.kTyp;
+            document.getElementById('hBox').value = cab.hBox;
+            document.getElementById('wBox').value = cab.wBox;
+            document.getElementById('dBox').value = cab.dBox;
+            document.getElementById('qPol').value = cab.qPol;
+            document.getElementById('tBoard').value = cab.tBoard;
+            document.getElementById('offsetPodporki').value = cab.offsetPodporki;
+            document.getElementById('qZaw').value = cab.qZaw;
+            document.getElementById('zOffD').value = cab.zOffD;
+            document.getElementById('zOffG').value = cab.zOffG;
+            document.getElementById('fLuzD').value = cab.fLuzD;
+            document.getElementById('fLuzG').value = cab.fLuzG;
+
+            spaceLocks = cab.spaceLocks;
+            run(); 
+            window.scrollTo(0, 0); // Powrót na górę ekranu po wczytaniu
+        }
+
+        function deleteCabinet(id) {
+            if(!confirm("Na pewno usunąć ten projekt?")) return;
+            let saved = JSON.parse(localStorage.getItem('cad_cabinets')) || [];
+            saved = saved.filter(c => c.id !== id);
+            localStorage.setItem('cad_cabinets', JSON.stringify(saved));
+            renderSavedCabinets();
+        }
+
+        function renderSavedCabinets() {
+            let saved = JSON.parse(localStorage.getItem('cad_cabinets')) || [];
+            let listHtml = '';
+            
+            if (saved.length === 0) {
+                listHtml = '<p style="color:#777;">Brak zapisanych projektów. Stwórz szafkę i kliknij "Zapisz do Bazy".</p>';
+            } else {
+                saved.forEach(cab => {
+                    let locksInfo = cab.spaceLocks.filter(s => s.locked).length;
+                    listHtml += `
+                        <div class="saved-item">
+                            <h4>${cab.name}</h4>
+                            <p>Wymiar: ${cab.hBox}x${cab.wBox}x${cab.dBox} mm<br>
+                               Półki: ${cab.qPol} | Zawiasy: ${cab.qZaw}<br>
+                               Zablokowanych przestrzeni: ${locksInfo}
+                            </p>
+                            <div class="saved-actions">
+                                <button class="btn-load" onclick="loadCabinet(${cab.id})">Wczytaj edytor</button>
+                                <button class="btn-delete" onclick="deleteCabinet(${cab.id})">Usuń</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            document.getElementById('savedList').innerHTML = listHtml;
+        }
+
+        // --- SYSTEM DRUKU KADROWANEGO ---
+        function printView() {
+            let type = document.getElementById('printType').value;
+            let svgNode = document.querySelector('#svgWrapper svg').cloneNode(true);
+            
+            let hBox = val('hBox'); let wBox = val('wBox'); let dBox = val('dBox');
+            let sXBok = wBox + 300; 
+            let sXFront = sXBok + dBox + 1000; 
+
+            // Ustawiamy wirtualną kamerę (ViewBox) w zależności od wyboru
+            if (type === 'interior') {
+                svgNode.setAttribute('viewBox', `-100 -120 ${wBox + 200} ${hBox + 250}`);
+            } else if (type === 'side') {
+                svgNode.setAttribute('viewBox', `${sXBok - 200} -120 ${dBox + 600} ${hBox + 250}`);
+            } else if (type === 'front') {
+                svgNode.setAttribute('viewBox', `${sXFront - 100} -120 ${wBox + 300} ${hBox + 250}`);
+            } 
+            // Jeśli 'all', zostawiamy oryginalny viewBox, który łapie wszystko
+
+            document.getElementById('printArea').innerHTML = '';
+            document.getElementById('printArea').appendChild(svgNode);
+            
+            window.print();
+        }
 
         // --- LOGIKA KALKULATORA PÓŁEK ---
         function resetLocksAndRun() {
@@ -203,13 +353,9 @@
             let hBox = val('hBox'); let wBox = val('wBox'); let dBox = val('dBox'); let tBoard = val('tBoard');
             let qPol = val('qPol'); let offsetPodporki = val('offsetPodporki');
 
-            // Filtry widoku
-            let sClearance = isChecked('sClearance');
-            let sShelfAxis = isChecked('sShelfAxis');
-            let sShelfHoles = isChecked('sShelfHoles');
-            let sDistances = isChecked('sDistances');
-            let sHingeAxis = isChecked('sHingeAxis');
-            let sHingeHoles = isChecked('sHingeHoles');
+            let sClearance = isChecked('sClearance'); let sShelfAxis = isChecked('sShelfAxis');
+            let sShelfHoles = isChecked('sShelfHoles'); let sDistances = isChecked('sDistances');
+            let sHingeAxis = isChecked('sHingeAxis'); let sHingeHoles = isChecked('sHingeHoles');
             let sFront = isChecked('sFront');
 
             let totalSpaces = qPol + 1;
@@ -272,7 +418,7 @@
                 currentBottom += tBoard; 
             }
 
-            // --- LOGIKA ZAWIASÓW (ANTYKOLIZJA) ---
+            // --- LOGIKA ZAWIASÓW ---
             let qZaw = val('qZaw'); let zOffD = val('zOffD'); let zOffG = val('zOffG'); 
             let fLuzD = val('fLuzD'); let fLuzG = val('fLuzG');
             let zawiasy = [];
@@ -284,32 +430,36 @@
                 if (qZaw === 1) {
                     zawBaseFront.push({ y: fH/2, isTop: false });
                 } else {
-                    zawBaseFront.push({ y: zOffD, isTop: false }); // Dolny mierzony od dołu frontu
+                    zawBaseFront.push({ y: zOffD, isTop: false }); 
                     if (qZaw > 2) {
                         let step = (fH - zOffG - zOffD) / (qZaw - 1);
                         for (let i = 1; i < qZaw - 1; i++) zawBaseFront.push({ y: zOffD + i * step, isTop: false });
                     }
-                    zawBaseFront.push({ y: fH - zOffG, isTop: true }); // Górny z flagą top
+                    zawBaseFront.push({ y: fH - zOffG, isTop: true }); 
                 }
 
                 zawBaseFront.forEach(zaw => {
-                    let mY = fLuzD + zaw.y; // Wysokość prowadnika od dołu korpusu
+                    let mY = fLuzD + zaw.y; 
                     let collision = true; let attempts = 0; let isShifted = false;
                     
-                    while(collision && attempts < 10) {
+                    while(collision && attempts < 15) {
                         collision = false;
                         for (let p of osie) {
-                            // Detekcja w strefie +- 25mm od rzeczywistej osi półki
-                            if (Math.abs(mY - p.osPrawdziwa) < 25) {
-                                collision = true; isShifted = true;
-                                mY += 32; // Systemowa korekta o 32mm w górę
-                            }
+                            [-32, 0, 32].forEach(off => {
+                                if (Math.abs(mY - (p.osPrawdziwa + off)) < 28) collision = true;
+                            });
+                        }
+                        if (collision) {
+                            isShifted = true;
+                            mY += zaw.isTop ? -32 : 32; 
                         }
                         attempts++;
                     }
+                    
+                    let roundedBodyY = Math.round(mY);
                     zawiasy.push({ 
-                        bodyY: Math.round(mY*10)/10, 
-                        frontY: Math.round((mY - fLuzD)*10)/10, 
+                        bodyY: roundedBodyY, 
+                        frontY: Math.round(roundedBodyY - fLuzD), 
                         shifted: isShifted,
                         isTop: zaw.isTop
                     });
@@ -317,12 +467,7 @@
             }
 
             // --- GENEROWANIE SVG W SKALI 1:1 ---
-            let sXCab = 0; 
-            let sXBok = wBox + 300; 
-            
-            // ZWIĘKSZONO ODSTĘP, aby bardzo długie opisy prowadników ("KOREKTA", "od góry boku" itp.) miały miejsce
-            let sXFront = sXBok + dBox + 1000; 
-            
+            let sXCab = 0; let sXBok = wBox + 300; let sXFront = sXBok + dBox + 1000; 
             let viewTotalW = sFront ? (sXFront + wBox + 500) : (sXBok + dBox + 1000); 
             let viewTotalH = hBox + 300;         
             
@@ -465,19 +610,23 @@
                     let drillY = hBox - zaw.bodyY;
                     let color = zaw.shifted ? "#9c27b0" : "#0288d1"; 
                     let holeFrontX = sXBok + dBox - 37;
+                    let dimFromTop = hBox - zaw.bodyY;
                     
                     if (sHingeAxis) {
                         svg += `<line x1="${holeFrontX - 20}" y1="${drillY}" x2="${sXBok + dBox + 200}" y2="${drillY}" stroke="${color}" stroke-dasharray="2,2" stroke-width="3"/>`;
-                        let dimText = zaw.isTop ? `${hBox - zaw.bodyY} (od góry boku)` : `${zaw.bodyY}`;
+                        
+                        let dimText = `${zaw.bodyY} (${dimFromTop})`;
                         if(zaw.shifted) dimText += " (KOREKTA)";
                         svg += `<text x="${sXBok + dBox + 210}" y="${drillY + 8}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">Prowadnik: ${dimText}</text>`;
                     }
                     
                     if (sHingeHoles) {
                         [-16, 16].forEach(off => {
-                            let hy = drillY - off; // -16 fizycznie podnosi otwór na rysunku
+                            let hy = drillY - off; 
                             let valY = zaw.bodyY + off; 
-                            let dimText = zaw.isTop ? `${hBox - valY} od góry` : `${valY}`;
+                            let holeFromTop = hBox - valY;
+                            
+                            let dimText = `${valY} (${holeFromTop})`;
                             
                             svg += `<circle cx="${holeFrontX}" cy="${hy}" r="4" fill="${color}"/>`;
                             svg += `<line x1="${holeFrontX}" y1="${hy}" x2="${sXBok + dBox + 60}" y2="${hy}" stroke="${color}" stroke-dasharray="1,2" stroke-width="1.5"/>`;
@@ -493,11 +642,10 @@
                 let fY = fLuzG; 
                 
                 svg += `<text x="${sXFront + wBox/2}" y="-80" font-size="36" font-weight="bold" fill="#2e7d32" text-anchor="middle">FRONT (Puszki)</text>`;
+                svg += `<text x="${sXFront + wBox + 210}" y="-40" font-size="${fontM}" fill="#888" text-anchor="middle">od dołu (od góry)</text>`;
                 
-                // Płyta frontu
                 svg += `<rect x="${sXFront}" y="${fY}" width="${wBox}" height="${fH}" fill="#e2efda" stroke="#2e7d32" stroke-width="${lineW}"/>`;
                 
-                // Oś 0 Frontu (Dół)
                 let baseF = hBox - fLuzD;
                 svg += `<line x1="${sXFront - 50}" y1="${baseF}" x2="${sXFront + wBox + 150}" y2="${baseF}" stroke="#2e7d32" stroke-width="3" stroke-dasharray="8,8" opacity="0.6"/>`;
                 svg += `<text x="${sXFront + wBox + 160}" y="${baseF + 8}" font-size="${fontL}" font-weight="bold" fill="#2e7d32" text-anchor="start">0 mm (DÓŁ FRONTU)</text>`;
@@ -507,18 +655,17 @@
                         let cy = hBox - fLuzD - zaw.frontY; 
                         let color = zaw.shifted ? "#9c27b0" : "#2e7d32";
                         let puszkaX = sXFront + 22; 
+                        let dimFromTopFront = fH - zaw.frontY;
                         
                         svg += `<circle cx="${puszkaX}" cy="${cy}" r="17.5" fill="none" stroke="${color}" stroke-width="3"/>`;
                         svg += `<circle cx="${puszkaX}" cy="${cy}" r="3" fill="${color}"/>`;
                         
                         svg += `<line x1="${puszkaX}" y1="${cy}" x2="${sXFront + wBox + 60}" y2="${cy}" stroke="${color}" stroke-dasharray="4,4" stroke-width="2"/>`;
                         
-                        let dimText = zaw.isTop ? `${fH - zaw.frontY}` : `${zaw.frontY}`;
+                        let dimText = `${zaw.frontY} (${dimFromTopFront})`;
                         if(zaw.shifted) dimText += " (KOREKTA)";
-                        let descText = zaw.isTop ? `od GÓRY frontu` : `od DOŁU frontu`;
                         
-                        svg += `<text x="${sXFront + wBox + 70}" y="${cy + 5}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">${dimText}</text>`;
-                        svg += `<text x="${sXFront + wBox + 70}" y="${cy - 20}" font-size="${fontS}" fill="${color}" text-anchor="start">${descText}</text>`;
+                        svg += `<text x="${sXFront + wBox + 70}" y="${cy + 8}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">${dimText}</text>`;
                     });
                 }
             }
@@ -527,7 +674,11 @@
             document.getElementById('svgWrapper').innerHTML = svg;
         }
 
-        window.onload = () => { initZoomPan(); resetLocksAndRun(); };
+        window.onload = () => { 
+            initZoomPan(); 
+            resetLocksAndRun(); 
+            renderSavedCabinets(); // Ładuje bazę z pamięci przy starcie
+        };
     </script>
 </body>
 </html>
