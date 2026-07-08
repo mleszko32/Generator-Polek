@@ -17,7 +17,7 @@
         label { display: block; font-size: 0.85rem; font-weight: bold; margin-top: 10px; margin-bottom: 4px; color: #555; }
         input[type="number"], input[type="text"], select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 1rem; background: #f9fbfd; }
         input:focus, select:focus { outline: none; border-color: #1F4E79; background: #fff; }
-        input[readonly] { background: #f0f0f0; border-color: #ddd; color: #777; cursor: not-allowed; }
+        input[readonly], input[disabled] { background: #f0f0f0; border-color: #ddd; color: #777; cursor: not-allowed; }
         
         .view-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #e8f0fe; padding: 12px; border-radius: 6px; border-left: 4px solid #1F4E79; margin-bottom: 15px; }
         .view-options label { margin: 0; font-weight: bold; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; color: #1F4E79; }
@@ -107,7 +107,15 @@
 
             <h3>Fronty, Zawiasy i Okucia</h3>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <div><label>Ilość zawiasów / drzwi</label><input type="number" id="qZaw" value="4" min="0" max="8" oninput="run()"></div>
+                <div>
+                    <label style="display:flex; justify-content:space-between; align-items:center;">
+                        Ilość zaw. / drzwi
+                        <span style="font-weight:normal; font-size:0.8rem; display:flex; align-items:center; gap:4px; color:#1F4E79; cursor:pointer;">
+                            <input type="checkbox" id="autoZaw" checked onchange="toggleAutoZaw()" style="width:auto; margin:0; cursor:pointer;"> Auto (z wys.)
+                        </span>
+                    </label>
+                    <input type="number" id="qZaw" value="4" min="0" max="8" disabled oninput="run()">
+                </div>
                 <div><label>Strefa ochrony zawiasu</label><input type="number" id="cMargin" value="35" min="0" oninput="run()"></div>
                 <div><label>Puszka (od dołu drzwi)</label><input type="number" id="zOffD" value="100" min="0" oninput="run()"></div>
                 <div><label>Puszka (od góry drzwi)</label><input type="number" id="zOffG" value="100" min="0" oninput="run()"></div>
@@ -213,6 +221,12 @@
         function resetZoom() { zScale = 1; panX = 0; panY = 0; applyTransform(); }
         function applyTransform() { document.getElementById('svgWrapper').style.transform = `translate(${panX}px, ${panY}px) scale(${zScale})`; }
 
+        function toggleAutoZaw() {
+            let auto = document.getElementById('autoZaw').checked;
+            document.getElementById('qZaw').disabled = auto;
+            run();
+        }
+
         function updateDrawerFields() {
             let system = document.getElementById('drawerSystem').value;
             let field = document.getElementById('customDrawerField');
@@ -238,7 +252,7 @@
                 kTyp: document.getElementById('kTyp').value,
                 hBox: val('hBox'), wBox: val('wBox'), dBox: val('dBox'),
                 qPol: val('qPol'), tBoard: val('tBoard'), offsetPodporki: val('offsetPodporki'), cokol: val('cokol'),
-                qZaw: val('qZaw'), zOffD: val('zOffD'), zOffG: val('zOffG'),
+                qZaw: val('qZaw'), autoZaw: document.getElementById('autoZaw').checked, zOffD: val('zOffD'), zOffG: val('zOffG'),
                 fLuzD: val('fLuzD'), fLuzG: val('fLuzG'), cMargin: val('cMargin'),
                 luzFrontow: val('luzFrontow'), drawerSystem: document.getElementById('drawerSystem').value,
                 customDrawerAxis: val('customDrawerAxis'),
@@ -266,7 +280,11 @@
             document.getElementById('tBoard').value = cab.tBoard;
             document.getElementById('offsetPodporki').value = cab.offsetPodporki;
             document.getElementById('cokol').value = cab.cokol !== undefined ? cab.cokol : 100;
+            
+            document.getElementById('autoZaw').checked = cab.autoZaw !== undefined ? cab.autoZaw : true;
             document.getElementById('qZaw').value = cab.qZaw;
+            document.getElementById('qZaw').disabled = document.getElementById('autoZaw').checked;
+
             document.getElementById('zOffD').value = cab.zOffD;
             document.getElementById('zOffG').value = cab.zOffG;
             document.getElementById('fLuzD').value = cab.fLuzD !== undefined ? cab.fLuzD : 0;
@@ -456,6 +474,9 @@
             let topHoleOffset = getTopHoleOffset();
             let fLuzD = val('fLuzD'); let fLuzG = val('fLuzG'); let luzFrontow = val('luzFrontow');
             
+            let globalQZaw = val('qZaw');
+            let isAutoZaw = isChecked('autoZaw');
+
             let totalSpaces = qPol + 1;
             if(spaceLocks.length !== totalSpaces) { resetLocksAndRun(); return; }
 
@@ -668,7 +689,7 @@
             if(currentDoorBlock) frontBlocks.push(currentDoorBlock);
 
             // Obliczanie detali wewnątrz bloków frontów
-            let qZaw = val('qZaw'); let zOffD = val('zOffD'); let zOffG = val('zOffG'); 
+            let zOffD = val('zOffD'); let zOffG = val('zOffG'); 
 
             frontBlocks.forEach(fb => {
                 let fH_total = fb.yEnd - fb.yStart;
@@ -714,15 +735,26 @@
                 } 
                 else if(fb.type === 'door') {
                     let hinges = [];
-                    if (qZaw > 0) {
+                    let localQZaw = globalQZaw;
+                    
+                    // Dobór automatyczny na podstawie schematu
+                    if (isAutoZaw) {
+                        if (fH_total <= 900) localQZaw = 2;
+                        else if (fH_total <= 1600) localQZaw = 3;
+                        else if (fH_total <= 2000) localQZaw = 4;
+                        else if (fH_total <= 2500) localQZaw = 5;
+                        else localQZaw = 6;
+                    }
+
+                    if (localQZaw > 0) {
                         let hgBaseFront = [];
-                        if (qZaw === 1) {
+                        if (localQZaw === 1) {
                             hgBaseFront.push({ offset: fH_total/2, isTop: false });
                         } else {
                             hgBaseFront.push({ offset: zOffD, isTop: false }); 
-                            if (qZaw > 2) {
-                                let step = (fH_total - zOffG - zOffD) / (qZaw - 1);
-                                for (let k = 1; k < qZaw - 1; k++) hgBaseFront.push({ offset: zOffD + k * step, isTop: false });
+                            if (localQZaw > 2) {
+                                let step = (fH_total - zOffG - zOffD) / (localQZaw - 1);
+                                for (let k = 1; k < localQZaw - 1; k++) hgBaseFront.push({ offset: zOffD + k * step, isTop: false });
                             }
                             hgBaseFront.push({ offset: fH_total - zOffG, isTop: true }); 
                         }
@@ -754,6 +786,7 @@
                         });
                     }
                     fb.hinges = hinges;
+                    fb.actualZawCount = localQZaw;
                     doorZawiasy.push(...hinges);
                 }
             });
@@ -947,7 +980,7 @@
             });
 
             // --- ZAWIASY NA BOKU ---
-            if ((sHingeAxis || sHingeHoles) && qZaw > 0) {
+            if ((sHingeAxis || sHingeHoles) && (isAutoZaw || globalQZaw > 0)) {
                 doorZawiasy.forEach(zaw => {
                     let drillY = hBox - zaw.bodyY; 
                     let color = zaw.shifted ? "#9c27b0" : "#0288d1"; 
@@ -992,6 +1025,10 @@
                     if(fb.type === 'door') {
                         svg += `<rect x="${sXFront}" y="${rectTopY}" width="${wBox}" height="${rectH}" fill="#e2efda" stroke="#2e7d32" stroke-width="${lineW}"/>`;
                         
+                        let fSizeLabel = Math.round(rectH);
+                        let zawText = fb.actualZawCount > 0 ? ` (${fb.actualZawCount} szt. zawiasów)` : ``;
+                        svg += `<text x="${sXFront + wBox/2}" y="${rectTopY + rectH/2 + 8}" font-size="${fontM}" font-weight="bold" fill="#2e7d32" text-anchor="middle">Front: ${fSizeLabel} mm${zawText}</text>`;
+                        
                         fb.hinges.forEach(zaw => {
                             let cy = hBox - zaw.bodyY; 
                             let color = zaw.shifted ? "#9c27b0" : "#2e7d32";
@@ -1028,6 +1065,7 @@
             initZoomPan(); 
             resetLocksAndRun(); 
             renderSavedCabinets(); 
+            toggleAutoZaw();
         };
     </script>
 </body>
