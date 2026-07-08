@@ -1,14 +1,14 @@
-<!DOCTYPE html>
+html_content = """<!DOCTYPE html>
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalkulator Formatek i Półek (Czyste Wymiarowanie)</title>
+    <title>Kalkulator Formatek i Półek (Precyzyjne Nawierty Szuflad)</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f4f7f6; padding: 20px; color: #333; margin: 0; }
-        .container { max-width: 1700px; margin: auto; display: flex; gap: 20px; flex-wrap: wrap; align-items: stretch; }
+        .container { max-width: 1800px; margin: auto; display: flex; gap: 20px; flex-wrap: wrap; align-items: stretch; }
         .panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #eee; display: flex; flex-direction: column; }
-        .panel-left { flex: 1.2; min-width: 420px; max-width: 480px; }
+        .panel-left { flex: 1.2; min-width: 440px; max-width: 500px; }
         .panel-right { flex: 2.5; min-width: 600px; }
         .panel-bottom { flex: 100%; width: 100%; margin-top: 10px; }
         
@@ -23,10 +23,12 @@
         .view-options label { margin: 0; font-weight: bold; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; color: #1F4E79; }
         .view-options input[type="checkbox"] { width: auto; accent-color: #1F4E79; transform: scale(1.2); margin:0; }
 
-        .space-row { display: flex; align-items: center; justify-content: space-between; background: #f9fbfd; padding: 8px 12px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #eee; transition: 0.2s; }
+        .space-row { background: #f9fbfd; padding: 10px 12px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #eee; transition: 0.2s; }
         .space-row.locked { border-left: 4px solid #d32f2f; background: #fce8e8; }
         .space-row.resultant { border-left: 4px solid #f57c00; background: #fff3e0; }
-        .space-row label { margin: 0; font-size: 0.9rem; color: #333; flex: 1; }
+        .space-row.drawer-active { border-left: 4px solid #2e7d32; background: #e8f5e9; }
+        .space-header { display: flex; justify-content: space-between; align-items: center; }
+        .space-row label.main-label { margin: 0; font-size: 0.9rem; color: #333; font-weight: bold; }
         .space-input-group { display: flex; gap: 8px; align-items: center; }
         .space-input-group input { width: 80px; text-align: center; font-weight: bold; padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
         
@@ -54,7 +56,7 @@
         .btn-load { background: #e2efda; border-color: #2e7d32; color: #2e7d32; flex: 1; }
         .btn-delete { background: #fce8e8; border-color: #d32f2f; color: #d32f2f; }
 
-        .svg-container { position: relative; overflow: hidden; background: #fafafa; border: 1px dashed #ccc; border-radius: 6px; flex: 1; min-height: 800px; cursor: grab; display: flex; justify-content: center; align-items: center; margin-top: 15px; }
+        .svg-container { position: relative; overflow: hidden; background: #fafafa; border: 1px dashed #ccc; border-radius: 6px; flex: 1; min-height: 850px; cursor: grab; display: flex; justify-content: center; align-items: center; margin-top: 15px; }
         .svg-container:active { cursor: grabbing; }
         .svg-wrapper { width: 100%; height: 100%; transform-origin: center center; transition: transform 0.05s linear; pointer-events: none; }
         
@@ -81,34 +83,51 @@
                 <label><input type="checkbox" id="sDistances" checked onchange="run()"> Dystanse podpórek</label>
                 <label><input type="checkbox" id="sHingeAxis" checked onchange="run()"> Prowadnik (oś)</label>
                 <label><input type="checkbox" id="sHingeHoles" checked onchange="run()"> Prowadnik (otwory)</label>
-                <label><input type="checkbox" id="sFront" checked onchange="run()"> Rzut Frontu (Puszki)</label>
+                <label><input type="checkbox" id="sFront" checked onchange="run()"> Rzut Frontu</label>
+                <label><input type="checkbox" id="sDrawerTopHoles" checked onchange="run()"> Szuflada - Otwór górny</label>
+                <label><input type="checkbox" id="sDrawerBottomHoles" checked onchange="run()"> Szuflada - Otwór dolny (32)</label>
             </div>
 
             <h3>Parametry Korpusu</h3>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <div><label>Wysokość (H)</label><input type="number" id="hBox" value="2000" oninput="resetLocksAndRun()"></div>
-                <div><label>Szerokość (W)</label><input type="number" id="wBox" value="600" oninput="run()"></div>
-                <div><label>Głębokość boku (D)</label><input type="number" id="dBox" value="510" oninput="run()"></div>
-                <div><label>Ilość półek</label><input type="number" id="qPol" value="4" oninput="resetLocksAndRun()"></div>
+                <div><label>Wysokość (H)</label><input type="number" id="hBox" value="2000" min="0" oninput="resetLocksAndRun()"></div>
+                <div><label>Szerokość (W)</label><input type="number" id="wBox" value="600" min="0" oninput="run()"></div>
+                <div><label>Głębokość boku (D)</label><input type="number" id="dBox" value="510" min="0" oninput="run()"></div>
+                <div><label>Ilość półek</label><input type="number" id="qPol" value="4" min="0" oninput="resetLocksAndRun()"></div>
                 <div><label>Typ korpusu</label>
                     <select id="kTyp" onchange="resetLocksAndRun()">
                         <option value="wpuszczane">Wpuszczane</option>
                         <option value="nakladane">Nakładane</option>
                     </select>
                 </div>
-                <div><label>Wysokość cokołu</label><input type="number" id="cokol" value="100" oninput="resetLocksAndRun()" title="Podnosi dolny wieniec"></div>
+                <div><label>Wysokość cokołu</label><input type="number" id="cokol" value="100" min="0" oninput="resetLocksAndRun()"></div>
                 <div><label>Offset podpórki (Dół)</label><input type="number" id="offsetPodporki" value="3" oninput="run()"></div>
-                <div><label>Grubość płyty (korpus)</label><input type="number" id="tBoard" value="18" oninput="run()"></div>
+                <div><label>Grubość płyty (korpus)</label><input type="number" id="tBoard" value="18" min="0" oninput="run()"></div>
             </div>
 
-            <h3>Front i Zawiasy</h3>
+            <h3>Fronty, Zawiasy i Okucia</h3>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <div><label>Ilość zawiasów</label><input type="number" id="qZaw" value="4" min="0" max="8" oninput="run()"></div>
-                <div><label>Strefa ochrony (mm)</label><input type="number" id="cMargin" value="35" oninput="run()" title="Minimalna odległość od otworów półki"></div>
-                <div><label>Puszka (od dołu frontu)</label><input type="number" id="zOffD" value="100" oninput="run()"></div>
-                <div><label>Puszka (od góry frontu)</label><input type="number" id="zOffG" value="100" oninput="run()"></div>
-                <div><label>Luz frontu (Dół)</label><input type="number" id="fLuzD" value="3" oninput="run()"></div>
-                <div><label>Luz frontu (Góra)</label><input type="number" id="fLuzG" value="3" oninput="run()"></div>
+                <div><label>Ilość zawiasów / drzwi</label><input type="number" id="qZaw" value="4" min="0" max="8" oninput="run()"></div>
+                <div><label>Strefa ochrony zawiasu</label><input type="number" id="cMargin" value="35" min="0" oninput="run()"></div>
+                <div><label>Puszka (od dołu drzwi)</label><input type="number" id="zOffD" value="100" min="0" oninput="run()"></div>
+                <div><label>Puszka (od góry drzwi)</label><input type="number" id="zOffG" value="100" min="0" oninput="run()"></div>
+                <div><label>Luz frontu (Dół)</label><input type="number" id="fLuzD" value="3" min="0" oninput="run()"></div>
+                <div><label>Luz frontu (Góra)</label><input type="number" id="fLuzG" value="3" min="0" oninput="run()"></div>
+                <div style="grid-column: span 2;"><label>Szczelina między frontami</label><input type="number" id="luzFrontow" value="3" min="0" oninput="run()"></div>
+                
+                <div style="grid-column: span 2;">
+                    <label>System prowadnic szuflad</label>
+                    <select id="drawerSystem" onchange="updateDrawerFields(); run();">
+                        <option value="44">GTV Axis Pro / Modern Box (Górny: 44mm)</option>
+                        <option value="54">Blum Merivobox (Górny: 54mm)</option>
+                        <option value="33">Blum Antaro / Tandembox (Górny: 33mm)</option>
+                        <option value="custom">Inne (Własny wymiar górnego otworu)</option>
+                    </select>
+                </div>
+                <div id="customDrawerField" style="grid-column: span 2; display:none;">
+                    <label>Własna wysokość otworu górnego (mm)</label>
+                    <input type="number" id="customDrawerAxis" value="44" min="0" oninput="run()">
+                </div>
             </div>
 
             <h3>Manager Przestrzeni</h3>
@@ -117,7 +136,7 @@
 
             <hr style="border: 0; border-top: 1px solid #ddd; margin: 20px 0;">
             <label>Nazwa do zapisu projektu:</label>
-            <input type="text" id="cabName" value="Szafka 2000x600" placeholder="np. Szafka kuchenna lewa">
+            <input type="text" id="cabName" value="Szafka z szufladami i półkami" placeholder="np. Szafka kuchenna lewa">
             <button class="btn-primary" onclick="saveCabinet()">💾 Zapisz do Bazy</button>
         </div>
         
@@ -194,27 +213,47 @@
         function resetZoom() { zScale = 1; panX = 0; panY = 0; applyTransform(); }
         function applyTransform() { document.getElementById('svgWrapper').style.transform = `translate(${panX}px, ${panY}px) scale(${zScale})`; }
 
+        function updateDrawerFields() {
+            let system = document.getElementById('drawerSystem').value;
+            let field = document.getElementById('customDrawerField');
+            if(system === 'custom') {
+                field.style.display = 'block';
+            } else {
+                field.style.display = 'none';
+            }
+        }
+
+        function getTopHoleOffset() {
+            let system = document.getElementById('drawerSystem').value;
+            if(system === 'custom') {
+                return val('customDrawerAxis');
+            }
+            return parseFloat(system);
+        }
+
         function saveCabinet() {
             let cab = {
                 id: Date.now(),
-                name: document.getElementById('cabName').value || `Szafka ${val('hBox')}x${val('wBox')}x${val('dBox')}`,
+                name: document.getElementById('cabName').value || `Szafka ${val('hBox')}x${val('wBox')}`,
                 kTyp: document.getElementById('kTyp').value,
                 hBox: val('hBox'), wBox: val('wBox'), dBox: val('dBox'),
                 qPol: val('qPol'), tBoard: val('tBoard'), offsetPodporki: val('offsetPodporki'), cokol: val('cokol'),
                 qZaw: val('qZaw'), zOffD: val('zOffD'), zOffG: val('zOffG'),
                 fLuzD: val('fLuzD'), fLuzG: val('fLuzG'), cMargin: val('cMargin'),
+                luzFrontow: val('luzFrontow'), drawerSystem: document.getElementById('drawerSystem').value,
+                customDrawerAxis: val('customDrawerAxis'),
                 spaceLocks: JSON.parse(JSON.stringify(spaceLocks))
             };
             
-            let saved = JSON.parse(localStorage.getItem('cad_cabinets')) || [];
+            let saved = JSON.parse(localStorage.getItem('cad_cabinets_v3')) || [];
             saved.push(cab);
-            localStorage.setItem('cad_cabinets', JSON.stringify(saved));
+            localStorage.setItem('cad_cabinets_v3', JSON.stringify(saved));
             renderSavedCabinets();
-            alert("Projekt zapisany poprawnie!");
+            alert("Projekt zapisany pomyślnie w bazie lokalnej!");
         }
 
         function loadCabinet(id) {
-            let saved = JSON.parse(localStorage.getItem('cad_cabinets')) || [];
+            let saved = JSON.parse(localStorage.getItem('cad_cabinets_v3')) || [];
             let cab = saved.find(c => c.id === id);
             if(!cab) return;
 
@@ -226,46 +265,58 @@
             document.getElementById('qPol').value = cab.qPol;
             document.getElementById('tBoard').value = cab.tBoard;
             document.getElementById('offsetPodporki').value = cab.offsetPodporki;
-            document.getElementById('cokol').value = cab.cokol !== undefined ? cab.cokol : 0;
+            document.getElementById('cokol').value = cab.cokol !== undefined ? cab.cokol : 100;
             document.getElementById('qZaw').value = cab.qZaw;
             document.getElementById('zOffD').value = cab.zOffD;
             document.getElementById('zOffG').value = cab.zOffG;
             document.getElementById('fLuzD').value = cab.fLuzD;
             document.getElementById('fLuzG').value = cab.fLuzG;
             document.getElementById('cMargin').value = cab.cMargin !== undefined ? cab.cMargin : 35;
+            document.getElementById('luzFrontow').value = cab.luzFrontow !== undefined ? cab.luzFrontow : 3;
+            document.getElementById('drawerSystem').value = cab.drawerSystem !== undefined ? cab.drawerSystem : "44";
+            document.getElementById('customDrawerAxis').value = cab.customDrawerAxis !== undefined ? cab.customDrawerAxis : 44;
 
-            spaceLocks = cab.spaceLocks;
+            updateDrawerFields();
+
+            spaceLocks = cab.spaceLocks.map(s => ({
+                locked: s.locked || false,
+                manualVal: s.manualVal || 0,
+                currentVal: s.currentVal || 0,
+                hasDrawers: s.hasDrawers || false,
+                qDrawers: s.qDrawers || 3
+            }));
+            
             run(); 
             window.scrollTo(0, 0); 
         }
 
         function deleteCabinet(id) {
-            if(!confirm("Na pewno usunąć ten projekt?")) return;
-            let saved = JSON.parse(localStorage.getItem('cad_cabinets')) || [];
+            if(!confirm("Czy na pewno chcesz usunąć ten zapisany szablon?")) return;
+            let saved = JSON.parse(localStorage.getItem('cad_cabinets_v3')) || [];
             saved = saved.filter(c => c.id !== id);
-            localStorage.setItem('cad_cabinets', JSON.stringify(saved));
+            localStorage.setItem('cad_cabinets_v3', JSON.stringify(saved));
             renderSavedCabinets();
         }
 
         function renderSavedCabinets() {
-            let saved = JSON.parse(localStorage.getItem('cad_cabinets')) || [];
+            let saved = JSON.parse(localStorage.getItem('cad_cabinets_v3')) || [];
             let listHtml = '';
             
             if (saved.length === 0) {
-                listHtml = '<p style="color:#777;">Brak zapisanych projektów. Stwórz szafkę i kliknij "Zapisz do Bazy".</p>';
+                listHtml = '<p style="color:#777;">Brak zapisanych projektów w bazie przeglądarki.</p>';
             } else {
                 saved.forEach(cab => {
                     let locksInfo = cab.spaceLocks.filter(s => s.locked).length;
-                    let cokolInfo = cab.cokol > 0 ? ` | Cokół: ${cab.cokol} mm` : '';
+                    let drawersInfo = cab.spaceLocks.filter(s => s.hasDrawers).length;
                     listHtml += `
                         <div class="saved-item">
                             <h4>${cab.name}</h4>
-                            <p>Wymiar: ${cab.hBox}x${cab.wBox}x${cab.dBox} mm${cokolInfo}<br>
-                               Półki: ${cab.qPol} | Zawiasy: ${cab.qZaw}<br>
-                               Zablokowanych przestrzeni: ${locksInfo}
+                            <p>Gabaryt: ${cab.hBox}x${cab.wBox}x${cab.dBox} mm<br>
+                               Półki: ${cab.qPol} | Przestrzenie z szufladami: ${drawersInfo}<br>
+                               Blokady wymiaru: ${locksInfo}
                             </p>
                             <div class="saved-actions">
-                                <button class="btn-load" onclick="loadCabinet(${cab.id})">Wczytaj edytor</button>
+                                <button class="btn-load" onclick="loadCabinet(${cab.id})">Wczytaj projekt</button>
                                 <button class="btn-delete" onclick="deleteCabinet(${cab.id})">Usuń</button>
                             </div>
                         </div>
@@ -293,14 +344,18 @@
 
             document.getElementById('printArea').innerHTML = '';
             document.getElementById('printArea').appendChild(svgNode);
-            
             window.print();
         }
 
         function resetLocksAndRun() {
             let qPol = val('qPol'); let totalSpaces = qPol + 1;
             spaceLocks = [];
-            for(let i = 0; i < totalSpaces; i++) spaceLocks.push({ locked: false, manualVal: 0, currentVal: 0 });
+            for(let i = 0; i < totalSpaces; i++) {
+                spaceLocks.push({ 
+                    locked: false, manualVal: 0, currentVal: 0,
+                    hasDrawers: false, qDrawers: 4
+                });
+            }
             hideError(); run();
         }
 
@@ -310,10 +365,21 @@
             if(spaceLocks[index].locked) {
                 spaceLocks[index].locked = false;
             } else {
-                if (lockedCount >= spaceLocks.length - 1) { showError("Ostatnia przestrzeń musi pozostać wypadkową."); return; }
+                if (lockedCount >= spaceLocks.length - 1) { showError("Ostatnia wolna przestrzeń musi pozostać jako automatyczna wypadkowa."); return; }
                 spaceLocks[index].locked = true;
                 spaceLocks[index].manualVal = spaceLocks[index].currentVal;
             }
+            run();
+        }
+        
+        function toggleDrawers(index) {
+            spaceLocks[index].hasDrawers = !spaceLocks[index].hasDrawers;
+            run();
+        }
+        
+        function updateDrawerCount(index, value) {
+            let q = parseInt(value);
+            if(!isNaN(q) && q > 0) spaceLocks[index].qDrawers = q;
             run();
         }
 
@@ -324,7 +390,7 @@
             let isCurrentlyLocked = spaceLocks[index].locked;
             let lockedCount = spaceLocks.filter(s => s.locked).length;
             if (!isCurrentlyLocked && lockedCount >= spaceLocks.length - 1) {
-                showError("Przestrzeń wypadkowa. Odblokuj inną, aby ją zmodyfikować."); run(); return;
+                showError("Przestrzeń automatyczna/wypadkowa. Odblokuj inne, aby zmienić ten wymiar."); run(); return;
             }
 
             let hBox = val('hBox'); let tBoard = val('tBoard'); let qPol = val('qPol'); let cokol = val('cokol');
@@ -335,7 +401,7 @@
             }
 
             let maxAllowed = innerSpace - (qPol * tBoard) - otherLockedSum;
-            if (num > maxAllowed) { showError(`Za mało miejsca w korpusie! Zostało ${maxAllowed} mm.`); num = maxAllowed; } 
+            if (num > maxAllowed) { showError(`Brak miejsca w świetle korpusu! Maksymalnie dostępno: ${maxAllowed} mm.`); num = maxAllowed; } 
             else hideError();
 
             spaceLocks[index].locked = true; spaceLocks[index].manualVal = num; run();
@@ -350,7 +416,10 @@
             let sShelfHoles = isChecked('sShelfHoles'); let sDistances = isChecked('sDistances');
             let sHingeAxis = isChecked('sHingeAxis'); let sHingeHoles = isChecked('sHingeHoles');
             let sFront = isChecked('sFront');
+            let sDrawerTopHoles = isChecked('sDrawerTopHoles');
+            let sDrawerBottomHoles = isChecked('sDrawerBottomHoles');
 
+            let topHoleOffset = getTopHoleOffset();
             let totalSpaces = qPol + 1;
             if(spaceLocks.length !== totalSpaces) { resetLocksAndRun(); return; }
 
@@ -374,15 +443,20 @@
             }
             unlockedCount = spaceLocks.filter(s => !s.locked).length;
 
+            // Generowanie HTML Managera Przestrzeni
             let controlsHtml = '';
             for(let i = 0; i < totalSpaces; i++) {
                 let isTop = (i === totalSpaces - 1); let isBottom = (i === 0);
                 let label = `Światło ${i+1}` + (isBottom ? ` (Dół)` : (isTop ? ` (Góra)` : ``));
                 let isLocked = spaceLocks[i].locked;
                 let isOnlyUnlocked = (!isLocked && unlockedCount === 1);
+                let isDrawers = spaceLocks[i].hasDrawers;
+                let qDrawers = spaceLocks[i].qDrawers;
                 
-                let rowClass = isLocked ? 'space-row locked' : 'space-row';
-                if (isOnlyUnlocked) rowClass += ' resultant';
+                let rowClass = 'space-row';
+                if (isLocked) rowClass += ' locked';
+                if (isDrawers) rowClass += ' drawer-active';
+                if (isOnlyUnlocked && !isDrawers) rowClass += ' resultant';
                 
                 let btnClass = isLocked ? 'lock-btn locked' : 'lock-btn';
                 let btnText = isLocked ? '🔒 Odblokuj' : '🔓 Zablokuj';
@@ -390,79 +464,152 @@
                 let btnProps = isOnlyUnlocked ? 'disabled' : `onclick="toggleLock(${i})"`;
                 if (isOnlyUnlocked) btnText = '⭐ Wypadkowa';
 
+                let drawerHtml = `
+                    <div style="margin-top: 6px; display: flex; gap: 8px; align-items: center;">
+                        <label style="cursor:pointer; display:flex; align-items:center; gap:4px; margin:0; font-weight:normal;">
+                            <input type="checkbox" ${isDrawers ? 'checked' : ''} onchange="toggleDrawers(${i})"> <b>Moduł Szuflad</b>
+                        </label>
+                        ${isDrawers ? `<input type="number" value="${qDrawers}" min="1" onchange="updateDrawerCount(${i}, this.value)" style="width: 55px; padding: 3px; text-align:center;"> szt.` : ''}
+                    </div>
+                `;
+
                 controlsHtml += `
                     <div class="${rowClass}">
-                        <label>${label}</label>
-                        <div class="space-input-group">
-                            <input type="number" value="${spaceLocks[i].currentVal}" onchange="handleSpaceInput(${i}, this.value)" ${inputProps}>
-                            <button class="${btnClass}" ${btnProps}>${btnText}</button>
+                        <div class="space-header">
+                            <div style="flex:1;">
+                                <label class="main-label">${label}</label>
+                                ${drawerHtml}
+                            </div>
+                            <div class="space-input-group">
+                                <input type="number" value="${spaceLocks[i].currentVal}" onchange="handleSpaceInput(${i}, this.value)" ${inputProps}>
+                                <button class="${btnClass}" ${btnProps}>${btnText}</button>
+                            </div>
                         </div>
                     </div>`;
             }
             document.getElementById('spaceControls').innerHTML = controlsHtml;
 
+            // Koordynaty i osie wewnętrzne
             let offsetOdDolu = (kTyp === 'nakladane') ? cokol : tBoard + cokol;
             let osie = [];
+            let spacesBoundary = []; 
+            
             let currentBottom = offsetOdDolu;
-            for(let i = 0; i < qPol; i++) {
-                currentBottom += spaceLocks[i].currentVal; 
-                let osSrodkowa = currentBottom - offsetPodporki;
-                osie.push({ spod: currentBottom, os: osSrodkowa, osPrawdziwa: currentBottom + tBoard/2 });
-                currentBottom += tBoard; 
+            for(let i = 0; i < totalSpaces; i++) {
+                let h = spaceLocks[i].currentVal;
+                spacesBoundary.push({
+                    index: i,
+                    hasDrawers: spaceLocks[i].hasDrawers,
+                    qDrawers: spaceLocks[i].qDrawers,
+                    yStart: currentBottom, 
+                    yEnd: currentBottom + h 
+                });
+                currentBottom += h; 
+                
+                if (i < qPol) { 
+                    let osSrodkowa = currentBottom - offsetPodporki;
+                    osie.push({ spod: currentBottom, os: osSrodkowa, osPrawdziwa: currentBottom + tBoard/2 });
+                    currentBottom += tBoard; 
+                }
             }
 
-            // --- LOGIKA ZAWIASÓW ---
+            // Parametry frontów i rozkład stref
             let qZaw = val('qZaw'); let zOffD = val('zOffD'); let zOffG = val('zOffG'); 
             let fLuzD = val('fLuzD'); let fLuzG = val('fLuzG');
+            let luzFrontow = val('luzFrontow');
             let cMargin = val('cMargin') || 35;
-            let zawiasy = [];
             
-            if (qZaw > 0) {
-                let fH = hBox - cokol - fLuzD - fLuzG;
-                let zawBaseFront = [];
+            let frontBlocks = [];
+            let currentDoorBlock = null;
+            let doorZawiasy = [];
+            let drawerGuides = [];
+            
+            // Mapowanie struktury frontów mebla
+            for(let i = 0; i < totalSpaces; i++) {
+                let sb = spacesBoundary[i];
+                let fStartY = (i === 0) ? cokol + fLuzD : sb.yStart - (tBoard/2) + (luzFrontow/2);
+                let fEndY = (i === totalSpaces - 1) ? hBox - fLuzG : sb.yEnd + (tBoard/2) - (luzFrontow/2);
                 
-                if (qZaw === 1) {
-                    zawBaseFront.push({ y: fH/2, isTop: false });
+                if(sb.hasDrawers) {
+                    if(currentDoorBlock) { frontBlocks.push(currentDoorBlock); currentDoorBlock = null; }
+                    frontBlocks.push({ type: 'drawers', yStart: fStartY, yEnd: fEndY, qDrawers: sb.qDrawers });
                 } else {
-                    zawBaseFront.push({ y: zOffD, isTop: false }); 
-                    if (qZaw > 2) {
-                        let step = (fH - zOffG - zOffD) / (qZaw - 1);
-                        for (let i = 1; i < qZaw - 1; i++) zawBaseFront.push({ y: zOffD + i * step, isTop: false });
+                    if(!currentDoorBlock) {
+                        currentDoorBlock = { type: 'door', yStart: fStartY, yEnd: fEndY };
+                    } else {
+                        currentDoorBlock.yEnd = fEndY;
                     }
-                    zawBaseFront.push({ y: fH - zOffG, isTop: true }); 
                 }
-
-                zawBaseFront.forEach(zaw => {
-                    let mY = fLuzD + cokol + zaw.y; 
-                    let collision = true; let attempts = 0; let isShifted = false;
-                    
-                    while(collision && attempts < 15) {
-                        collision = false;
-                        for (let p of osie) {
-                            [-32, 0, 32].forEach(off => {
-                                if (Math.abs(mY - (p.osPrawdziwa + off)) < cMargin) {
-                                    collision = true;
-                                }
-                            });
-                        }
-                        if (collision) {
-                            isShifted = true;
-                            mY += zaw.isTop ? -32 : 32; 
-                        }
-                        attempts++;
-                    }
-                    
-                    let roundedBodyY = Math.round(mY);
-                    zawiasy.push({ 
-                        bodyY: roundedBodyY, 
-                        frontY: Math.round(roundedBodyY - cokol - fLuzD), 
-                        shifted: isShifted,
-                        isTop: zaw.isTop
-                    });
-                });
             }
+            if(currentDoorBlock) frontBlocks.push(currentDoorBlock);
 
-            // --- GENEROWANIE SVG W SKALI 1:1 ---
+            // Obliczanie detali pozycjonowania (Szuflady oraz wykrywanie kolizji z zawiasami drzwi)
+            frontBlocks.forEach(fb => {
+                let fH = fb.yEnd - fb.yStart;
+                
+                if(fb.type === 'drawers') {
+                    let dLuzTotal = (fb.qDrawers - 1) * luzFrontow;
+                    let dFrontH = (fH - dLuzTotal) / fb.qDrawers;
+                    fb.drawers = [];
+                    
+                    for(let j=0; j < fb.qDrawers; j++) {
+                        let dBottom = fb.yStart + j * (dFrontH + luzFrontow); 
+                        let dTop = dBottom + dFrontH;
+                        fb.drawers.push({ yStart: dBottom, yEnd: dTop, guideTop: dBottom + topHoleOffset, guideBottom: dBottom + 32 });
+                        drawerGuides.push({ axisYTop: dBottom + topHoleOffset, axisYBottom: dBottom + 32 });
+                    }
+                } 
+                else if(fb.type === 'door') {
+                    let hinges = [];
+                    if (qZaw > 0) {
+                        let hgBaseFront = [];
+                        if (qZaw === 1) {
+                            hgBaseFront.push({ offset: fH/2, isTop: false });
+                        } else {
+                            hgBaseFront.push({ offset: zOffD, isTop: false }); 
+                            if (qZaw > 2) {
+                                let step = (fH - zOffG - zOffD) / (qZaw - 1);
+                                for (let k = 1; k < qZaw - 1; k++) hgBaseFront.push({ offset: zOffD + k * step, isTop: false });
+                            }
+                            hgBaseFront.push({ offset: fH - zOffG, isTop: true }); 
+                        }
+                        
+                        hgBaseFront.forEach(hg => {
+                            let mY = fb.yStart + hg.offset; 
+                            let collision = true; let attempts = 0; let isShifted = false;
+                            
+                            while(collision && attempts < 15) {
+                                collision = false;
+                                // Kolizje z podpórkami półek
+                                for (let p of osie) {
+                                    [-32, 0, 32].forEach(off => {
+                                        if (Math.abs(mY - (p.osPrawdziwa + off)) < cMargin) collision = true;
+                                    });
+                                }
+                                // Kolizje z liniami nawiertów prowadnic szuflad
+                                for (let dg of drawerGuides) {
+                                    if (Math.abs(mY - dg.axisYTop) < cMargin || Math.abs(mY - dg.axisYBottom) < cMargin) {
+                                        collision = true;
+                                    }
+                                }
+                                
+                                if (collision) {
+                                    isShifted = true;
+                                    mY += hg.isTop ? -32 : 32; 
+                                }
+                                attempts++;
+                            }
+                            
+                            let roundedY = Math.round(mY);
+                            hinges.push({ bodyY: roundedY, frontY: Math.round(roundedY - fb.yStart), shifted: isShifted, isTop: hg.isTop });
+                        });
+                    }
+                    fb.hinges = hinges;
+                    doorZawiasy.push(...hinges);
+                }
+            });
+
+            // Generowanie rysunku SVG
             let sXCab = 0; let sXBok = wBox + 300; let sXFront = sXBok + dBox + 1200; 
             let viewTotalW = sFront ? (sXFront + wBox + 500) : (sXBok + dBox + 1300); 
             let viewTotalH = hBox + 300;         
@@ -481,7 +628,7 @@
 
             let innerX = sXCab + tBoard; let innerW = wBox - 2*tBoard; let centerX = sXCab + wBox/2;
             
-            // --- 1. RZUT KORPUSU ---
+            // --- 1. KORPUS ---
             let yBottomWieniec = hBox - tBoard - cokol;
             if(kTyp === 'wpuszczane') {
                 svg += `<rect x="${sXCab}" y="0" width="${tBoard}" height="${hBox}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/>`;
@@ -550,7 +697,7 @@
             }
 
             svg += `<line x1="${sXCab - 50}" y1="${hBox}" x2="${sXBok + dBox + 150}" y2="${hBox}" stroke="#333" stroke-width="3" stroke-dasharray="8,8" opacity="0.6"/>`;
-            svg += `<text x="${sXBok + dBox + 160}" y="${hBox + 8}" font-size="${fontL}" font-weight="bold" fill="#333" text-anchor="start">0 mm (DÓŁ BAZY)</text>`;
+            svg += `<text x="${sXBok + dBox + 160}" y="${hBox + 8}" font-size="${fontL}" font-weight="bold" fill="#333" text-anchor="start">0 mm (Baza Posadzki / Dół Korpusu)</text>`;
 
             if(kTyp === 'wpuszczane') {
                 svg += `<rect x="${sXBok}" y="0" width="${dBox}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" opacity="0.6" stroke-width="${lineW}"/>`;
@@ -561,14 +708,12 @@
                     svg += `<text x="${sXBok - 40}" y="${hBox - cokol/2 + 8}" font-size="${fontL}" font-weight="bold" fill="#1F4E79" text-anchor="end">Cokół: ${cokol}</text>`;
                 }
 
-                // Oś WIEŃCA DOLNEGO (Konfirmaty/Kołki)
-                let osWd = cokol + tBoard / 2; // Y from floor
+                let osWd = cokol + tBoard / 2; 
                 let svgOsWd = hBox - osWd;
                 let dimWdFromBottom = Math.round(osWd - sideBottom);
                 svg += `<line x1="${sXBok - 130}" y1="${svgOsWd}" x2="${sXBok}" y2="${svgOsWd}" stroke="#1F4E79" stroke-dasharray="6,6" stroke-width="2"/>`;
                 svg += `<text x="${sXBok - 140}" y="${svgOsWd + 8}" font-size="${fontL}" font-weight="bold" fill="#1F4E79" text-anchor="end">Oś wieńca: ${dimWdFromBottom}</text>`;
                 
-                // Oś WIEŃCA GÓRNEGO
                 let osWg = hBox - tBoard / 2;
                 let svgOsWg = hBox - osWg;
                 let dimWgFromBottom = Math.round(osWg - sideBottom);
@@ -580,10 +725,6 @@
                         svg += `<circle cx="${sXBok + x}" cy="${svgOsWd}" r="5" fill="#1F4E79"/>`;
                         svg += `<circle cx="${sXBok + x}" cy="${svgOsWg}" r="5" fill="#1F4E79"/>`;
                     });
-                    if (dBox >= 400) { 
-                        svg += `<circle cx="${sXBok + dBox/2}" cy="${svgOsWd}" r="5" fill="#1F4E79"/>`;
-                        svg += `<circle cx="${sXBok + dBox/2}" cy="${svgOsWg}" r="5" fill="#1F4E79"/>`;
-                    }
                 }
             }
 
@@ -591,7 +732,7 @@
                 let ySpodSVG = hBox - data.spod; 
                 svg += `<rect x="${sXBok}" y="${ySpodSVG - tBoard}" width="${dBox}" height="${tBoard}" fill="#2F5597" opacity="0.15"/>`;
                 
-                let osPolki = data.spod + (tBoard / 2); // Y from floor
+                let osPolki = data.spod + (tBoard / 2); 
                 let yOsPolkiSVG = hBox - osPolki;
                 let dimPolkaFromBottom = Math.round(osPolki - sideBottom);
                 
@@ -602,9 +743,8 @@
                 
                 if (sShelfHoles) {
                     [-32, 0, 32].forEach(offset => {
-                        let drillOs = data.os + offset; // Y from floor
+                        let drillOs = data.os + offset;
                         let drillY = hBox - drillOs; 
-                        
                         let dimFromBottom = Math.round(drillOs - sideBottom);
                         let dimFromTop = Math.round(sideTop - drillOs);
                         
@@ -635,17 +775,38 @@
                 }
             });
 
+            // --- NAWIERTY PROWADNIC SZUFLAD NA BOKU ---
+            drawerGuides.forEach((dg) => {
+                let dimTopFromBottom = Math.round(dg.axisYTop - sideBottom);
+                let dimBottomFromBottom = Math.round(dg.axisYBottom - sideBottom);
+                
+                if (sDrawerTopHoles) {
+                    let guideSvgYTop = hBox - dg.axisYTop;
+                    svg += `<line x1="${holeFrontX}" y1="${guideSvgYTop}" x2="${laneHingeAxis - 10}" y2="${guideSvgYTop}" stroke="#1F4E79" stroke-dasharray="2,2" stroke-width="3"/>`;
+                    svg += `<circle cx="${holeFrontX}" cy="${guideSvgYTop}" r="5" fill="#1F4E79"/>`;
+                    svg += `<circle cx="${holeBackX}" cy="${guideSvgYTop}" r="5" fill="#1F4E79"/>`; 
+                    svg += `<text x="${laneHingeAxis}" y="${guideSvgYTop + 8}" font-size="${fontL}" font-weight="bold" fill="#1F4E79" text-anchor="start">Otwór górny: ${dimTopFromBottom}</text>`;
+                }
+                
+                if (sDrawerBottomHoles) {
+                    let guideSvgYBottom = hBox - dg.axisYBottom;
+                    svg += `<line x1="${holeFrontX}" y1="${guideSvgYBottom}" x2="${laneHingeAxis - 10}" y2="${guideSvgYBottom}" stroke="#e65100" stroke-dasharray="2,2" stroke-width="3"/>`;
+                    svg += `<circle cx="${holeFrontX}" cy="${guideSvgYBottom}" r="5" fill="#e65100"/>`;
+                    svg += `<circle cx="${holeBackX}" cy="${guideSvgYBottom}" r="5" fill="#e65100"/>`; 
+                    svg += `<text x="${laneHingeAxis + 320}" y="${guideSvgYBottom + 8}" font-size="${fontL}" font-weight="bold" fill="#e65100" text-anchor="start">Dolny (32): ${dimBottomFromBottom}</text>`;
+                }
+            });
+
+            // --- ZAWIASY NA BOKU ---
             if ((sHingeAxis || sHingeHoles) && qZaw > 0) {
-                zawiasy.forEach(zaw => {
-                    let drillY = hBox - zaw.bodyY; // Rzeczywisty Y w SVG na rysunku boku
+                doorZawiasy.forEach(zaw => {
+                    let drillY = hBox - zaw.bodyY; 
                     let color = zaw.shifted ? "#9c27b0" : "#0288d1"; 
                     
                     if (sHingeAxis) {
                         svg += `<line x1="${holeFrontX - 20}" y1="${drillY}" x2="${laneHingeAxis - 10}" y2="${drillY}" stroke="${color}" stroke-dasharray="2,2" stroke-width="3"/>`;
-                        
                         let dimFromBottom = Math.round(zaw.bodyY - sideBottom);
                         let dimFromTop = Math.round(sideTop - zaw.bodyY);
-                        
                         let dimText = `${dimFromBottom} (${dimFromTop})`;
                         if (zaw.shifted) dimText += " [KOREKTA]";
                         
@@ -654,13 +815,10 @@
                     
                     if (sHingeHoles) {
                         [-16, 16].forEach(off => {
-                            let valY = zaw.bodyY + off; // Y from floor
+                            let valY = zaw.bodyY + off; 
                             let hy = hBox - valY; 
-                            
                             let dimFromBottom = Math.round(valY - sideBottom);
-                            let dimFromTop = Math.round(sideTop - valY);
-                            
-                            let dimText = `${dimFromBottom} (${dimFromTop})`;
+                            let dimText = `${dimFromBottom}`;
                             
                             svg += `<circle cx="${holeFrontX}" cy="${hy}" r="4" fill="${color}"/>`;
                             svg += `<line x1="${holeFrontX}" y1="${hy}" x2="${laneHingeHoles - 10}" y2="${hy}" stroke="${color}" stroke-dasharray="1,2" stroke-width="1.5"/>`;
@@ -672,34 +830,45 @@
 
             // --- 3. RZUT FRONTU ---
             if (sFront) {
-                let fH = hBox - cokol - fLuzD - fLuzG;
-                let fY = fLuzG; // Odległość od góry korpusu do początku frontu
+                svg += `<text x="${sXFront + wBox/2}" y="-80" font-size="36" font-weight="bold" fill="#2e7d32" text-anchor="middle">FRONT (Podział zewnętrzny)</text>`;
                 
-                svg += `<text x="${sXFront + wBox/2}" y="-80" font-size="36" font-weight="bold" fill="#2e7d32" text-anchor="middle">FRONT (Puszki)</text>`;
-                svg += `<rect x="${sXFront}" y="${fY}" width="${wBox}" height="${fH}" fill="#e2efda" stroke="#2e7d32" stroke-width="${lineW}"/>`;
-                
-                let baseF = hBox - cokol - fLuzD; // Poziom dolnej krawędzi frontu w SVG
+                let baseF = hBox - cokol - fLuzD; 
                 svg += `<line x1="${sXFront - 50}" y1="${baseF}" x2="${sXFront + wBox + 150}" y2="${baseF}" stroke="#2e7d32" stroke-width="3" stroke-dasharray="8,8" opacity="0.6"/>`;
                 svg += `<text x="${sXFront + wBox + 160}" y="${baseF + 8}" font-size="${fontL}" font-weight="bold" fill="#2e7d32" text-anchor="start">0 mm (DÓŁ FRONTU)</text>`;
                 
-                if (qZaw > 0) {
-                    zawiasy.forEach(zaw => {
-                        let cy = hBox - zaw.bodyY; // Rzeczywiste umiejscowienie na osi Y w SVG
-                        let color = zaw.shifted ? "#9c27b0" : "#2e7d32";
-                        let puszkaX = sXFront + 22; 
+                frontBlocks.forEach(fb => {
+                    let rectTopY = hBox - fb.yEnd; 
+                    let rectH = fb.yEnd - fb.yStart;
+                    
+                    if(fb.type === 'door') {
+                        svg += `<rect x="${sXFront}" y="${rectTopY}" width="${wBox}" height="${rectH}" fill="#e2efda" stroke="#2e7d32" stroke-width="${lineW}"/>`;
                         
-                        svg += `<circle cx="${puszkaX}" cy="${cy}" r="17.5" fill="none" stroke="${color}" stroke-width="3"/>`;
-                        svg += `<circle cx="${puszkaX}" cy="${cy}" r="3" fill="${color}"/>`;
-                        svg += `<line x1="${puszkaX}" y1="${cy}" x2="${sXFront + wBox + 60}" y2="${cy}" stroke="${color}" stroke-dasharray="4,4" stroke-width="2"/>`;
-                        
-                        let dimFromBottomFront = Math.round(zaw.frontY);
-                        let dimFromTopFront = Math.round(fH - zaw.frontY);
-                        
-                        let dimText = `${dimFromBottomFront} (${dimFromTopFront})`;
-                        if(zaw.shifted) dimText += " [KOREKTA]";
-                        svg += `<text x="${sXFront + wBox + 70}" y="${cy + 8}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">${dimText}</text>`;
-                    });
-                }
+                        fb.hinges.forEach(zaw => {
+                            let cy = hBox - zaw.bodyY; 
+                            let color = zaw.shifted ? "#9c27b0" : "#2e7d32";
+                            let puszkaX = sXFront + 22; 
+                            
+                            svg += `<circle cx="${puszkaX}" cy="${cy}" r="17.5" fill="none" stroke="${color}" stroke-width="3"/>`;
+                            svg += `<circle cx="${puszkaX}" cy="${cy}" r="3" fill="${color}"/>`;
+                            svg += `<line x1="${puszkaX}" y1="${cy}" x2="${sXFront + wBox + 60}" y2="${cy}" stroke="${color}" stroke-dasharray="4,4" stroke-width="2"/>`;
+                            
+                            let dimFromBottomFront = Math.round(zaw.frontY);
+                            let dimFromTopFront = Math.round(rectH - zaw.frontY);
+                            let dimText = `${dimFromBottomFront} (${dimFromTopFront})`;
+                            if(zaw.shifted) dimText += " [KOREKTA]";
+                            svg += `<text x="${sXFront + wBox + 70}" y="${cy + 8}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">${dimText}</text>`;
+                        });
+                    } else if(fb.type === 'drawers') {
+                        fb.drawers.forEach((dr, idx) => {
+                            let drTopY = hBox - dr.yEnd;
+                            let drH = dr.yEnd - dr.yStart;
+                            svg += `<rect x="${sXFront}" y="${drTopY}" width="${wBox}" height="${drH}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/>`;
+                            
+                            let fSizeLabel = Math.round(drH);
+                            svg += `<text x="${sXFront + wBox/2}" y="${drTopY + drH/2 + 8}" font-size="${fontM}" font-weight="bold" fill="#1F4E79" text-anchor="middle">Szuflada ${idx+1} (F: ${fSizeLabel}mm)</text>`;
+                        });
+                    }
+                });
             }
 
             svg += `</svg>`;
@@ -713,4 +882,8 @@
         };
     </script>
 </body>
-</html>
+</html>"""
+
+with open("kalkulator_szuflad.html", "w", encoding="utf-8") as f:
+    f.write(html_content)
+print("File generated successfully.")
