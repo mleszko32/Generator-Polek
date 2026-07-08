@@ -149,7 +149,10 @@
             <hr style="border: 0; border-top: 1px solid #ddd; margin: 20px 0;">
             <label>Nazwa do zapisu projektu:</label>
             <input type="text" id="cabName" value="Szafka z szufladami i półkami" placeholder="np. Szafka kuchenna lewa">
-            <button class="btn-primary" onclick="saveCabinet()">💾 Zapisz do Bazy</button>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-primary" onclick="saveCabinet()">💾 Zapisz jako nowy</button>
+                <button id="btnUpdate" class="btn-primary" style="display: none; background: #f57c00; border-color: #e65100;" onclick="updateCabinet()">🔄 Aktualizuj wczytany</button>
+            </div>
         </div>
         
         <div class="panel panel-right">
@@ -194,6 +197,7 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         let cloudCabinets = []; // Globalna pamięć na projekty z chmury
+        let currentLoadedDocId = null; // Pamięta ID aktualnie wczytanej szafki
         let zScale = 1; let panX = 0; let panY = 0; let isDragging = false; let startX = 0; let startY = 0;
         let spaceLocks = [];
         let structuralShelves = [];
@@ -262,6 +266,28 @@
         }
 
         function saveCabinet() {
+            function updateCabinet() {
+            if (!currentLoadedDocId) return;
+            
+            let cab = {
+                name: document.getElementById('cabName').value || `Szafka ${val('hBox')}x${val('wBox')}`,
+                kTyp: document.getElementById('kTyp').value,
+                hBox: val('hBox'), wBox: val('wBox'), dBox: val('dBox'),
+                qPol: val('qPol'), tBoard: val('tBoard'), offsetPodporki: val('offsetPodporki'), cokol: val('cokol'),
+                qZaw: val('qZaw'), autoZaw: document.getElementById('autoZaw').checked, zOffD: val('zOffD'), zOffG: val('zOffG'),
+                fLuzD: val('fLuzD'), fLuzG: val('fLuzG'), cMargin: val('cMargin'),
+                luzFrontow: val('luzFrontow'), drawerSystem: document.getElementById('drawerSystem').value,
+                customDrawerAxis: val('customDrawerAxis'),
+                spaceLocks: JSON.parse(JSON.stringify(spaceLocks)),
+                structuralShelves: JSON.parse(JSON.stringify(structuralShelves))
+            };
+            
+            db.collection("cabinets").doc(currentLoadedDocId).update(cab).then(() => {
+                alert("Projekt zaktualizowany pomyślnie w chmurze!");
+            }).catch((error) => {
+                alert("Błąd aktualizacji: " + error.message);
+            });
+        }
             let cab = {
                 id: Date.now(),
                 name: document.getElementById('cabName').value || `Szafka ${val('hBox')}x${val('wBox')}`,
@@ -324,6 +350,9 @@
             }));
 
             structuralShelves = cab.structuralShelves || new Array(val('qPol')).fill(false);
+            
+            currentLoadedDocId = docId;
+            document.getElementById('btnUpdate').style.display = 'block';
             
             run(); 
             window.scrollTo(0, 0); 
