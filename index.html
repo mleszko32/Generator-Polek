@@ -1,9 +1,9 @@
-html_content = """<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalkulator Formatek i Półek (Korekta Wieńca Szuflad)</title>
+    <title>Kalkulator Formatek i Półek (Bottom-Up Szuflady)</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f4f7f6; padding: 20px; color: #333; margin: 0; }
         .container { max-width: 1800px; margin: auto; display: flex; gap: 20px; flex-wrap: wrap; align-items: stretch; }
@@ -245,15 +245,15 @@ html_content = """<!DOCTYPE html>
                 spaceLocks: JSON.parse(JSON.stringify(spaceLocks))
             };
             
-            let saved = JSON.parse(localStorage.getItem('cad_cabinets_v4')) || [];
+            let saved = JSON.parse(localStorage.getItem('cad_cabinets_v5')) || [];
             saved.push(cab);
-            localStorage.setItem('cad_cabinets_v4', JSON.stringify(saved));
+            localStorage.setItem('cad_cabinets_v5', JSON.stringify(saved));
             renderSavedCabinets();
             alert("Projekt zapisany pomyślnie w bazie lokalnej!");
         }
 
         function loadCabinet(id) {
-            let saved = JSON.parse(localStorage.getItem('cad_cabinets_v4')) || [];
+            let saved = JSON.parse(localStorage.getItem('cad_cabinets_v5')) || [];
             let cab = saved.find(c => c.id === id);
             if(!cab) return;
 
@@ -283,7 +283,10 @@ html_content = """<!DOCTYPE html>
                 manualVal: s.manualVal || 0,
                 currentVal: s.currentVal || 0,
                 hasDrawers: s.hasDrawers || false,
-                qDrawers: s.qDrawers || 3
+                drawerMode: s.drawerMode || 'auto',
+                qDrawers: s.qDrawers || 3,
+                manualFronts: s.manualFronts || [200, 200, 200],
+                topGapToAxis: s.topGapToAxis !== undefined ? s.topGapToAxis : 12
             }));
             
             run(); 
@@ -292,14 +295,14 @@ html_content = """<!DOCTYPE html>
 
         function deleteCabinet(id) {
             if(!confirm("Czy na pewno chcesz usunąć ten zapisany szablon?")) return;
-            let saved = JSON.parse(localStorage.getItem('cad_cabinets_v4')) || [];
+            let saved = JSON.parse(localStorage.getItem('cad_cabinets_v5')) || [];
             saved = saved.filter(c => c.id !== id);
-            localStorage.setItem('cad_cabinets_v4', JSON.stringify(saved));
+            localStorage.setItem('cad_cabinets_v5', JSON.stringify(saved));
             renderSavedCabinets();
         }
 
         function renderSavedCabinets() {
-            let saved = JSON.parse(localStorage.getItem('cad_cabinets_v4')) || [];
+            let saved = JSON.parse(localStorage.getItem('cad_cabinets_v5')) || [];
             let listHtml = '';
             
             if (saved.length === 0) {
@@ -353,7 +356,8 @@ html_content = """<!DOCTYPE html>
             for(let i = 0; i < totalSpaces; i++) {
                 spaceLocks.push({ 
                     locked: false, manualVal: 0, currentVal: 0,
-                    hasDrawers: false, qDrawers: 4
+                    hasDrawers: false, drawerMode: 'auto', qDrawers: 3,
+                    manualFronts: [200, 200, 140], topGapToAxis: 12
                 });
             }
             hideError(); run();
@@ -377,9 +381,39 @@ html_content = """<!DOCTYPE html>
             run();
         }
         
+        function changeDrawerMode(index, mode) {
+            spaceLocks[index].drawerMode = mode;
+            if(mode === 'manual') spaceLocks[index].locked = true;
+            run();
+        }
+
         function updateDrawerCount(index, value) {
             let q = parseInt(value);
             if(!isNaN(q) && q > 0) spaceLocks[index].qDrawers = q;
+            run();
+        }
+
+        function updateManualFront(spaceIdx, frontIdx, value) {
+            let v = parseFloat(value);
+            if(!isNaN(v) && v > 0) spaceLocks[spaceIdx].manualFronts[frontIdx] = v;
+            run();
+        }
+
+        function addManualFront(spaceIdx) {
+            spaceLocks[spaceIdx].manualFronts.push(200);
+            run();
+        }
+
+        function removeManualFront(spaceIdx) {
+            if(spaceLocks[spaceIdx].manualFronts.length > 1) {
+                spaceLocks[spaceIdx].manualFronts.pop();
+            }
+            run();
+        }
+
+        function updateTopGap(spaceIdx, value) {
+            let v = parseFloat(value);
+            if(!isNaN(v)) spaceLocks[spaceIdx].topGapToAxis = v;
             run();
         }
 
@@ -420,9 +454,35 @@ html_content = """<!DOCTYPE html>
             let sDrawerBottomHoles = isChecked('sDrawerBottomHoles');
 
             let topHoleOffset = getTopHoleOffset();
+            let fLuzD = val('fLuzD'); let fLuzG = val('fLuzG'); let luzFrontow = val('luzFrontow');
+            
             let totalSpaces = qPol + 1;
             if(spaceLocks.length !== totalSpaces) { resetLocksAndRun(); return; }
 
+            // --- 1. PRE-KALKULACJA "BOTTOM-UP" DLA SZUFLAD WŁASNYCH ---
+            let facadeShift = 0;
+            for(let i = 0; i < totalSpaces; i++) {
+                if(spaceLocks[i].hasDrawers && spaceLocks[i].drawerMode === 'manual') {
+                    let sumFronts = spaceLocks[i].manualFronts.reduce((a,b)=>a+b, 0);
+                    let totalLuz = (spaceLocks[i].manualFronts.length - 1) * luzFrontow;
+                    
+                    let reqSpace = 0;
+                    if(i === 0) {
+                        reqSpace = fLuzD + sumFronts + totalLuz + spaceLocks[i].topGapToAxis - 1.5 * tBoard;
+                    } else {
+                        reqSpace = facadeShift + sumFronts + totalLuz + spaceLocks[i].topGapToAxis + (luzFrontow/2) - tBoard;
+                    }
+                    
+                    spaceLocks[i].locked = true;
+                    spaceLocks[i].manualVal = Math.round(reqSpace * 10) / 10;
+                    
+                    facadeShift = (luzFrontow / 2) - spaceLocks[i].topGapToAxis;
+                } else {
+                    facadeShift = 0; 
+                }
+            }
+
+            // --- 2. DYSTRYBUCJA WOLNEGO ŚWIATŁA (TOP-DOWN) ---
             let innerSpace = hBox - 2*tBoard - cokol;
             let usedSpace = 0; let unlockedCount = 0;
             for(let i = 0; i < totalSpaces; i++) {
@@ -451,7 +511,8 @@ html_content = """<!DOCTYPE html>
                 let isLocked = spaceLocks[i].locked;
                 let isOnlyUnlocked = (!isLocked && unlockedCount === 1);
                 let isDrawers = spaceLocks[i].hasDrawers;
-                let qDrawers = spaceLocks[i].qDrawers;
+                let drawerMode = spaceLocks[i].drawerMode;
+                let isManual = isDrawers && drawerMode === 'manual';
                 
                 let rowClass = 'space-row';
                 if (isLocked) rowClass += ' locked';
@@ -460,18 +521,63 @@ html_content = """<!DOCTYPE html>
                 
                 let btnClass = isLocked ? 'lock-btn locked' : 'lock-btn';
                 let btnText = isLocked ? '🔒 Odblokuj' : '🔓 Zablokuj';
-                let inputProps = isOnlyUnlocked ? 'readonly title="Wypadkowa"' : '';
-                let btnProps = isOnlyUnlocked ? 'disabled' : `onclick="toggleLock(${i})"`;
+                let inputProps = (isOnlyUnlocked || isManual) ? 'readonly' : '';
+                if(isOnlyUnlocked) inputProps += ' title="Wypadkowa (Auto)"';
+                if(isManual) inputProps += ' title="Zablokowane przez fronty (Bottom-Up)"';
+                
+                let btnProps = (isOnlyUnlocked || isManual) ? 'disabled' : `onclick="toggleLock(${i})"`;
                 if (isOnlyUnlocked) btnText = '⭐ Wypadkowa';
+                if (isManual) btnText = '🧱 Bottom-Up';
 
                 let drawerHtml = `
-                    <div style="margin-top: 6px; display: flex; gap: 8px; align-items: center;">
-                        <label style="cursor:pointer; display:flex; align-items:center; gap:4px; margin:0; font-weight:normal;">
-                            <input type="checkbox" ${isDrawers ? 'checked' : ''} onchange="toggleDrawers(${i})"> <b>Moduł Szuflad</b>
-                        </label>
-                        ${isDrawers ? `<input type="number" value="${qDrawers}" min="1" onchange="updateDrawerCount(${i}, this.value)" style="width: 55px; padding: 3px; text-align:center;"> szt.` : ''}
-                    </div>
+                    <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 4px; background: #fff; padding: 6px; border-radius: 4px; border: 1px solid #ddd;">
+                        <div style="display:flex; align-items:center; gap: 10px;">
+                            <label style="cursor:pointer; display:flex; align-items:center; gap:4px; margin:0; font-weight:normal; color:#1F4E79;">
+                                <input type="checkbox" ${isDrawers ? 'checked' : ''} onchange="toggleDrawers(${i})"> <b>Moduł Szuflad</b>
+                            </label>
+                            ${isDrawers ? `
+                                <select onchange="changeDrawerMode(${i}, this.value)" style="padding: 2px 5px; font-size:0.8rem; width:auto;">
+                                    <option value="auto" ${drawerMode==='auto'?'selected':''}>Równomiernie (Auto)</option>
+                                    <option value="manual" ${drawerMode==='manual'?'selected':''}>Własne fronty (Bottom-Up)</option>
+                                </select>
+                            ` : ''}
+                        </div>
                 `;
+
+                if (isDrawers) {
+                    if (drawerMode === 'auto') {
+                        drawerHtml += `
+                        <div style="display:flex; gap: 8px; align-items:center; margin-top:4px;">
+                            <span style="font-size:0.8rem;">Ilość:</span>
+                            <input type="number" value="${spaceLocks[i].qDrawers}" min="1" onchange="updateDrawerCount(${i}, this.value)" style="width: 50px; padding: 2px; text-align:center;">
+                            <span style="font-size:0.8rem;">szt.</span>
+                        </div>`;
+                    } else {
+                        drawerHtml += `<div style="font-size:0.8rem; margin-top:6px; border-top: 1px dashed #eee; padding-top:6px;">`;
+                        spaceLocks[i].manualFronts.forEach((mf, fIdx) => {
+                            let lbl = (fIdx === 0) ? `Front ${fIdx+1} (Dół)` : `Front ${fIdx+1}`;
+                            drawerHtml += `
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                    <span>${lbl}:</span>
+                                    <input type="number" value="${mf}" onchange="updateManualFront(${i}, ${fIdx}, this.value)" style="width: 60px; padding: 2px; text-align:center;">
+                                </div>
+                            `;
+                        });
+                        drawerHtml += `
+                            <div style="display:flex; gap:5px; margin-bottom: 8px;">
+                                <button type="button" onclick="addManualFront(${i})" style="flex:1; padding:2px;">+ Dodaj front</button>
+                                <button type="button" onclick="removeManualFront(${i})" style="flex:1; padding:2px;">- Usuń</button>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; background:#e8f0fe; padding:4px; border-radius:4px;">
+                                <span title="Dystans od krawędzi najwyższego frontu do osi półki nad szufladami">Luz do osi półki:</span>
+                                <div>
+                                    <input type="number" value="${spaceLocks[i].topGapToAxis}" onchange="updateTopGap(${i}, this.value)" style="width: 50px; padding: 2px; text-align:center;"> mm
+                                </div>
+                            </div>
+                        </div>`;
+                    }
+                }
+                drawerHtml += `</div>`;
 
                 controlsHtml += `
                     <div class="${rowClass}">
@@ -480,7 +586,7 @@ html_content = """<!DOCTYPE html>
                                 <label class="main-label">${label}</label>
                                 ${drawerHtml}
                             </div>
-                            <div class="space-input-group">
+                            <div class="space-input-group" style="align-self: flex-start; margin-top:5px;">
                                 <input type="number" value="${spaceLocks[i].currentVal}" onchange="handleSpaceInput(${i}, this.value)" ${inputProps}>
                                 <button class="${btnClass}" ${btnProps}>${btnText}</button>
                             </div>
@@ -489,7 +595,7 @@ html_content = """<!DOCTYPE html>
             }
             document.getElementById('spaceControls').innerHTML = controlsHtml;
 
-            // Koordynaty i osie wewnętrzne
+            // --- KOORDYNATY WNĘTRZA KORPUSU ---
             let offsetOdDolu = (kTyp === 'nakladane') ? cokol : tBoard + cokol;
             let osie = [];
             let spacesBoundary = []; 
@@ -500,6 +606,8 @@ html_content = """<!DOCTYPE html>
                 spacesBoundary.push({
                     index: i,
                     hasDrawers: spaceLocks[i].hasDrawers,
+                    drawerMode: spaceLocks[i].drawerMode,
+                    manualFronts: spaceLocks[i].manualFronts,
                     qDrawers: spaceLocks[i].qDrawers,
                     yStart: currentBottom, 
                     yEnd: currentBottom + h 
@@ -513,67 +621,95 @@ html_content = """<!DOCTYPE html>
                 }
             }
 
-            // Parametry frontów i rozkład stref
-            let qZaw = val('qZaw'); let zOffD = val('zOffD'); let zOffG = val('zOffG'); 
-            let fLuzD = val('fLuzD'); let fLuzG = val('fLuzG');
-            let luzFrontow = val('luzFrontow');
-            let cMargin = val('cMargin') || 35;
-            
+            // --- BUDOWANIE CIĄGŁEJ FASADY FRONTÓW ---
             let frontBlocks = [];
             let currentDoorBlock = null;
             let doorZawiasy = [];
             let drawerGuides = [];
+            let cMargin = val('cMargin') || 35;
             
-            // Mapowanie struktury frontów mebla
+            let facadeY = cokol + fLuzD;
+
             for(let i = 0; i < totalSpaces; i++) {
                 let sb = spacesBoundary[i];
-                let fStartY = (i === 0) ? cokol + fLuzD : sb.yStart - (tBoard/2) + (luzFrontow/2);
-                let fEndY = (i === totalSpaces - 1) ? hBox - fLuzG : sb.yEnd + (tBoard/2) - (luzFrontow/2);
+                let isTop = (i === totalSpaces - 1);
                 
-                if(sb.hasDrawers) {
-                    if(currentDoorBlock) { frontBlocks.push(currentDoorBlock); currentDoorBlock = null; }
+                let defaultEndY = isTop ? hBox - fLuzG : sb.yEnd + (tBoard/2) - (luzFrontow/2);
+                
+                if (sb.hasDrawers) {
+                    if (currentDoorBlock) { frontBlocks.push(currentDoorBlock); currentDoorBlock = null; }
+                    
+                    let blockEndY = defaultEndY;
+                    if (sb.drawerMode === 'manual') {
+                        let sumF = sb.manualFronts.reduce((a,b)=>a+b, 0);
+                        let totalL = (sb.manualFronts.length - 1) * luzFrontow;
+                        blockEndY = facadeY + sumF + totalL;
+                    }
+                    
                     frontBlocks.push({ 
                         type: 'drawers', 
-                        yStart: fStartY, 
-                        yEnd: fEndY, 
+                        drawerMode: sb.drawerMode,
+                        manualFronts: sb.manualFronts,
                         qDrawers: sb.qDrawers,
+                        yStart: facadeY, 
+                        yEnd: blockEndY, 
                         interiorBottom: sb.yStart 
                     });
+                    facadeY = blockEndY + luzFrontow;
                 } else {
-                    if(!currentDoorBlock) {
-                        currentDoorBlock = { type: 'door', yStart: fStartY, yEnd: fEndY };
+                    if (!currentDoorBlock) {
+                        currentDoorBlock = { type: 'door', yStart: facadeY, yEnd: defaultEndY };
                     } else {
-                        currentDoorBlock.yEnd = fEndY;
+                        currentDoorBlock.yEnd = defaultEndY;
                     }
+                    facadeY = defaultEndY + luzFrontow;
                 }
             }
             if(currentDoorBlock) frontBlocks.push(currentDoorBlock);
 
-            // Obliczanie detali pozycjonowania (Szuflady oraz wykrywanie kolizji z zawiasami drzwi)
+            // Obliczanie detali wewnątrz bloków frontów
+            let qZaw = val('qZaw'); let zOffD = val('zOffD'); let zOffG = val('zOffG'); 
+
             frontBlocks.forEach(fb => {
-                let fH = fb.yEnd - fb.yStart;
+                let fH_total = fb.yEnd - fb.yStart;
                 
                 if(fb.type === 'drawers') {
-                    let dLuzTotal = (fb.qDrawers - 1) * luzFrontow;
-                    let dFrontH = (fH - dLuzTotal) / fb.qDrawers;
                     fb.drawers = [];
-                    
-                    for(let j=0; j < fb.qDrawers; j++) {
-                        let dBottom = fb.yStart + j * (dFrontH + luzFrontow); 
-                        let dTop = dBottom + dFrontH;
-                        
-                        let guideTopY = dBottom + topHoleOffset;
-                        let guideBottomY = dBottom + 32;
-                        
-                        // KOREKTA WIEŃCA: Prowadnica fizycznie stoi na/odnosi się do wieńca (wnętrza szafki).
-                        // Pierwsza szuflada nie może mieć prowadnicy niżej niż pozwala na to grubość wieńca.
-                        if (j === 0) {
-                            guideTopY = Math.max(guideTopY, fb.interiorBottom + topHoleOffset);
-                            guideBottomY = Math.max(guideBottomY, fb.interiorBottom + 32);
+                    if (fb.drawerMode === 'manual') {
+                        let currY = fb.yStart;
+                        for(let j=0; j < fb.manualFronts.length; j++) {
+                            let fH = fb.manualFronts[j];
+                            let dTop = currY + fH;
+                            
+                            let guideTopY = currY + topHoleOffset;
+                            let guideBottomY = currY + 32;
+                            
+                            if (j === 0) { // Zabezpieczenie pierwszej szuflady względem wieńca
+                                guideTopY = Math.max(guideTopY, fb.interiorBottom + topHoleOffset);
+                                guideBottomY = Math.max(guideBottomY, fb.interiorBottom + 32);
+                            }
+                            fb.drawers.push({ yStart: currY, yEnd: dTop, guideTop: guideTopY, guideBottom: guideBottomY });
+                            drawerGuides.push({ axisYTop: guideTopY, axisYBottom: guideBottomY });
+                            currY = dTop + luzFrontow;
                         }
+                    } else { // AUTO
+                        let dLuzTotal = (fb.qDrawers - 1) * luzFrontow;
+                        let dFrontH = (fH_total - dLuzTotal) / fb.qDrawers;
                         
-                        fb.drawers.push({ yStart: dBottom, yEnd: dTop, guideTop: guideTopY, guideBottom: guideBottomY });
-                        drawerGuides.push({ axisYTop: guideTopY, axisYBottom: guideBottomY });
+                        let currY = fb.yStart;
+                        for(let j=0; j < fb.qDrawers; j++) {
+                            let dTop = currY + dFrontH;
+                            let guideTopY = currY + topHoleOffset;
+                            let guideBottomY = currY + 32;
+                            
+                            if (j === 0) {
+                                guideTopY = Math.max(guideTopY, fb.interiorBottom + topHoleOffset);
+                                guideBottomY = Math.max(guideBottomY, fb.interiorBottom + 32);
+                            }
+                            fb.drawers.push({ yStart: currY, yEnd: dTop, guideTop: guideTopY, guideBottom: guideBottomY });
+                            drawerGuides.push({ axisYTop: guideTopY, axisYBottom: guideBottomY });
+                            currY = dTop + luzFrontow;
+                        }
                     }
                 } 
                 else if(fb.type === 'door') {
@@ -581,14 +717,14 @@ html_content = """<!DOCTYPE html>
                     if (qZaw > 0) {
                         let hgBaseFront = [];
                         if (qZaw === 1) {
-                            hgBaseFront.push({ offset: fH/2, isTop: false });
+                            hgBaseFront.push({ offset: fH_total/2, isTop: false });
                         } else {
                             hgBaseFront.push({ offset: zOffD, isTop: false }); 
                             if (qZaw > 2) {
-                                let step = (fH - zOffG - zOffD) / (qZaw - 1);
+                                let step = (fH_total - zOffG - zOffD) / (qZaw - 1);
                                 for (let k = 1; k < qZaw - 1; k++) hgBaseFront.push({ offset: zOffD + k * step, isTop: false });
                             }
-                            hgBaseFront.push({ offset: fH - zOffG, isTop: true }); 
+                            hgBaseFront.push({ offset: fH_total - zOffG, isTop: true }); 
                         }
                         
                         hgBaseFront.forEach(hg => {
@@ -597,26 +733,22 @@ html_content = """<!DOCTYPE html>
                             
                             while(collision && attempts < 15) {
                                 collision = false;
-                                // Kolizje z podpórkami półek
                                 for (let p of osie) {
                                     [-32, 0, 32].forEach(off => {
                                         if (Math.abs(mY - (p.osPrawdziwa + off)) < cMargin) collision = true;
                                     });
                                 }
-                                // Kolizje z liniami nawiertów prowadnic szuflad
                                 for (let dg of drawerGuides) {
                                     if (Math.abs(mY - dg.axisYTop) < cMargin || Math.abs(mY - dg.axisYBottom) < cMargin) {
                                         collision = true;
                                     }
                                 }
-                                
                                 if (collision) {
                                     isShifted = true;
                                     mY += hg.isTop ? -32 : 32; 
                                 }
                                 attempts++;
                             }
-                            
                             let roundedY = Math.round(mY);
                             hinges.push({ bodyY: roundedY, frontY: Math.round(roundedY - fb.yStart), shifted: isShifted, isTop: hg.isTop });
                         });
@@ -626,7 +758,7 @@ html_content = """<!DOCTYPE html>
                 }
             });
 
-            // Generowanie rysunku SVG
+            // --- GENEROWANIE SVG ---
             let sXCab = 0; let sXBok = wBox + 300; let sXFront = sXBok + dBox + 1200; 
             let viewTotalW = sFront ? (sXFront + wBox + 500) : (sXBok + dBox + 1300); 
             let viewTotalH = hBox + 300;         
@@ -899,8 +1031,4 @@ html_content = """<!DOCTYPE html>
         };
     </script>
 </body>
-</html>"""
-
-with open("kalkulator_szuflad_v2.html", "w", encoding="utf-8") as f:
-    f.write(html_content)
-print("File generated successfully.")
+</html>
