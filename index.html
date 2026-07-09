@@ -232,14 +232,7 @@
                 lengths: [250, 300, 350, 400, 450, 500, 550, 600], 
                 ltRequired: 5, 
                 yHolesMap: { 
-                    250: [96], 
-                    300: [128], 
-                    350: [128], 
-                    400: [192], 
-                    450: [192], 
-                    500: [224], 
-                    550: [224], 
-                    600: [224, 352] 
+                    250: [96], 300: [128], 350: [128], 400: [192], 450: [192], 500: [224], 550: [224], 600: [224, 352] 
                 }, 
                 types: [ 
                     { id: "A", label: "A (Niska)", minFront: 105 }, 
@@ -254,14 +247,7 @@
                 lengths: [270, 300, 350, 400, 450, 500, 550, 600], 
                 ltRequired: 3, 
                 yHolesMap: { 
-                    270: [96], 
-                    300: [128], 
-                    350: [128], 
-                    400: [192], 
-                    450: [192, 256], 
-                    500: [224, 288], 
-                    550: [224, 352], 
-                    600: [224, 384] 
+                    270: [96], 300: [128], 350: [128], 400: [192], 450: [192, 256], 500: [224, 288], 550: [224, 352], 600: [224, 384] 
                 }, 
                 types: [ 
                     { id: "N", label: "N (B. Niska)", minFront: 85.5 }, 
@@ -276,15 +262,7 @@
                 lengths: [270, 300, 350, 400, 450, 500, 550, 600, 650], 
                 ltRequired: 3, 
                 yHolesMap: { 
-                    270: [96], 
-                    300: [128], 
-                    350: [128], 
-                    400: [192], 
-                    450: [192, 288], 
-                    500: [224, 288], 
-                    550: [224, 384], 
-                    600: [224, 384], 
-                    650: [224, 384, 480] 
+                    270: [96], 300: [128], 350: [128], 400: [192], 450: [192, 288], 500: [224, 288], 550: [224, 384], 600: [224, 384], 650: [224, 384, 480] 
                 }, 
                 types: [ 
                     { id: "N", label: "N (B. Niska)", minFront: 82.5 }, 
@@ -1002,12 +980,14 @@
             svg += `<text x="${sXBok - 20}" y="${hBox/2}" font-size="${fontM}" font-weight="bold" fill="#888" text-anchor="middle" transform="rotate(-90 ${sXBok - 20} ${hBox/2})">TYŁ BOKU</text><text x="${sXBok + dBox + 20}" y="${hBox/2}" font-size="${fontM}" font-weight="bold" fill="#888" text-anchor="middle" transform="rotate(90 ${sXBok + dBox + 20} ${hBox/2})">PRZÓD BOKU</text>`; 
              
             // --- RYSOWANIE PLECÓW I FRONTÓW NA WIDOKU BOKU (WIZUALIZACJA) ---
+            // Zastosowano cieńszą ramkę (stroke-width="1") aby nie nachodziła wizualnie na obrys boku.
             let plecyX_Bok = (backType === 'nut') ? (sXBok + nutDepth) : (sXBok - grPlecy);
-            svg += `<rect x="${plecyX_Bok}" y="${hBox - sideTop}" width="${grPlecy}" height="${sideTop - sideBottom}" fill="#e0e0e0" stroke="#757575" stroke-width="1.5" stroke-dasharray="4,2" class="hide-on-print"/>`;
+            svg += `<rect x="${plecyX_Bok}" y="${hBox - sideTop}" width="${grPlecy}" height="${sideTop - sideBottom}" fill="#e0e0e0" stroke="#757575" stroke-width="1" class="hide-on-print"/>`;
 
             let grFrontuWizualna = 18;
-            let frontX_Bok = (kTyp === 'wpuszczane') ? (sXBok + dBox - grFrontuWizualna) : (sXBok + dBox);
-            svg += `<rect x="${frontX_Bok}" y="${hBox - sideTop}" width="${grFrontuWizualna}" height="${sideTop - sideBottom}" fill="#e2efda" stroke="#2e7d32" stroke-width="1.5" stroke-dasharray="2,2" opacity="0.6" class="hide-on-print"/>`;
+            // FRONT: Rysowany zawsze CAŁKOWICIE POZA wymiarem boku (sXBok + dBox) – nigdy nie wejdzie do środka boku.
+            let frontX_Bok = sXBok + dBox;
+            svg += `<rect x="${frontX_Bok}" y="${hBox - sideTop}" width="${grFrontuWizualna}" height="${sideTop - sideBottom}" fill="#e2efda" stroke="#2e7d32" stroke-width="1" opacity="0.8" class="hide-on-print"/>`;
             
             let laneHingeHoles = sXBok + dBox + 40;  
             let laneShelfHoles = sXBok + dBox + 150; 
