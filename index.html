@@ -106,6 +106,7 @@
                 <label><input type="checkbox" id="sFront" checked onchange="run()"> Rzut Frontu</label> 
                 <label><input type="checkbox" id="sDrawerTopHoles" checked onchange="run()"> Szuflada - Otwór montażowy</label> 
                 <label><input type="checkbox" id="sDrawerYDim" checked onchange="run()"> Szuflada - Rozstawy w poziomie (Y)</label> 
+                <label style="color:#d32f2f; font-weight:bold; grid-column: span 2;"><input type="checkbox" id="rcMode" onchange="run()"> 🛠 Matryca RC (System 32) [Korekta Liniału]</label>
             </div> 
  
             <h3>Parametry Korpusu</h3> 
@@ -121,7 +122,7 @@
                     </select> 
                 </div> 
                 <div><label>Wysokość cokołu</label><input type="number" id="cokol" value="100" min="0" oninput="run()"></div> 
-                <div><label>Offset podpórki (Dół)</label><input type="number" id="offsetPodporki" value="3" oninput="run()"></div> 
+                <div><label>Offset podpórki (Dół)</label><input type="number" id="offsetPodporki" value="0" oninput="run()"></div> 
                 <div><label>Grubość płyty (korpus)</label><input type="number" id="tBoard" value="18" min="0" oninput="run()"></div> 
                 <div><label>Konstrukcja pleców</label> 
                     <select id="backType" onchange="toggleBackFields(); run();"> 
@@ -627,6 +628,9 @@
             let backType = document.getElementById('backType').value; 
             let nutDepth = val('nutDepth'); 
             let grPlecy = val('grPlecy');
+            
+            // --- TRYB MATRYCY RC ---
+            let rcMode = isChecked('rcMode');
  
             let sClearance = isChecked('sClearance'); let sShelfAxis = isChecked('sShelfAxis'); 
             let sShelfHoles = isChecked('sShelfHoles'); let sDistances = isChecked('sDistances'); 
@@ -980,12 +984,10 @@
             svg += `<text x="${sXBok - 20}" y="${hBox/2}" font-size="${fontM}" font-weight="bold" fill="#888" text-anchor="middle" transform="rotate(-90 ${sXBok - 20} ${hBox/2})">TYŁ BOKU</text><text x="${sXBok + dBox + 20}" y="${hBox/2}" font-size="${fontM}" font-weight="bold" fill="#888" text-anchor="middle" transform="rotate(90 ${sXBok + dBox + 20} ${hBox/2})">PRZÓD BOKU</text>`; 
              
             // --- RYSOWANIE PLECÓW I FRONTÓW NA WIDOKU BOKU (WIZUALIZACJA) ---
-            // Zastosowano cieńszą ramkę (stroke-width="1") aby nie nachodziła wizualnie na obrys boku.
             let plecyX_Bok = (backType === 'nut') ? (sXBok + nutDepth) : (sXBok - grPlecy);
             svg += `<rect x="${plecyX_Bok}" y="${hBox - sideTop}" width="${grPlecy}" height="${sideTop - sideBottom}" fill="#e0e0e0" stroke="#757575" stroke-width="1" class="hide-on-print"/>`;
 
             let grFrontuWizualna = 18;
-            // FRONT: Rysowany zawsze CAŁKOWICIE POZA wymiarem boku (sXBok + dBox) – nigdy nie wejdzie do środka boku.
             let frontX_Bok = sXBok + dBox;
             svg += `<rect x="${frontX_Bok}" y="${hBox - sideTop}" width="${grFrontuWizualna}" height="${sideTop - sideBottom}" fill="#e2efda" stroke="#2e7d32" stroke-width="1" opacity="0.8" class="hide-on-print"/>`;
             
@@ -1021,18 +1023,37 @@
                     if (isStruct) svg += drawStructuralHoles(yOsPolkiSVG); 
                     else [-32, 0, 32].forEach(offset => { 
                         let drillY = hBox - (data.os + offset); let isCenter = offset === 0; let color = isCenter ? "#e65100" : "#ffb74d"; 
-                        svg += `<circle cx="${hFrontX}" cy="${drillY}" r="${isCenter ? 5 : 4}" fill="${color}"/><circle cx="${hBackX}" cy="${drillY}" r="${isCenter ? 5 : 4}" fill="${color}"/><line x1="${hFrontX}" y1="${drillY}" x2="${laneShelfHoles - 10}" y2="${drillY}" stroke="${color}" stroke-dasharray="4,4" stroke-width="1.5"/><text x="${laneShelfHoles}" y="${drillY + 8}" font-size="${isCenter ? fontL : fontM}" font-weight="${isCenter ? "bold" : "normal"}" fill="${color}" text-anchor="start">${Math.round(data.os + offset - sideBottom)} (${Math.round(sideTop - (data.os + offset))})</text>`; 
+                        let absDist = Math.round(data.os + offset - sideBottom);
+                        let topDist = Math.round(sideTop - (data.os + offset));
+                        let txtDisplay = `${absDist}`;
+                        if (rcMode) txtDisplay += ` [M: ${absDist - 32}]`;
+                        txtDisplay += ` (${topDist})`;
+
+                        svg += `<circle cx="${hFrontX}" cy="${drillY}" r="${isCenter ? 5 : 4}" fill="${color}"/><circle cx="${hBackX}" cy="${drillY}" r="${isCenter ? 5 : 4}" fill="${color}"/><line x1="${hFrontX}" y1="${drillY}" x2="${laneShelfHoles - 10}" y2="${drillY}" stroke="${color}" stroke-dasharray="4,4" stroke-width="1.5"/><text x="${laneShelfHoles}" y="${drillY + 8}" font-size="${isCenter ? fontL : fontM}" font-weight="${isCenter ? "bold" : "normal"}" fill="${color}" text-anchor="start">${txtDisplay}</text>`; 
                     }); 
                 } 
                  
-                if (sDistances && i > 0 && !isStruct && !structuralShelves[i-1]) { 
-                    let yPrevHoleSVG = hBox - osie[i-1].os; 
+                if (sDistances && !isStruct) { 
+                    let isFirst = (i === 0 || structuralShelves[i-1]);
+                    let yPrevHoleSVG = isFirst ? (hBox - sideBottom) : (hBox - osie[i-1].os); 
                     let yCurrHoleSVG = hBox - data.os; 
+                    let actualDist = Math.abs(Math.round(yPrevHoleSVG - yCurrHoleSVG));
                     let freeDimLineX = hFrontX - 35; 
                      
                     svg += `<line x1="${freeDimLineX}" y1="${yPrevHoleSVG}" x2="${freeDimLineX}" y2="${yCurrHoleSVG}" stroke="#e65100" stroke-width="1.5" marker-start="url(#arrow)" marker-end="url(#arrow)"/>`; 
-                    svg += `<rect x="${freeDimLineX - 25}" y="${(yPrevHoleSVG + yCurrHoleSVG)/2 - 14}" width="50" height="28" fill="#ffffff" stroke="#e65100" stroke-width="1" rx="4"/>`; 
-                    svg += `<text x="${freeDimLineX}" y="${(yPrevHoleSVG + yCurrHoleSVG)/2 + 7}" font-size="${fontS}" font-weight="bold" fill="#e65100" text-anchor="middle">${Math.abs(Math.round(yPrevHoleSVG - yCurrHoleSVG))}</text>`; 
+                    
+                    let rcOffset = isFirst ? 32 : 34.5;
+                    let displayTxt = actualDist;
+                    let boxW = 50;
+                    let fSize = fontS;
+                    if (rcMode) {
+                        displayTxt = `${actualDist} (M:${actualDist - rcOffset})`;
+                        boxW = 125;
+                        fSize = fontS - 4;
+                    }
+
+                    svg += `<rect x="${freeDimLineX - boxW/2}" y="${(yPrevHoleSVG + yCurrHoleSVG)/2 - 14}" width="${boxW}" height="28" fill="#ffffff" stroke="#e65100" stroke-width="1" rx="4"/>`; 
+                    svg += `<text x="${freeDimLineX}" y="${(yPrevHoleSVG + yCurrHoleSVG)/2 + 7}" font-size="${fSize}" font-weight="bold" fill="#e65100" text-anchor="middle">${displayTxt}</text>`; 
                 } 
             }); 
  
@@ -1040,8 +1061,14 @@
                 let yT = hBox - dg.axisYTop; 
                  
                 if (sDrawerTopHoles) { 
-                    svg += `<rect x="${laneHingeAxis}" y="${yT - 20}" width="380" height="38" fill="#f0f4f8" stroke="#1F4E79" stroke-width="1.5" rx="6"/>`; 
-                    svg += `<text x="${laneHingeAxis + 15}" y="${yT + 7}" font-size="${fontM}" font-weight="bold" fill="#1F4E79" text-anchor="start">Oś prowadnicy: ${Math.round(dg.axisYTop - sideBottom)} [NL: ${dg.currentNL}]</text>`; 
+                    svg += `<rect x="${laneHingeAxis}" y="${yT - 20}" width="420" height="38" fill="#f0f4f8" stroke="#1F4E79" stroke-width="1.5" rx="6"/>`; 
+                    
+                    let valAbs = Math.round(dg.axisYTop - sideBottom);
+                    let txtDisplay = `Oś prowadnicy: ${valAbs}`;
+                    if (rcMode) txtDisplay += ` [M: ${valAbs - 32}]`;
+                    txtDisplay += ` [NL: ${dg.currentNL}]`;
+
+                    svg += `<text x="${laneHingeAxis + 15}" y="${yT + 7}" font-size="${fontM}" font-weight="bold" fill="#1F4E79" text-anchor="start">${txtDisplay}</text>`; 
                      
                     let holesArray = sysDB.yHolesMap[dg.currentNL] || []; 
                     let firstHoleX = sXBok + dBox - 37; 
@@ -1069,7 +1096,13 @@
             if ((sHingeAxis || sHingeHoles) && (isAutoZaw || globalQZaw > 0)) { 
                 doorZawiasy.forEach(zaw => { 
                     let drillY = hBox - zaw.bodyY; let color = zaw.shifted ? "#9c27b0" : "#0288d1";  
-                    if (sHingeAxis) svg += `<line x1="${hFrontX - 20}" y1="${drillY}" x2="${laneHingeAxis - 10}" y2="${drillY}" stroke="${color}" stroke-dasharray="2,2" stroke-width="2"/><text x="${laneHingeAxis}" y="${drillY + 8}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">Prowadnik: ${Math.round(zaw.bodyY - sideBottom)} (${Math.round(sideTop - zaw.bodyY)})${zaw.shifted ? " [KOREKTA]" : ""}</text>`; 
+                    let valAbs = Math.round(zaw.bodyY - sideBottom);
+                    let topAbs = Math.round(sideTop - zaw.bodyY);
+                    let txtDisplay = `Prowadnik: ${valAbs}`;
+                    if (rcMode) txtDisplay += ` [M: ${valAbs - 32}]`;
+                    txtDisplay += ` (${topAbs})${zaw.shifted ? " [KOREKTA]" : ""}`;
+
+                    if (sHingeAxis) svg += `<line x1="${hFrontX - 20}" y1="${drillY}" x2="${laneHingeAxis - 10}" y2="${drillY}" stroke="${color}" stroke-dasharray="2,2" stroke-width="2"/><text x="${laneHingeAxis}" y="${drillY + 8}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">${txtDisplay}</text>`; 
                     if (sHingeHoles) [-16, 16].forEach(off => { 
                         let hy = hBox - (zaw.bodyY + off); 
                         svg += `<circle cx="${hFrontX}" cy="${hy}" r="4" fill="${color}"/><line x1="${hFrontX}" y1="${hy}" x2="${laneHingeHoles - 10}" y2="${hy}" stroke="${color}" stroke-dasharray="1,2" stroke-width="1.5"/><text x="${laneHingeHoles}" y="${hy + 8}" font-size="${fontM}" fill="${color}" text-anchor="start">${Math.round(zaw.bodyY + off - sideBottom)}</text>`; 
