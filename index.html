@@ -245,6 +245,7 @@
  
     <div id="printArea"></div> 
     
+    <!-- Modal dla Listy Formatek -->
     <div id="cutListModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -482,6 +483,7 @@
                     currentVal: s.currentVal || 0, 
                     hasDrawers: s.hasDrawers || false,
                     frontType: s.frontType || (s.hasDrawers ? 'drawers' : 'merged'),
+                    frontLayout: s.frontLayout || 'full',
                     drawerMode: s.drawerMode || 'auto', 
                     qDrawers: s.qDrawers || 3, 
                     manualFronts: mFronts, 
@@ -548,7 +550,7 @@
             for(let i = 0; i < totalSpaces; i++) { 
                 spaceLocks.push({  
                     locked: false, manualVal: 0, currentVal: 0, 
-                    hasDrawers: false, frontType: 'merged', drawerMode: 'auto', qDrawers: 3, 
+                    hasDrawers: false, frontType: 'merged', frontLayout: 'full', drawerMode: 'auto', qDrawers: 3, 
                     manualFronts: [ 
                         { height: 200, type: dbSys.default }, 
                         { height: 200, type: dbSys.default }, 
@@ -582,6 +584,11 @@
                 spaceLocks[index].frontType = type; 
             } 
             run(); 
+        }
+        
+        function changeFrontLayout(index, layout) {
+            spaceLocks[index].frontLayout = layout;
+            run();
         }
          
         function toggleStructural(index) { structuralShelves[index] = !structuralShelves[index]; run(); } 
@@ -756,32 +763,36 @@
                 parts.push({ gr: tBoard, mat: "Płyta", nazwa: "Półka ruchoma", l: wBox - 2*tBoard - 1, w: dBox - offsetPodporki, szt: polkiRuchome.length });
             }
 
-            let fW = wBox - luzFrontow; 
-            for(let i = 0; i < totalSpaces; i++) {
-                if(spaceLocks[i].hasDrawers) {
-                    if(spaceLocks[i].drawerMode === 'manual') {
-                        spaceLocks[i].manualFronts.forEach((mf, idx) => {
-                            parts.push({ gr: 18, mat: "Płyta", nazwa: `Front szuflady ${idx+1} (Wnęka ${i+1})`, l: Math.round(mf.height), w: Math.round(fW), szt: 1 });
+            // Rozpis formatek frontowych oparty na gotowych wyrenderowanych blokach (niezawodny przy scalonych frontach)
+            if (window.lastFrontBlocks) {
+                window.lastFrontBlocks.forEach((fb, idx) => {
+                    let layout = fb.layout || 'full';
+                    if (layout === 'none') return;
+                    
+                    let fW = (layout === 'double' || layout === 'left' || layout === 'right') ? (wBox - 2*luzFrontow) / 2 : wBox - luzFrontow;
+                    let qtyMult = (layout === 'double') ? 2 : 1;
+                    let layoutText = layout === 'left' ? " (Lewy)" : (layout === 'right' ? " (Prawy)" : (layout === 'double' ? " (L+P)" : ""));
+
+                    if (fb.type === 'door') {
+                        let rectH = fb.yEnd - fb.yStart;
+                        parts.push({ gr: 18, mat: "Płyta", nazwa: `Front Drzwi${layoutText}`, l: Math.round(rectH), w: Math.round(fW), szt: 1 * qtyMult });
+                    } else if (fb.type === 'drawers') {
+                        fb.drawers.forEach((dr, dIdx) => {
+                            let drH = dr.yEnd - dr.yStart;
+                            parts.push({ gr: 18, mat: "Płyta", nazwa: `Front Szuflady ${dIdx+1}${layoutText}`, l: Math.round(drH), w: Math.round(fW), szt: 1 * qtyMult });
                         });
-                    } else {
-                        let fH_total = spaceLocks[i].currentVal; 
-                        let qD = spaceLocks[i].qDrawers;
-                        let dFrontH = (fH_total - ((qD - 1) * luzFrontow)) / qD;
-                        parts.push({ gr: 18, mat: "Płyta", nazwa: `Front szuflady (Wnęka ${i+1})`, l: Math.round(dFrontH), w: Math.round(fW), szt: qD });
                     }
-                } else if(spaceLocks[i].frontType === 'single') {
-                    parts.push({ gr: 18, mat: "Płyta", nazwa: `Front osobny (Wnęka ${i+1})`, l: Math.round(spaceLocks[i].currentVal), w: Math.round(fW), szt: 1 });
-                }
+                });
             }
             
             let tableHtml = `<table class="cut-table">
                 <thead>
                     <tr>
                         <th>Nazwa Elementu</th>
-                        <th>Długość (wymiar po usłojeniu)</th>
-                        <th>Szerokość</th>
+                        <th>Wymiar - Wysokość (H)</th>
+                        <th>Wymiar - Szerokość (W)</th>
                         <th>Grubość</th>
-                        <th>Ilość sztuk</th>
+                        <th>Ilość</th>
                     </tr>
                 </thead>
                 <tbody>`;
@@ -845,7 +856,7 @@
             while(spaceLocks.length < totalSpaces) {
                 spaceLocks.push({  
                     locked: false, manualVal: 0, currentVal: 0, 
-                    hasDrawers: false, frontType: 'merged', drawerMode: 'auto', qDrawers: 3, 
+                    hasDrawers: false, frontType: 'merged', frontLayout: 'full', drawerMode: 'auto', qDrawers: 3, 
                     manualFronts: [ 
                         { height: 200, type: sysDB.default }, 
                         { height: 200, type: sysDB.default }, 
@@ -919,13 +930,25 @@
                 let drawerHtml = ` 
                     <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 4px; background: #fff; padding: 6px; border-radius: 4px; border: 1px solid #ddd;"> 
                         <div style="display:flex; align-items:center; justify-content:space-between; gap: 10px;"> 
-                            <div style="display:flex; align-items:center; gap: 6px;">
-                                <span style="font-size:0.8rem; font-weight:bold; color:#1F4E79;">Typ frontu:</span>
-                                <select onchange="changeFrontType(${i}, this.value)" style="padding: 2px 4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px; outline:none; background:#f9fbfd;">
-                                    <option value="merged" ${spaceLocks[i].frontType === 'merged' || (!spaceLocks[i].frontType && !spaceLocks[i].hasDrawers) ? 'selected' : ''}>🚪 Razem (Drzwi)</option>
-                                    <option value="single" ${spaceLocks[i].frontType === 'single' ? 'selected' : ''}>🚪 Osobny (Drzwi)</option>
-                                    <option value="drawers" ${spaceLocks[i].hasDrawers ? 'selected' : ''}>🗄️ Szuflady</option>
-                                </select>
+                            <div style="display:flex; align-items:center; gap: 15px;">
+                                <div style="display:flex; align-items:center; gap: 6px;">
+                                    <span style="font-size:0.8rem; font-weight:bold; color:#1F4E79;">Typ frontu:</span>
+                                    <select onchange="changeFrontType(${i}, this.value)" style="padding: 2px 4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px; outline:none; background:#f9fbfd;">
+                                        <option value="merged" ${spaceLocks[i].frontType === 'merged' || (!spaceLocks[i].frontType && !spaceLocks[i].hasDrawers) ? 'selected' : ''}>🚪 Razem (Sklej z góry/dołu)</option>
+                                        <option value="single" ${spaceLocks[i].frontType === 'single' ? 'selected' : ''}>🚪 Osobny (Tylko tu)</option>
+                                        <option value="drawers" ${spaceLocks[i].hasDrawers ? 'selected' : ''}>🗄️ Szuflady</option>
+                                    </select>
+                                </div>
+                                <div style="display:flex; align-items:center; gap: 6px;">
+                                    <span style="font-size:0.8rem; font-weight:bold; color:#1F4E79;">Układ:</span>
+                                    <select onchange="changeFrontLayout(${i}, this.value)" style="padding: 2px 4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px; outline:none; background:#f9fbfd;">
+                                        <option value="full" ${spaceLocks[i].frontLayout === 'full' || !spaceLocks[i].frontLayout ? 'selected' : ''}>Pełny (1 szt.)</option>
+                                        <option value="left" ${spaceLocks[i].frontLayout === 'left' ? 'selected' : ''}>Tylko Lewy</option>
+                                        <option value="right" ${spaceLocks[i].frontLayout === 'right' ? 'selected' : ''}>Tylko Prawy</option>
+                                        <option value="double" ${spaceLocks[i].frontLayout === 'double' ? 'selected' : ''}>Podwójny (L+P)</option>
+                                        <option value="none" ${spaceLocks[i].frontLayout === 'none' ? 'selected' : ''}>Brak frontu</option>
+                                    </select>
+                                </div>
                             </div>
                             ${isDrawers ? `<select onchange="changeDrawerMode(${i}, this.value)" style="padding: 2px 5px; font-size:0.8rem; width:auto;"> 
                                     <option value="auto" ${drawerMode==='auto'?'selected':''}>Równomiernie (Auto)</option> 
@@ -1077,6 +1100,7 @@
                 } 
                 
                 let defaultEndY = isTop ? hBox - fLuzG : sb.yEnd + (tBoard/2) - (luzFrontow/2); 
+                let layout = spaceLocks[i].frontLayout || 'full';
                 
                 if (sb.hasDrawers) { 
                     if (currentDoorBlock) { frontBlocks.push(currentDoorBlock); currentDoorBlock = null; } 
@@ -1085,7 +1109,7 @@
                     frontBlocks.push({ 
                         type: 'drawers', drawerMode: sb.drawerMode, manualFronts: sb.manualFronts, qDrawers: sb.qDrawers, 
                         spaceIdx: i, yStart: facadeY, yEnd: blockEndY, interiorBottom: sb.yStart, 
-                        visualGap: sb.visualGap, localZero: sb.localZero 
+                        visualGap: sb.visualGap, localZero: sb.localZero, layout: layout 
                     }); 
                     facadeY = blockEndY + luzFrontow; 
                 } else { 
@@ -1096,10 +1120,10 @@
                             frontBlocks.push(currentDoorBlock); 
                             currentDoorBlock = null; 
                         } 
-                        frontBlocks.push({ type: 'door', yStart: facadeY, yEnd: defaultEndY, visualGap: sb.visualGap, localZero: sb.localZero });
+                        frontBlocks.push({ type: 'door', yStart: facadeY, yEnd: defaultEndY, visualGap: sb.visualGap, localZero: sb.localZero, layout: layout });
                         facadeY = defaultEndY + luzFrontow;
                     } else {
-                        if (!currentDoorBlock) currentDoorBlock = { type: 'door', yStart: facadeY, yEnd: defaultEndY, visualGap: sb.visualGap, localZero: sb.localZero }; 
+                        if (!currentDoorBlock) currentDoorBlock = { type: 'door', yStart: facadeY, yEnd: defaultEndY, visualGap: sb.visualGap, localZero: sb.localZero, layout: layout }; 
                         else currentDoorBlock.yEnd = defaultEndY; 
                         facadeY = defaultEndY + luzFrontow; 
                     }
@@ -1148,7 +1172,7 @@
                         } 
                     } 
                 }  
-                else if(fb.type === 'door') { 
+                else if(fb.type === 'door' && fb.layout !== 'none') { 
                     let hinges = []; let localQZaw = globalQZaw; 
                     if (isAutoZaw) { 
                         if (fH_total <= 900) localQZaw = 2; else if (fH_total <= 1600) localQZaw = 3; else if (fH_total <= 2000) localQZaw = 4; else if (fH_total <= 2500) localQZaw = 5; else localQZaw = 6; 
@@ -1173,10 +1197,15 @@
                             hinges.push({ bodyY: Math.round(mY), frontY: Math.round(Math.round(mY) - fb.yStart), shifted: isShifted, isTop: hg.isTop, visualGap: fb.visualGap, localZero: fb.localZero }); 
                         }); 
                     } 
-                    fb.hinges = hinges; fb.actualZawCount = localQZaw; doorZawiasy.push(...hinges); 
+                    fb.hinges = hinges; fb.actualZawCount = localQZaw; 
+                    if (fb.layout !== 'right') { // Nie dodajemy puszek z prawego frontu na lewy bok
+                        doorZawiasy.push(...hinges); 
+                    }
                 } 
             }); 
- 
+            
+            window.lastFrontBlocks = frontBlocks;
+
             // --- SVG RENDER --- 
             let sXCab = 0; let sXBok = wBox + 300; let sXFront = sXBok + dBox + 1200;  
             let viewTotalW = sFront ? (sXFront + wBox + 500) : (sXBok + dBox + 1000); let viewTotalH = hBox + currentVisualGap + 300;         
@@ -1363,23 +1392,6 @@
                 } 
             }); 
  
-            if ((sHingeAxis || sHingeHoles) && (isAutoZaw || globalQZaw > 0)) { 
-                doorZawiasy.forEach(zaw => { 
-                    let drillY = hBox - zaw.bodyY - zaw.visualGap; let color = zaw.shifted ? "#9c27b0" : "#0288d1";  
-                    let valAbs = Math.round(zaw.bodyY - zaw.localZero);
-                    let cab = subCabinets.find(c => c.visualGap === zaw.visualGap);
-                    let topAbs = Math.round(cab.endY - zaw.bodyY);
-                    let txtDisplay = `Prowadnik: ${valAbs}`;
-                    if (rcMode) txtDisplay += ` [M: ${valAbs - 32}]`;
-                    txtDisplay += ` (${topAbs})${zaw.shifted ? " [KOREKTA]" : ""}`;
-                    if (sHingeAxis) svg += `<line x1="${hFrontX - 20}" y1="${drillY}" x2="${laneHingeAxis - 10}" y2="${drillY}" stroke="${color}" stroke-dasharray="2,2" stroke-width="2"/><text x="${laneHingeAxis}" y="${drillY + 8}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">${txtDisplay}</text>`; 
-                    if (sHingeHoles) [-16, 16].forEach(off => { 
-                        let hy = hBox - (zaw.bodyY + off) - zaw.visualGap; 
-                        svg += `<circle cx="${hFrontX}" cy="${hy}" r="4" fill="${color}"/><line x1="${hFrontX}" y1="${hy}" x2="${laneHingeHoles - 10}" y2="${hy}" stroke="${color}" stroke-dasharray="1,2" stroke-width="1.5"/><text x="${laneHingeHoles}" y="${hy + 8}" font-size="${fontM}" fill="${color}" text-anchor="start">${Math.round(zaw.bodyY + off - zaw.localZero)}</text>`; 
-                    }); 
-                }); 
-            } 
- 
             if (sFront) { 
                 svg += `<text x="${sXFront + wBox/2}" y="-80" font-size="36" font-weight="bold" fill="#2e7d32" text-anchor="middle">FRONT (Podział zewnętrzny)</text>`; 
                 
@@ -1388,7 +1400,7 @@
                     if (i === 0) baseF -= fLuzD;
                     svg += `<line x1="${sXFront - 50}" y1="${baseF}" x2="${sXFront + wBox + 150}" y2="${baseF}" stroke="#2e7d32" stroke-width="3" stroke-dasharray="8,8" opacity="0.6"/><text x="${sXFront + wBox + 160}" y="${baseF + 8}" font-size="${fontL}" font-weight="bold" fill="#2e7d32" text-anchor="start">0 mm (DÓŁ FRONTU${subCabinets.length > 1 ? ` MODUŁU ${i+1}` : ''})</text>`; 
                     
-                    let blocksInCab = frontBlocks.filter(fb => fb.visualGap === cab.visualGap);
+                    let blocksInCab = frontBlocks.filter(fb => fb.visualGap === cab.visualGap && fb.layout !== 'none');
                     if (blocksInCab.length > 0) {
                         let minStart = Math.min(...blocksInCab.map(b => b.yStart));
                         let maxEnd = Math.max(...blocksInCab.map(b => b.yEnd));
@@ -1404,7 +1416,10 @@
                 });
                  
                 frontBlocks.forEach(fb => { 
+                    if (fb.layout === 'none') return; // Nie rysuj nic jeśli brak frontu
+
                     let rectTopY = hBox - fb.yEnd - fb.visualGap; let rectH = fb.yEnd - fb.yStart; 
+                    let halfW = (wBox - luzFrontow) / 2;
                     
                     let dimX = sXFront - 45;
                     svg += `<line x1="${dimX}" y1="${rectTopY}" x2="${dimX}" y2="${rectTopY + rectH}" stroke="#2e7d32" stroke-width="1.5" marker-start="url(#arrow-green)" marker-end="url(#arrow-green)"/>`;
@@ -1412,21 +1427,61 @@
                     svg += `<text x="${dimX}" y="${rectTopY + rectH/2 + 6}" font-size="${fontS}" font-weight="bold" fill="#2e7d32" text-anchor="middle">${Math.round(rectH)}</text>`;
 
                     if(fb.type === 'door') { 
-                        svg += `<rect x="${sXFront}" y="${rectTopY}" width="${wBox}" height="${rectH}" fill="#e2efda" stroke="#2e7d32" stroke-width="${lineW}"/><text x="${sXFront + wBox/2}" y="${rectTopY + rectH/2 + 8}" font-size="${fontM}" font-weight="bold" fill="#2e7d32" text-anchor="middle">Front: ${Math.round(rectH)} mm${fb.actualZawCount > 0 ? ` (${fb.actualZawCount} szt. zawiasów)` : ``}</text>`; 
+                        let rects = [];
+                        if (fb.layout === 'full') rects.push({ x: sXFront, w: wBox, hinge: 'left' });
+                        else if (fb.layout === 'left') rects.push({ x: sXFront, w: halfW, hinge: 'left' });
+                        else if (fb.layout === 'right') rects.push({ x: sXFront + halfW + luzFrontow, w: halfW, hinge: 'right' });
+                        else if (fb.layout === 'double') {
+                            rects.push({ x: sXFront, w: halfW, hinge: 'left' });
+                            rects.push({ x: sXFront + halfW + luzFrontow, w: halfW, hinge: 'right' });
+                        }
+
+                        rects.forEach(r => {
+                            svg += `<rect x="${r.x}" y="${rectTopY}" width="${r.w}" height="${rectH}" fill="#e2efda" stroke="#2e7d32" stroke-width="${lineW}"/>`;
+                            let zawInfo = fb.actualZawCount > 0 ? ` (${fb.actualZawCount} zaw.)` : ``;
+                            svg += `<text x="${r.x + r.w/2}" y="${rectTopY + rectH/2 + 8}" font-size="${fontM}" font-weight="bold" fill="#2e7d32" text-anchor="middle">Front: ${Math.round(rectH)} mm${zawInfo}</text>`;
+                        });
+
                         fb.hinges.forEach(zaw => { 
-                            let cy = hBox - zaw.bodyY - zaw.visualGap; let color = zaw.shifted ? "#9c27b0" : "#2e7d32"; let puszkaX = sXFront + 22;  
-                            svg += `<circle cx="${puszkaX}" cy="${cy}" r="17.5" fill="none" stroke="${color}" stroke-width="3"/><circle cx="${puszkaX}" cy="${cy}" r="3" fill="${color}"/><line x1="${puszkaX}" y1="${cy}" x2="${sXFront + wBox + 60}" y2="${cy}" stroke="${color}" stroke-dasharray="4,4" stroke-width="2"/><text x="${sXFront + wBox + 70}" y="${cy + 8}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">${Math.round(zaw.frontY)} (${Math.round(rectH - zaw.frontY)})${zaw.shifted ? " [KOREKTA]" : ""}</text>`; 
+                            let cy = hBox - zaw.bodyY - zaw.visualGap; let color = zaw.shifted ? "#9c27b0" : "#2e7d32"; 
+                            
+                            if (fb.layout === 'full' || fb.layout === 'left' || fb.layout === 'double') {
+                                let puszkaX = sXFront + 22;  
+                                svg += `<circle cx="${puszkaX}" cy="${cy}" r="17.5" fill="none" stroke="${color}" stroke-width="3"/><circle cx="${puszkaX}" cy="${cy}" r="3" fill="${color}"/>`;
+                                svg += `<line x1="${puszkaX}" y1="${cy}" x2="${sXFront + wBox + 60}" y2="${cy}" stroke="${color}" stroke-dasharray="4,4" stroke-width="2"/>`;
+                                if (fb.layout !== 'double') {
+                                    svg += `<text x="${sXFront + wBox + 70}" y="${cy + 8}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">${Math.round(zaw.frontY)} (${Math.round(rectH - zaw.frontY)})${zaw.shifted ? " [KOREKTA]" : ""}</text>`; 
+                                }
+                            }
+                            if (fb.layout === 'right' || fb.layout === 'double') {
+                                let puszkaX = sXFront + wBox - 22;
+                                svg += `<circle cx="${puszkaX}" cy="${cy}" r="17.5" fill="none" stroke="${color}" stroke-width="3"/><circle cx="${puszkaX}" cy="${cy}" r="3" fill="${color}"/>`;
+                                svg += `<line x1="${puszkaX}" y1="${cy}" x2="${sXFront + wBox + 60}" y2="${cy}" stroke="${color}" stroke-dasharray="4,4" stroke-width="2"/>`;
+                                svg += `<text x="${sXFront + wBox + 70}" y="${cy + 8}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">${Math.round(zaw.frontY)} (${Math.round(rectH - zaw.frontY)})${zaw.shifted ? " [KOREKTA]" : ""}</text>`;
+                            }
                         }); 
                     } else if(fb.type === 'drawers') { 
+                        let rects = [];
+                        if (fb.layout === 'full') rects.push({ x: sXFront, w: wBox });
+                        else if (fb.layout === 'left') rects.push({ x: sXFront, w: halfW });
+                        else if (fb.layout === 'right') rects.push({ x: sXFront + halfW + luzFrontow, w: halfW });
+                        else if (fb.layout === 'double') {
+                            rects.push({ x: sXFront, w: halfW });
+                            rects.push({ x: sXFront + halfW + luzFrontow, w: halfW });
+                        }
+
                         fb.drawers.forEach((dr, idx) => { 
                             let drH = dr.yEnd - dr.yStart; 
-                            svg += `<rect x="${sXFront}" y="${hBox - dr.yEnd - fb.visualGap}" width="${wBox}" height="${drH}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/>`; 
-                            let drTypeLabel = ""; 
-                            if (fb.drawerMode === 'manual' && fb.manualFronts[idx]) { 
-                                let tObj = sysDB.types.find(t => t.id === fb.manualFronts[idx].type); 
-                                if(tObj) drTypeLabel = ` [Typ: ${tObj.label}]`; 
-                            } 
-                            svg += `<text x="${sXFront + wBox/2}" y="${hBox - dr.yEnd - fb.visualGap + drH/2 + 8}" font-size="${fontM}" font-weight="bold" fill="#1F4E79" text-anchor="middle">Szuflada ${idx+1} (F: ${Math.round(drH)}mm)${drTypeLabel} [NL: ${dr.currentNL}mm]</text>`; 
+                            
+                            rects.forEach(r => {
+                                svg += `<rect x="${r.x}" y="${hBox - dr.yEnd - fb.visualGap}" width="${r.w}" height="${drH}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/>`; 
+                                let drTypeLabel = ""; 
+                                if (fb.drawerMode === 'manual' && fb.manualFronts[idx]) { 
+                                    let tObj = sysDB.types.find(t => t.id === fb.manualFronts[idx].type); 
+                                    if(tObj) drTypeLabel = ` [Typ: ${tObj.label}]`; 
+                                } 
+                                svg += `<text x="${r.x + r.w/2}" y="${hBox - dr.yEnd - fb.visualGap + drH/2 + 8}" font-size="${fontS}" font-weight="bold" fill="#1F4E79" text-anchor="middle">Szuf. ${idx+1} (F: ${Math.round(drH)}mm)${drTypeLabel}</text>`; 
+                            });
                         }); 
                     } 
                 }); 
