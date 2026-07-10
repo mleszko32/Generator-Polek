@@ -68,37 +68,19 @@
         #printArea { display: none; } 
         
         /* OKNO MODALNE Z LISTĄ FORMATEK */
-        .modal-overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.6); z-index: 1000; justify-content: center; align-items: center;
-        }
-        .modal-content {
-            background: #fff; padding: 20px 30px; border-radius: 8px; width: 90%; max-width: 800px;
-            max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        }
-        .modal-header {
-            display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1F4E79; padding-bottom: 10px; margin-bottom: 20px;
-        }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: #fff; padding: 20px 30px; border-radius: 8px; width: 90%; max-width: 800px; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1F4E79; padding-bottom: 10px; margin-bottom: 20px; }
         .modal-header h2 { margin: 0; border: none; padding: 0; }
-        .btn-close {
-            background: #d32f2f; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold;
-        }
+        .btn-close { background: #d32f2f; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         .btn-close:hover { background: #b71c1c; }
         
         /* TABELA FORMATEK */
-        .cut-table {
-            width: 100%; border-collapse: collapse; margin-bottom: 20px; text-align: center;
-        }
-        .cut-table th {
-            background: #e8f0fe; color: #1F4E79; padding: 10px; border: 1px solid #ddd;
-        }
-        .cut-table td {
-            padding: 8px; border: 1px solid #ddd; color: #333;
-        }
+        .cut-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; text-align: center; }
+        .cut-table th { background: #e8f0fe; color: #1F4E79; padding: 10px; border: 1px solid #ddd; }
+        .cut-table td { padding: 8px; border: 1px solid #ddd; color: #333; }
         .cut-table tr:nth-child(even) { background: #f9fbfd; }
-        .table-group-header {
-            background: #1F4E79 !important; color: white !important; font-weight: bold; text-align: left !important;
-        }
+        .table-group-header { background: #1F4E79 !important; color: white !important; font-weight: bold; text-align: left !important; }
 
         @media print { 
             body { background: white; margin: 0; padding: 0; } 
@@ -109,15 +91,8 @@
         } 
  
         @media (max-width: 1024px) { 
-            .panel-right { 
-                position: static !important; 
-                height: auto !important; 
-                align-self: stretch; 
-                min-width: 100%; 
-            } 
-            .svg-container { 
-                min-height: 500px; 
-            } 
+            .panel-right { position: static !important; height: auto !important; align-self: stretch; min-width: 100%; } 
+            .svg-container { min-height: 500px; } 
         } 
     </style> 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script> 
@@ -190,12 +165,12 @@
                 <div style="grid-column: span 2;"> 
                     <label>System prowadnic szuflad</label> 
                     <select id="drawerSystem" onchange="updateDrawerFields(); updateAllDrawersToDefault(); run();"> 
-    <option value="44">GTV Axis Pro / Modern Box (Dno 16mm)</option> 
-    <option value="44_18">GTV Axis Pro (Dno 18mm)</option> 
-    <option value="54">Blum Merivobox (Górny: 54mm)</option> 
-    <option value="33">Blum Antaro / Tandembox (Górny: 33mm)</option> 
-    <option value="custom">Inne (Własny wymiar górnego otworu)</option> 
-</select> 
+                        <option value="44">GTV Axis Pro / Modern Box (Dno 16mm)</option> 
+                        <option value="44_18">GTV Axis Pro (Dno 18mm)</option> 
+                        <option value="54">Blum Merivobox (Górny: 54mm)</option> 
+                        <option value="33">Blum Antaro / Tandembox (Górny: 33mm)</option> 
+                        <option value="custom">Inne (Własny wymiar górnego otworu)</option> 
+                    </select> 
                 </div> 
                 <div id="customDrawerField" style="grid-column: span 2; display:none;"> 
                     <label>Własna wysokość otworu górnego (mm)</label> 
@@ -279,9 +254,7 @@
                 name: "GTV Axis Pro / Modern Box", 
                 lengths: [250, 300, 350, 400, 450, 500, 550, 600], 
                 ltRequired: 5, 
-                yHolesMap: { 
-                    250: [96], 300: [128], 350: [128], 400: [192], 450: [192], 500: [224], 550: [224], 600: [224, 352] 
-                }, 
+                yHolesMap: { 250: [96], 300: [128], 350: [128], 400: [192], 450: [192], 500: [224], 550: [224], 600: [224, 352] }, 
                 types: [ 
                     { id: "A", label: "A (Niska)", minFront: 105 }, 
                     { id: "B", label: "B (Średnia)", minFront: 160 }, 
@@ -294,9 +267,7 @@
                 name: "GTV Axis Pro (Dno 18mm)", 
                 lengths: [250, 300, 350, 400, 450, 500, 550, 600], 
                 ltRequired: 5, 
-                yHolesMap: { 
-                    250: [96], 300: [128], 350: [128], 400: [192], 450: [192], 500: [224], 550: [224], 600: [224, 352] 
-                }, 
+                yHolesMap: { 250: [96], 300: [128], 350: [128], 400: [192], 450: [192], 500: [224], 550: [224], 600: [224, 352] }, 
                 types: [ 
                     { id: "A", label: "A (H=86)", minFront: 115 }, 
                     { id: "B", label: "B (H=120)", minFront: 147 }, 
@@ -309,9 +280,7 @@
                 name: "Blum Merivobox", 
                 lengths: [270, 300, 350, 400, 450, 500, 550, 600], 
                 ltRequired: 3, 
-                yHolesMap: { 
-                    270: [96], 300: [128], 350: [128], 400: [192], 450: [192, 256], 500: [224, 288], 550: [224, 352], 600: [224, 384] 
-                }, 
+                yHolesMap: { 270: [96], 300: [128], 350: [128], 400: [192], 450: [192, 256], 500: [224, 288], 550: [224, 352], 600: [224, 384] }, 
                 types: [ 
                     { id: "N", label: "N (B. Niska)", minFront: 85.5 }, 
                     { id: "M", label: "M (Niska)", minFront: 108 }, 
@@ -324,9 +293,7 @@
                 name: "Blum Antaro / Tandembox", 
                 lengths: [270, 300, 350, 400, 450, 500, 550, 600, 650], 
                 ltRequired: 3, 
-                yHolesMap: { 
-                    270: [96], 300: [128], 350: [128], 400: [192], 450: [192, 288], 500: [224, 288], 550: [224, 384], 600: [224, 384], 650: [224, 384, 480] 
-                }, 
+                yHolesMap: { 270: [96], 300: [128], 350: [128], 400: [192], 450: [192, 288], 500: [224, 288], 550: [224, 384], 600: [224, 384], 650: [224, 384, 480] }, 
                 types: [ 
                     { id: "N", label: "N (B. Niska)", minFront: 82.5 }, 
                     { id: "M", label: "M (Niska)", minFront: 98.5 }, 
@@ -340,12 +307,8 @@
                 name: "Inne (Własne)", 
                 lengths: [250, 300, 350, 400, 450, 500, 550, 600], 
                 ltRequired: 3, 
-                yHolesMap: { 
-                    250: [96], 300: [128], 350: [128], 400: [192], 450: [192], 500: [224], 550: [224], 600: [224] 
-                }, 
-                types: [ 
-                    { id: "UNI", label: "Uniwersalna", minFront: 60 } 
-                ], 
+                yHolesMap: { 250: [96], 300: [128], 350: [128], 400: [192], 450: [192], 500: [224], 550: [224], 600: [224] }, 
+                types: [ { id: "UNI", label: "Uniwersalna", minFront: 60 } ], 
                 default: "UNI" 
             } 
         }; 
@@ -389,10 +352,7 @@
         function resetZoom() { zScale = 1; panX = 0; panY = 0; applyTransform(); } 
         function applyTransform() { document.getElementById('svgWrapper').style.transform = `translate(${panX}px, ${panY}px) scale(${zScale})`; } 
  
-        function toggleAutoZaw() { 
-            document.getElementById('qZaw').disabled = document.getElementById('autoZaw').checked; 
-            run(); 
-        } 
+        function toggleAutoZaw() { document.getElementById('qZaw').disabled = document.getElementById('autoZaw').checked; run(); } 
  
         function updateDrawerFields() { 
             let system = document.getElementById('drawerSystem').value; 
@@ -428,10 +388,8 @@
                 qZaw: val('qZaw'), autoZaw: document.getElementById('autoZaw').checked, zOffD: val('zOffD'), zOffG: val('zOffG'), 
                 fLuzD: val('fLuzD'), fLuzG: val('fLuzG'), cMargin: val('cMargin'), 
                 luzFrontow: val('luzFrontow'), drawerSystem: document.getElementById('drawerSystem').value, 
-                customDrawerAxis: val('customDrawerAxis'), 
-                backType: document.getElementById('backType').value, 
-                grPlecy: val('grPlecy'),
-                nutDepth: val('nutDepth'), 
+                customDrawerAxis: val('customDrawerAxis'), backType: document.getElementById('backType').value, 
+                grPlecy: val('grPlecy'), nutDepth: val('nutDepth'), 
                 spaceLocks: JSON.parse(JSON.stringify(spaceLocks)), 
                 structuralShelves: JSON.parse(JSON.stringify(structuralShelves)) 
             }; 
@@ -448,10 +406,8 @@
                 qZaw: val('qZaw'), autoZaw: document.getElementById('autoZaw').checked, zOffD: val('zOffD'), zOffG: val('zOffG'), 
                 fLuzD: val('fLuzD'), fLuzG: val('fLuzG'), cMargin: val('cMargin'), 
                 luzFrontow: val('luzFrontow'), drawerSystem: document.getElementById('drawerSystem').value, 
-                customDrawerAxis: val('customDrawerAxis'), 
-                backType: document.getElementById('backType').value, 
-                grPlecy: val('grPlecy'),
-                nutDepth: val('nutDepth'), 
+                customDrawerAxis: val('customDrawerAxis'), backType: document.getElementById('backType').value, 
+                grPlecy: val('grPlecy'), nutDepth: val('nutDepth'), 
                 spaceLocks: JSON.parse(JSON.stringify(spaceLocks)), 
                 structuralShelves: JSON.parse(JSON.stringify(structuralShelves)) 
             }; 
@@ -461,12 +417,8 @@
         function loadCabinet(docId) { 
             let cab = cloudCabinets.find(c => c.docId === docId); 
             if(!cab) return; 
- 
-            document.getElementById('cabName').value = cab.name; 
-            document.getElementById('kTyp').value = cab.kTyp; 
-            ['hBox','wBox','dBox','qPol','tBoard','offsetPodporki','qZaw','zOffD','zOffG','fLuzG'].forEach(id => { 
-                document.getElementById(id).value = cab[id]; 
-            }); 
+            document.getElementById('cabName').value = cab.name; document.getElementById('kTyp').value = cab.kTyp; 
+            ['hBox','wBox','dBox','qPol','tBoard','offsetPodporki','qZaw','zOffD','zOffG','fLuzG'].forEach(id => { document.getElementById(id).value = cab[id]; }); 
             document.getElementById('cokol').value = cab.cokol !== undefined ? cab.cokol : 100; 
             document.getElementById('autoZaw').checked = cab.autoZaw !== undefined ? cab.autoZaw : true; 
             document.getElementById('qZaw').disabled = document.getElementById('autoZaw').checked; 
@@ -478,11 +430,9 @@
             document.getElementById('nutDepth').value = cab.nutDepth !== undefined ? cab.nutDepth : 12; 
              
             toggleBackFields(); 
- 
             let loadedSys = cab.drawerSystem !== undefined ? cab.drawerSystem : "44"; 
             document.getElementById('drawerSystem').value = loadedSys; 
             document.getElementById('customDrawerAxis').value = cab.customDrawerAxis !== undefined ? cab.customDrawerAxis : 44; 
- 
             updateDrawerFields(); 
             let sysObj = DRAWER_DB[loadedSys]; 
  
@@ -492,32 +442,21 @@
                     if (typeof f === 'number') return { height: f, type: sysObj.default }; 
                     return { height: f.height, type: f.type || sysObj.default }; 
                 }); 
- 
                 return { 
-                    locked: s.locked || false, 
-                    manualVal: s.manualVal || 0, 
-                    currentVal: s.currentVal || 0, 
-                    hasDrawers: s.hasDrawers || false,
-                    frontType: s.frontType || (s.hasDrawers ? 'drawers' : 'merged'),
-                    frontLayout: s.frontLayout || 'full',
-                    drawerMode: s.drawerMode || 'auto', 
-                    qDrawers: s.qDrawers || 3, 
-                    manualFronts: mFronts, 
-                    topGapToAxis: s.topGapToAxis !== undefined ? s.topGapToAxis : 12, 
+                    locked: s.locked || false, manualVal: s.manualVal || 0, currentVal: s.currentVal || 0, 
+                    hasDrawers: s.hasDrawers || false, frontType: s.frontType || (s.hasDrawers ? 'drawers' : 'merged'),
+                    frontLayout: s.frontLayout || 'full', drawerMode: s.drawerMode || 'auto', qDrawers: s.qDrawers || 3, 
+                    manualFronts: mFronts, topGapToAxis: s.topGapToAxis !== undefined ? s.topGapToAxis : 12,
+                    gapTop: s.gapTop || 0, gapBottom: s.gapBottom || 0,
                     manualDrawerNL: s.manualDrawerNL || {} 
                 }; 
             }); 
- 
             structuralShelves = cab.structuralShelves || new Array(val('qPol')).fill(false); 
-            currentLoadedDocId = docId; 
-            document.getElementById('btnUpdate').style.display = 'block'; 
+            currentLoadedDocId = docId; document.getElementById('btnUpdate').style.display = 'block'; 
             run(); window.scrollTo(0, 0);  
         } 
  
-        function deleteCabinet(docId) { 
-            if(!confirm("Usunąć ten projekt?")) return; 
-            db.collection("cabinets").doc(docId).delete(); 
-        } 
+        function deleteCabinet(docId) { if(!confirm("Usunąć ten projekt?")) return; db.collection("cabinets").doc(docId).delete(); } 
  
         function renderSavedCabinets() {
             db.collection("cabinets").onSnapshot((querySnapshot) => { 
@@ -547,14 +486,10 @@
             let sXBok = wBox + 300; let sXFront = sXBok + dBox + 1200;  
  
             svgNode.querySelectorAll('.hide-on-print').forEach(el => el.remove());
-
             if (type === 'interior') svgNode.setAttribute('viewBox', `-100 -120 ${wBox + 200} ${hBox + 250}`); 
             else if (type === 'side') svgNode.setAttribute('viewBox', `${sXBok - 200} -120 ${dBox + 900} ${hBox + 250}`); 
             else if (type === 'front') svgNode.setAttribute('viewBox', `${sXFront - 100} -120 ${wBox + 300} ${hBox + 250}`); 
- 
-            document.getElementById('printArea').innerHTML = ''; 
-            document.getElementById('printArea').appendChild(svgNode); 
-            window.print(); 
+            document.getElementById('printArea').innerHTML = ''; document.getElementById('printArea').appendChild(svgNode); window.print(); 
         } 
  
         function resetLocksAndRun() { 
@@ -572,7 +507,7 @@
                         { height: 200, type: dbSys.default }, 
                         { height: 140, type: dbSys.default } 
                     ], 
-                    topGapToAxis: 12, 
+                    topGapToAxis: 12, gapTop: 0, gapBottom: 0,
                     manualDrawerNL: {} 
                 }); 
             } 
@@ -585,106 +520,66 @@
             if(spaceLocks[index].locked) spaceLocks[index].locked = false; 
             else { 
                 if (spaceLocks.filter(s => s.locked).length >= spaceLocks.length - 1) { showError("Zostaw min. 1 wymiar auto."); return; } 
-                spaceLocks[index].locked = true; 
-                spaceLocks[index].manualVal = spaceLocks[index].currentVal; 
+                spaceLocks[index].locked = true; spaceLocks[index].manualVal = spaceLocks[index].currentVal; 
             } 
             run(); 
         } 
          
         function changeFrontType(index, type) { 
-            if (type === 'drawers') { 
-                spaceLocks[index].hasDrawers = true; 
-                spaceLocks[index].frontType = 'drawers'; 
-            } else { 
-                spaceLocks[index].hasDrawers = false; 
-                spaceLocks[index].frontType = type; 
-            } 
+            if (type === 'drawers') { spaceLocks[index].hasDrawers = true; spaceLocks[index].frontType = 'drawers'; } 
+            else { spaceLocks[index].hasDrawers = false; spaceLocks[index].frontType = type; } 
             run(); 
         }
-        
-        function changeFrontLayout(index, layout) {
-            spaceLocks[index].frontLayout = layout;
-            run();
-        }
-         
+        function changeFrontLayout(index, layout) { spaceLocks[index].frontLayout = layout; run(); }
         function toggleStructural(index) { structuralShelves[index] = !structuralShelves[index]; run(); } 
-         
         function changeDrawerMode(index, mode) { 
             spaceLocks[index].drawerMode = mode; 
             if(mode === 'manual') spaceLocks[index].locked = true; 
             run(); 
         } 
- 
-        function updateDrawerCount(index, value) { 
-            let q = parseInt(value); if(!isNaN(q) && q > 0) spaceLocks[index].qDrawers = q; run(); 
-        } 
- 
+        function updateDrawerCount(index, value) { let q = parseInt(value); if(!isNaN(q) && q > 0) spaceLocks[index].qDrawers = q; run(); } 
         function updateDrawerNL(spaceIdx, drawerIdx, value) { 
             if(!spaceLocks[spaceIdx].manualDrawerNL) spaceLocks[spaceIdx].manualDrawerNL = {}; 
-            spaceLocks[spaceIdx].manualDrawerNL[drawerIdx] = value; 
+            spaceLocks[spaceIdx].manualDrawerNL[drawerIdx] = value; run(); 
+        } 
+        function updateGap(index, type, val) { spaceLocks[index][type] = parseFloat(val) || 0; run(); }
+
+        function updateFrontHeight(spaceIdx, frontIdx, value) { 
+            let v = parseFloat(value); if(isNaN(v) || v <= 0) return; 
+            spaceLocks[spaceIdx].manualFronts[frontIdx].height = v; 
             run(); 
         } 
- function updateFrontHeight(spaceIdx, frontIdx, value) { 
-    let v = parseFloat(value); if(isNaN(v) || v <= 0) return; 
-    spaceLocks[spaceIdx].manualFronts[frontIdx].height = v; 
-    run(); // Skrypt sam złapie zmianę i w razie kolizji zredukuje typ szuflady
-} 
 
-function updateDrawerType(spaceIdx, frontIdx, typeVal) { 
-    spaceLocks[spaceIdx].manualFronts[frontIdx].type = typeVal; 
-    run(); 
-} 
-
-function shrinkFront(spaceIdx, frontIdx) { 
-    let sys = DRAWER_DB[document.getElementById('drawerSystem').value]; 
-    let front = spaceLocks[spaceIdx].manualFronts[frontIdx]; 
-    let typeObj = sys.types.find(t => t.id === front.type); 
-    
-    if (typeObj) { 
-        let i = spaceIdx; let fIdx = frontIdx;
-        let tBoard = val('tBoard'); let fLuzD = val('fLuzD'); let fLuzG = val('fLuzG'); let luzFrontow = val('luzFrontow');
-        let bottomOverlap = 0; let topOverlap = 0;
-        let totalSpaces = val('qPol') + 1;
-        
-        let isAbsoluteBottom = (i === 0 && fIdx === 0);
-        let isAbsoluteTop = (i === totalSpaces - 1 && fIdx === spaceLocks[i].manualFronts.length - 1);
-        
-        if (isAbsoluteBottom) bottomOverlap = tBoard - fLuzD;
-        else if (fIdx === 0 && structuralShelves[i-1]) bottomOverlap = (tBoard / 2) - (luzFrontow / 2);
-        
-        if (isAbsoluteTop) topOverlap = tBoard - fLuzG;
-        else if (fIdx === spaceLocks[i].manualFronts.length - 1 && structuralShelves[i]) topOverlap = (tBoard / 2) - (luzFrontow / 2);
-        
-        // Wyliczamy minimalny bezpieczny front z uwzględnieniem pożeraczy przestrzeni
-        let requiredFrontHeight = typeObj.minFront + bottomOverlap + topOverlap - (!isAbsoluteTop ? luzFrontow : 0);
-        front.height = Math.max(requiredFrontHeight, 10);
-    } 
-    run(); 
-}
- 
         function updateDrawerType(spaceIdx, frontIdx, typeVal) { 
-            let sys = DRAWER_DB[document.getElementById('drawerSystem').value]; 
-            let front = spaceLocks[spaceIdx].manualFronts[frontIdx]; 
-            let newTypeObj = sys.types.find(t => t.id === typeVal); 
-             
-            front.type = typeVal; 
-            if (front.height < newTypeObj.minFront) { 
-                front.height = newTypeObj.minFront; 
-            } 
-             
+            spaceLocks[spaceIdx].manualFronts[frontIdx].type = typeVal; 
             run(); 
         } 
- 
+
         function shrinkFront(spaceIdx, frontIdx) { 
             let sys = DRAWER_DB[document.getElementById('drawerSystem').value]; 
             let front = spaceLocks[spaceIdx].manualFronts[frontIdx]; 
             let typeObj = sys.types.find(t => t.id === front.type); 
             if (typeObj) { 
-                front.height = typeObj.minFront; 
+                let i = spaceIdx; let fIdx = frontIdx;
+                let tBoard = val('tBoard'); let fLuzD = val('fLuzD'); let fLuzG = val('fLuzG'); let luzFrontow = val('luzFrontow');
+                let bottomOverlap = 0; let topOverlap = 0;
+                let totalSpaces = val('qPol') + 1;
+                
+                let isAbsoluteBottom = (i === 0 && fIdx === 0);
+                let isAbsoluteTop = (i === totalSpaces - 1 && fIdx === spaceLocks[i].manualFronts.length - 1);
+                
+                if (isAbsoluteBottom) bottomOverlap = tBoard - fLuzD;
+                else if (fIdx === 0 && structuralShelves[i-1]) bottomOverlap = (tBoard / 2) - (luzFrontow / 2);
+                
+                if (isAbsoluteTop) topOverlap = tBoard - fLuzG;
+                else if (fIdx === spaceLocks[i].manualFronts.length - 1 && structuralShelves[i]) topOverlap = (tBoard / 2) - (luzFrontow / 2);
+                
+                let requiredFrontHeight = typeObj.minFront + bottomOverlap + topOverlap - (!isAbsoluteTop ? luzFrontow : 0);
+                front.height = Math.max(requiredFrontHeight, 10);
             } 
             run(); 
-        } 
- 
+        }
+
         function addManualFront(spaceIdx) { 
             let sysId = document.getElementById('drawerSystem').value; 
             let defType = DRAWER_DB[sysId].default; 
@@ -692,15 +587,8 @@ function shrinkFront(spaceIdx, frontIdx) {
             spaceLocks[spaceIdx].manualFronts.push({ height: defHeight, type: defType }); 
             run(); 
         } 
- 
-        function removeManualFront(spaceIdx) { 
-            if(spaceLocks[spaceIdx].manualFronts.length > 1) spaceLocks[spaceIdx].manualFronts.pop(); 
-            run(); 
-        } 
- 
-        function updateTopGap(spaceIdx, value) { 
-            let v = parseFloat(value); if(!isNaN(v)) spaceLocks[spaceIdx].topGapToAxis = v; run(); 
-        } 
+        function removeManualFront(spaceIdx) { if(spaceLocks[spaceIdx].manualFronts.length > 1) spaceLocks[spaceIdx].manualFronts.pop(); run(); } 
+        function updateTopGap(spaceIdx, value) { let v = parseFloat(value); if(!isNaN(v)) spaceLocks[spaceIdx].topGapToAxis = v; run(); } 
  
         function handleSpaceInput(index, value) { 
             let num = parseFloat(value); 
@@ -802,7 +690,6 @@ function shrinkFront(spaceIdx, frontIdx) {
                 parts.push({ gr: tBoard, mat: "Płyta", nazwa: "Półka ruchoma", l: wBox - 2*tBoard - 1, w: dBox - offsetPodporki, szt: polkiRuchome.length });
             }
 
-            // Rozpis formatek frontowych oparty na gotowych wyrenderowanych blokach (niezawodny przy scalonych frontach)
             if (window.lastFrontBlocks) {
                 window.lastFrontBlocks.forEach((fb, idx) => {
                     let layout = fb.layout || 'full';
@@ -860,18 +747,14 @@ function shrinkFront(spaceIdx, frontIdx) {
             document.getElementById('cutListModal').style.display = 'flex';
         }
 
-        function closeCutList() {
-            document.getElementById('cutListModal').style.display = 'none';
-        }
+        function closeCutList() { document.getElementById('cutListModal').style.display = 'none'; }
  
         function run() { 
             let kTyp = document.getElementById('kTyp').value; 
             let hBox = val('hBox'); let wBox = val('wBox'); let dBox = val('dBox'); let tBoard = val('tBoard'); 
             let qPol = val('qPol'); let offsetPodporki = val('offsetPodporki'); let cokol = val('cokol'); 
             let backType = document.getElementById('backType').value; 
-            let nutDepth = val('nutDepth'); 
-            let grPlecy = val('grPlecy');
-            
+            let nutDepth = val('nutDepth'); let grPlecy = val('grPlecy');
             let rcMode = isChecked('rcMode');
  
             let sClearance = isChecked('sClearance'); let sShelfAxis = isChecked('sShelfAxis'); 
@@ -901,20 +784,13 @@ function shrinkFront(spaceIdx, frontIdx) {
                         { height: 200, type: sysDB.default }, 
                         { height: 140, type: sysDB.default } 
                     ], 
-                    topGapToAxis: 12, 
+                    topGapToAxis: 12, gapTop: 0, gapBottom: 0, 
                     manualDrawerNL: {} 
                 }); 
             }
-            if (spaceLocks.length > totalSpaces) {
-                spaceLocks = spaceLocks.slice(0, totalSpaces);
-            }
-            
-            while(structuralShelves.length < qPol) {
-                structuralShelves.push(false);
-            }
-            if (structuralShelves.length > qPol) {
-                structuralShelves = structuralShelves.slice(0, qPol);
-            }
+            if (spaceLocks.length > totalSpaces) spaceLocks = spaceLocks.slice(0, totalSpaces);
+            while(structuralShelves.length < qPol) structuralShelves.push(false);
+            if (structuralShelves.length > qPol) structuralShelves = structuralShelves.slice(0, qPol);
  
             let facadeShift = 0; 
             for(let i = 0; i < totalSpaces; i++) { 
@@ -993,6 +869,10 @@ function shrinkFront(spaceIdx, frontIdx) {
                                     <option value="auto" ${drawerMode==='auto'?'selected':''}>Równomiernie (Auto)</option> 
                                     <option value="manual" ${drawerMode==='manual'?'selected':''}>Własne (Bottom-Up)</option> 
                                 </select>` : ''} 
+                        </div>
+                        <div style="display:flex; gap:10px; margin-top:5px; font-size:0.75rem; background:#f0f4f8; padding:4px; border-radius:4px;">
+                            <label style="margin:0; display:flex; align-items:center; gap:4px;">Luz Góra: <input type="number" value="${spaceLocks[i].gapTop || 0}" onchange="updateGap(${i}, 'gapTop', this.value)" style="width:40px; padding:2px; text-align:center;"></label>
+                            <label style="margin:0; display:flex; align-items:center; gap:4px;">Luz Dół: <input type="number" value="${spaceLocks[i].gapBottom || 0}" onchange="updateGap(${i}, 'gapBottom', this.value)" style="width:40px; padding:2px; text-align:center;"></label>
                         </div>`; 
  
                 if (isDrawers) { 
@@ -1004,43 +884,35 @@ function shrinkFront(spaceIdx, frontIdx) {
                             let lbl = (fIdx === 0) ? `F${fIdx+1} (Dół)` : `F${fIdx+1}`; 
                             let optionsHtml = ''; 
                              
-                            // --- NOWA LOGIKA: Prawdziwe światło wewnętrzne dla konkretnej szuflady ---
-let bottomOverlap = 0; let topOverlap = 0;
-let isAbsoluteBottom = (i === 0 && fIdx === 0);
-let isAbsoluteTop = (i === totalSpaces - 1 && fIdx === spaceLocks[i].manualFronts.length - 1);
+                            let bottomOverlap = 0; let topOverlap = 0;
+                            let isAbsoluteBottom = (i === 0 && fIdx === 0);
+                            let isAbsoluteTop = (i === totalSpaces - 1 && fIdx === spaceLocks[i].manualFronts.length - 1);
 
-// Obliczanie naddatku frontu na wieniec dolny lub półkę konstrukcyjną
-if (isAbsoluteBottom) bottomOverlap = tBoard - fLuzD;
-else if (fIdx === 0 && structuralShelves[i-1]) bottomOverlap = (tBoard / 2) - (luzFrontow / 2);
+                            if (isAbsoluteBottom) bottomOverlap = tBoard - fLuzD;
+                            else if (fIdx === 0 && structuralShelves[i-1]) bottomOverlap = (tBoard / 2) - (luzFrontow / 2);
 
-// Obliczanie naddatku frontu na wieniec górny lub półkę konstrukcyjną
-if (isAbsoluteTop) topOverlap = tBoard - fLuzG;
-else if (fIdx === spaceLocks[i].manualFronts.length - 1 && structuralShelves[i]) topOverlap = (tBoard / 2) - (luzFrontow / 2);
+                            if (isAbsoluteTop) topOverlap = tBoard - fLuzG;
+                            else if (fIdx === spaceLocks[i].manualFronts.length - 1 && structuralShelves[i]) topOverlap = (tBoard / 2) - (luzFrontow / 2);
 
-// Rzeczywiste, fizyczne miejsce w środku dla hardware'u szuflady
-let availableH = mf.height - bottomOverlap - topOverlap;
-if (!isAbsoluteTop) availableH += luzFrontow; // Szczelina nad frontem to też puste światło dla szuflady poniżej
+                            let availableH = mf.height - bottomOverlap - topOverlap;
+                            if (!isAbsoluteTop) availableH += luzFrontow; 
 
-// Auto-korekta (downgrade): jeśli po wpisaniu wysokości szuflada fizycznie nie wchodzi, zbij ją na maksa, który wejdzie
-let currentTypeObj = sysDB.types.find(t => t.id === mf.type);
-if (currentTypeObj && availableH < currentTypeObj.minFront) {
-    let fittingTypes = sysDB.types.filter(t => t.minFront <= availableH);
-    mf.type = fittingTypes.length > 0 ? fittingTypes[fittingTypes.length - 1].id : sysDB.types[0].id;
-    currentTypeObj = sysDB.types.find(t => t.id === mf.type);
-}
+                            let currentTypeObj = sysDB.types.find(t => t.id === mf.type);
+                            if (currentTypeObj && availableH < currentTypeObj.minFront) {
+                                let fittingTypes = sysDB.types.filter(t => t.minFront <= availableH);
+                                mf.type = fittingTypes.length > 0 ? fittingTypes[fittingTypes.length - 1].id : sysDB.types[0].id;
+                                currentTypeObj = sysDB.types.find(t => t.id === mf.type);
+                            }
 
-let minReq = currentTypeObj ? currentTypeObj.minFront : 0; 
+                            let minReq = currentTypeObj ? currentTypeObj.minFront : 0; 
+                            let requiredFrontHeight = minReq + bottomOverlap + topOverlap - (!isAbsoluteTop ? luzFrontow : 0);
+                            let canShrink = mf.height > requiredFrontHeight; 
 
-// Odwrócona kalkulacja dla przycisku "Ściśnij" (uwzględnia nachodzenie na wieńce)
-let requiredFrontHeight = minReq + bottomOverlap + topOverlap - (!isAbsoluteTop ? luzFrontow : 0);
-let canShrink = mf.height > requiredFrontHeight; 
-
-sysDB.types.forEach(t => { 
-    let isDisabled = availableH < t.minFront ? 'disabled' : ''; 
-    let isSelected = mf.type === t.id ? 'selected' : ''; 
-    optionsHtml += `<option value="${t.id}" ${isDisabled} ${isSelected}>${t.label} (wewn. ${t.minFront})${isDisabled ? ' 🚫' : ''}</option>`; 
-});
-// -------------------------------------------------------------------------
+                            sysDB.types.forEach(t => { 
+                                let isDisabled = availableH < t.minFront ? 'disabled' : ''; 
+                                let isSelected = mf.type === t.id ? 'selected' : ''; 
+                                optionsHtml += `<option value="${t.id}" ${isDisabled} ${isSelected}>${t.label} (wewn. ${t.minFront})${isDisabled ? ' 🚫' : ''}</option>`; 
+                            });
                              
                             let shrinkBtnHtml = canShrink ? `<button type="button" class="btn-shrink" onclick="shrinkFront(${i}, ${fIdx})" title="Ściśnij front do ${minReq}mm" style="padding:2px 6px; font-size:0.8rem; background:#e8f0fe; border:1px solid #1F4E79; color:#1F4E79; border-radius:4px; cursor:pointer;">>< Ściśnij</button>` : ''; 
  
@@ -1154,33 +1026,39 @@ sysDB.types.forEach(t => {
                     currentBottom += tBoard; 
                 } 
             } 
- let frontBlocks = []; let currentDoorBlock = null; let doorZawiasy = []; let drawerGuides = []; let facadeY = cokol + fLuzD; 
+ 
+            let frontBlocks = []; let currentDoorBlock = null; let doorZawiasy = []; let drawerGuides = []; let facadeY = cokol + fLuzD; 
             for(let i = 0; i < totalSpaces; i++) { 
                 let sb = spacesBoundary[i]; let isTop = (i === totalSpaces - 1); 
                 
-                // Obsługa wirtualnego szwu (światło = 0 mm)
                 if (sb.isSplit) { 
                     if (currentDoorBlock) { 
                         currentDoorBlock.yEnd = sb.yStart - luzFrontow/2; 
                         frontBlocks.push(currentDoorBlock); 
                         currentDoorBlock = null; 
                     } 
-                    facadeY = sb.yStart + luzFrontow/2; 
-                    
-                    // KLUCZOWE: Pomijamy generowanie frontu dla tej "pustej" przestrzeni
+                    facadeY = sb.yStart + fLuzD; 
                     continue; 
                 } 
                 
-                let defaultEndY = isTop ? hBox - fLuzG : sb.yEnd + (tBoard/2) - (luzFrontow/2); 
+                let gapTop = spaceLocks[i].gapTop || 0;
+                let gapBottom = spaceLocks[i].gapBottom || 0;
+                
+                let localStartY = facadeY;
+                if (!currentDoorBlock || spaceLocks[i].frontType === 'single' || sb.hasDrawers) {
+                     localStartY = Math.max(facadeY, sb.yStart + gapBottom);
+                }
+
+                let defaultEndY = isTop ? hBox - fLuzG - gapTop : sb.yEnd - gapTop + (tBoard/2) - (luzFrontow/2); 
                 let layout = spaceLocks[i].frontLayout || 'full';
 
                 if (sb.hasDrawers) { 
                     if (currentDoorBlock) { frontBlocks.push(currentDoorBlock); currentDoorBlock = null; } 
                     let blockEndY = defaultEndY; 
-                    if (sb.drawerMode === 'manual') blockEndY = facadeY + sb.manualFronts.reduce((a,b) => a + b.height, 0) + ((sb.manualFronts.length - 1) * luzFrontow); 
+                    if (sb.drawerMode === 'manual') blockEndY = localStartY + sb.manualFronts.reduce((a,b) => a + b.height, 0) + ((sb.manualFronts.length - 1) * luzFrontow); 
                     frontBlocks.push({ 
                         type: 'drawers', drawerMode: sb.drawerMode, manualFronts: sb.manualFronts, qDrawers: sb.qDrawers, 
-                        spaceIdx: i, yStart: facadeY, yEnd: blockEndY, interiorBottom: sb.yStart, 
+                        spaceIdx: i, yStart: localStartY, yEnd: blockEndY, interiorBottom: sb.yStart, 
                         visualGap: sb.visualGap, localZero: sb.localZero, layout: layout 
                     }); 
                     facadeY = blockEndY + luzFrontow; 
@@ -1192,11 +1070,14 @@ sysDB.types.forEach(t => {
                             frontBlocks.push(currentDoorBlock); 
                             currentDoorBlock = null; 
                         } 
-                        frontBlocks.push({ type: 'door', yStart: facadeY, yEnd: defaultEndY, visualGap: sb.visualGap, localZero: sb.localZero, layout: layout });
+                        frontBlocks.push({ type: 'door', yStart: localStartY, yEnd: defaultEndY, visualGap: sb.visualGap, localZero: sb.localZero, layout: layout });
                         facadeY = defaultEndY + luzFrontow;
                     } else {
-                        if (!currentDoorBlock) currentDoorBlock = { type: 'door', yStart: facadeY, yEnd: defaultEndY, visualGap: sb.visualGap, localZero: sb.localZero, layout: layout }; 
-                        else currentDoorBlock.yEnd = defaultEndY; 
+                        if (!currentDoorBlock) {
+                            currentDoorBlock = { type: 'door', yStart: localStartY, yEnd: defaultEndY, visualGap: sb.visualGap, localZero: sb.localZero, layout: layout }; 
+                        } else {
+                            currentDoorBlock.yEnd = defaultEndY; 
+                        }
                         facadeY = defaultEndY + luzFrontow; 
                     }
                 } 
@@ -1270,9 +1151,7 @@ sysDB.types.forEach(t => {
                         }); 
                     } 
                     fb.hinges = hinges; fb.actualZawCount = localQZaw; 
-                    if (fb.layout !== 'right') { // Nie dodajemy puszek z prawego frontu na lewy bok
-                        doorZawiasy.push(...hinges); 
-                    }
+                    if (fb.layout !== 'right') { doorZawiasy.push(...hinges); }
                 } 
             }); 
             
@@ -1464,6 +1343,23 @@ sysDB.types.forEach(t => {
                 } 
             }); 
  
+            if ((sHingeAxis || sHingeHoles) && (isAutoZaw || globalQZaw > 0)) { 
+                doorZawiasy.forEach(zaw => { 
+                    let drillY = hBox - zaw.bodyY - zaw.visualGap; let color = zaw.shifted ? "#9c27b0" : "#0288d1";  
+                    let valAbs = Math.round(zaw.bodyY - zaw.localZero);
+                    let cab = subCabinets.find(c => c.visualGap === zaw.visualGap);
+                    let topAbs = Math.round(cab.endY - zaw.bodyY);
+                    let txtDisplay = `Prowadnik: ${valAbs}`;
+                    if (rcMode) txtDisplay += ` [M: ${valAbs - 32}]`;
+                    txtDisplay += ` (${topAbs})${zaw.shifted ? " [KOREKTA]" : ""}`;
+                    if (sHingeAxis) svg += `<line x1="${hFrontX - 20}" y1="${drillY}" x2="${laneHingeAxis - 10}" y2="${drillY}" stroke="${color}" stroke-dasharray="2,2" stroke-width="2"/><text x="${laneHingeAxis}" y="${drillY + 8}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">${txtDisplay}</text>`; 
+                    if (sHingeHoles) [-16, 16].forEach(off => { 
+                        let hy = hBox - (zaw.bodyY + off) - zaw.visualGap; 
+                        svg += `<circle cx="${hFrontX}" cy="${hy}" r="4" fill="${color}"/><line x1="${hFrontX}" y1="${hy}" x2="${laneHingeHoles - 10}" y2="${hy}" stroke="${color}" stroke-dasharray="1,2" stroke-width="1.5"/><text x="${laneHingeHoles}" y="${hy + 8}" font-size="${fontM}" fill="${color}" text-anchor="start">${Math.round(zaw.bodyY + off - zaw.localZero)}</text>`; 
+                    }); 
+                }); 
+            } 
+ 
             if (sFront) { 
                 svg += `<text x="${sXFront + wBox/2}" y="-80" font-size="36" font-weight="bold" fill="#2e7d32" text-anchor="middle">FRONT (Podział zewnętrzny)</text>`; 
                 
@@ -1488,7 +1384,7 @@ sysDB.types.forEach(t => {
                 });
                  
                 frontBlocks.forEach(fb => { 
-                    if (fb.layout === 'none') return; // Nie rysuj nic jeśli brak frontu
+                    if (fb.layout === 'none') return; 
 
                     let rectTopY = hBox - fb.yEnd - fb.visualGap; let rectH = fb.yEnd - fb.yStart; 
                     let halfW = (wBox - luzFrontow) / 2;
