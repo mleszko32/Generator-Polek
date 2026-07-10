@@ -3,7 +3,7 @@
 <head> 
     <meta charset="UTF-8"> 
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-    <title>Generator Stolarski </title> 
+    <title>Generator Stolarski</title> 
     <style> 
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f4f7f6; padding: 20px; color: #333; margin: 0; } 
         .container { max-width: 98%; margin: auto; display: flex; gap: 20px; flex-wrap: wrap; align-items: stretch; } 
@@ -455,24 +455,26 @@
             db.collection("cabinets").doc(docId).delete(); 
         } 
  
-        db.collection("cabinets").onSnapshot((querySnapshot) => { 
-            cloudCabinets = []; 
-            let listHtml = querySnapshot.empty ? '<p style="color:#777;">Brak zapisanych projektów.</p>' : ''; 
-            querySnapshot.forEach((doc) => { 
-                let cab = doc.data(); cab.docId = doc.id; cloudCabinets.push(cab); 
-                let locksInfo = cab.spaceLocks ? cab.spaceLocks.filter(s => s.locked).length : 0; 
-                listHtml += ` 
-                    <div class="saved-item"> 
-                        <h4>${cab.name}</h4> 
-                        <p>Gabaryt: ${cab.hBox}x${cab.wBox}x${cab.dBox} mm<br>Półki: ${cab.qPol} | Blokady: ${locksInfo}</p> 
-                        <div class="saved-actions"> 
-                            <button class="btn-load" onclick="loadCabinet('${cab.docId}')">Wczytaj</button> 
-                            <button class="btn-delete" onclick="deleteCabinet('${cab.docId}')">Usuń</button> 
-                        </div> 
-                    </div>`; 
+        function renderSavedCabinets() {
+            db.collection("cabinets").onSnapshot((querySnapshot) => { 
+                cloudCabinets = []; 
+                let listHtml = querySnapshot.empty ? '<p style="color:#777;">Brak zapisanych projektów.</p>' : ''; 
+                querySnapshot.forEach((doc) => { 
+                    let cab = doc.data(); cab.docId = doc.id; cloudCabinets.push(cab); 
+                    let locksInfo = cab.spaceLocks ? cab.spaceLocks.filter(s => s.locked).length : 0; 
+                    listHtml += ` 
+                        <div class="saved-item"> 
+                            <h4>${cab.name}</h4> 
+                            <p>Gabaryt: ${cab.hBox}x${cab.wBox}x${cab.dBox} mm<br>Półki: ${cab.qPol} | Blokady: ${locksInfo}</p> 
+                            <div class="saved-actions"> 
+                                <button class="btn-load" onclick="loadCabinet('${cab.docId}')">Wczytaj</button> 
+                                <button class="btn-delete" onclick="deleteCabinet('${cab.docId}')">Usuń</button> 
+                            </div> 
+                        </div>`; 
+                }); 
+                document.getElementById('savedList').innerHTML = listHtml; 
             }); 
-            document.getElementById('savedList').innerHTML = listHtml; 
-        }); 
+        }
  
         function printView() { 
             let type = document.getElementById('printType').value; 
@@ -629,7 +631,6 @@
             let nutDepth = val('nutDepth'); 
             let grPlecy = val('grPlecy');
             
-            // --- TRYB MATRYCY RC ---
             let rcMode = isChecked('rcMode');
  
             let sClearance = isChecked('sClearance'); let sShelfAxis = isChecked('sShelfAxis'); 
@@ -830,27 +831,69 @@
             } 
             document.getElementById('spaceControls').innerHTML = controlsHtml; 
  
+            let sideBottom = (kTyp === 'nakladane') ? cokol + tBoard : 0; 
+            let sideTop = (kTyp === 'nakladane') ? hBox - tBoard : hBox; 
             let offsetOdDolu = (kTyp === 'nakladane') ? cokol : tBoard + cokol; 
+            
             let osie = []; let spacesBoundary = []; let currentBottom = offsetOdDolu; 
+            let localZeros = []; let visualGaps = []; 
+            let currentZero = sideBottom; 
+            let currentVisualGap = 0; 
+            
             for(let i = 0; i < totalSpaces; i++) { 
                 let h = spaceLocks[i].currentVal; 
-                spacesBoundary.push({ index: i, hasDrawers: spaceLocks[i].hasDrawers, drawerMode: spaceLocks[i].drawerMode, manualFronts: spaceLocks[i].manualFronts, qDrawers: spaceLocks[i].qDrawers, spaceIdx: i, yStart: currentBottom, yEnd: currentBottom + h }); 
+                let isSplit = false; 
+                // Wykrywanie wirtualnego szwu (podziału)
+                if (h === 0 && i > 0 && i < qPol && structuralShelves[i-1] && structuralShelves[i]) { 
+                    isSplit = true; 
+                } 
+                if (isSplit) { 
+                    currentVisualGap += 60; // Dystans wizualny w SVG miedzy korpusami 
+                    currentZero = currentBottom; 
+                } 
+                localZeros.push(currentZero); 
+                visualGaps.push(currentVisualGap); 
+                
+                spacesBoundary.push({ 
+                    index: i, hasDrawers: spaceLocks[i].hasDrawers, drawerMode: spaceLocks[i].drawerMode, 
+                    manualFronts: spaceLocks[i].manualFronts, qDrawers: spaceLocks[i].qDrawers, spaceIdx: i, 
+                    yStart: currentBottom, yEnd: currentBottom + h, 
+                    visualGap: currentVisualGap, localZero: currentZero, isSplit: isSplit 
+                }); 
                 currentBottom += h;  
-                if (i < qPol) { osie.push({ spod: currentBottom, os: currentBottom - offsetPodporki, osPrawdziwa: currentBottom + tBoard/2 }); currentBottom += tBoard; } 
+                if (i < qPol) { 
+                    osie.push({ 
+                        spod: currentBottom, os: currentBottom - offsetPodporki, osPrawdziwa: currentBottom + tBoard/2, 
+                        visualGap: currentVisualGap, localZero: currentZero, isStruct: structuralShelves[i] 
+                    }); 
+                    currentBottom += tBoard; 
+                } 
             } 
  
             let frontBlocks = []; let currentDoorBlock = null; let doorZawiasy = []; let drawerGuides = []; let facadeY = cokol + fLuzD; 
             for(let i = 0; i < totalSpaces; i++) { 
                 let sb = spacesBoundary[i]; let isTop = (i === totalSpaces - 1); 
+                
+                if (sb.isSplit && currentDoorBlock) { 
+                    currentDoorBlock.yEnd = sb.yStart - luzFrontow/2; 
+                    frontBlocks.push(currentDoorBlock); 
+                    currentDoorBlock = null; 
+                    facadeY = sb.yStart + luzFrontow/2; 
+                } 
+                
                 let defaultEndY = isTop ? hBox - fLuzG : sb.yEnd + (tBoard/2) - (luzFrontow/2); 
                 if (sb.hasDrawers) { 
                     if (currentDoorBlock) { frontBlocks.push(currentDoorBlock); currentDoorBlock = null; } 
                     let blockEndY = defaultEndY; 
                     if (sb.drawerMode === 'manual') blockEndY = facadeY + sb.manualFronts.reduce((a,b) => a + b.height, 0) + ((sb.manualFronts.length - 1) * luzFrontow); 
-                    frontBlocks.push({ type: 'drawers', drawerMode: sb.drawerMode, manualFronts: sb.manualFronts, qDrawers: sb.qDrawers, spaceIdx: i, yStart: facadeY, yEnd: blockEndY, interiorBottom: sb.yStart }); 
+                    frontBlocks.push({ 
+                        type: 'drawers', drawerMode: sb.drawerMode, manualFronts: sb.manualFronts, qDrawers: sb.qDrawers, 
+                        spaceIdx: i, yStart: facadeY, yEnd: blockEndY, interiorBottom: sb.yStart, 
+                        visualGap: sb.visualGap, localZero: sb.localZero 
+                    }); 
                     facadeY = blockEndY + luzFrontow; 
                 } else { 
-                    if (!currentDoorBlock) currentDoorBlock = { type: 'door', yStart: facadeY, yEnd: defaultEndY }; 
+                    if (!currentDoorBlock) currentDoorBlock = { type: 'door', yStart: facadeY, yEnd: defaultEndY, visualGap: sb.visualGap, localZero: sb.localZero }; 
                     else currentDoorBlock.yEnd = defaultEndY; 
                     facadeY = defaultEndY + luzFrontow; 
                 } 
@@ -877,7 +920,7 @@
                             let activeNL = currentSavedNL === undefined || currentSavedNL === 'auto' ? autoSelectedNL : parseFloat(currentSavedNL); 
  
                             fb.drawers.push({ yStart: currY, yEnd: dTop, guideTop: guideTopY, currentNL: activeNL }); 
-                            drawerGuides.push({ axisYTop: guideTopY, currentNL: activeNL }); 
+                            drawerGuides.push({ axisYTop: guideTopY, currentNL: activeNL, visualGap: fb.visualGap, localZero: fb.localZero }); 
                             currY = dTop + luzFrontow; 
                         } 
                     } else {  
@@ -893,7 +936,7 @@
                             }); 
  
                             fb.drawers.push({ yStart: currY, yEnd: dTop, guideTop: guideTopY, currentNL: autoSelectedNL }); 
-                            drawerGuides.push({ axisYTop: guideTopY, currentNL: autoSelectedNL }); 
+                            drawerGuides.push({ axisYTop: guideTopY, currentNL: autoSelectedNL, visualGap: fb.visualGap, localZero: fb.localZero }); 
                             currY = dTop + luzFrontow; 
                         } 
                     } 
@@ -920,7 +963,7 @@
                                 if (collision) { isShifted = true; mY += hg.isTop ? -32 : 32; } 
                                 attempts++; 
                             } 
-                            hinges.push({ bodyY: Math.round(mY), frontY: Math.round(Math.round(mY) - fb.yStart), shifted: isShifted, isTop: hg.isTop }); 
+                            hinges.push({ bodyY: Math.round(mY), frontY: Math.round(Math.round(mY) - fb.yStart), shifted: isShifted, isTop: hg.isTop, visualGap: fb.visualGap, localZero: fb.localZero }); 
                         }); 
                     } 
                     fb.hinges = hinges; fb.actualZawCount = localQZaw; doorZawiasy.push(...hinges); 
@@ -929,7 +972,7 @@
  
             // --- SVG RENDER --- 
             let sXCab = 0; let sXBok = wBox + 300; let sXFront = sXBok + dBox + 1200;  
-            let viewTotalW = sFront ? (sXFront + wBox + 500) : (sXBok + dBox + 1000); let viewTotalH = hBox + 300;         
+            let viewTotalW = sFront ? (sXFront + wBox + 500) : (sXBok + dBox + 1000); let viewTotalH = hBox + currentVisualGap + 300;         
             let svg = `<svg viewBox="-150 -150 ${viewTotalW} ${viewTotalH}" class="svg-drawing" xmlns="http://www.w3.org/2000/svg">`; 
             svg += `<defs><marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1.5 L 10 5 L 0 8.5 Z" fill="#4a5568" /></marker><marker id="arrow-red" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1.5 L 10 5 L 0 8.5 Z" fill="#e53e3e" /></marker><marker id="arrow-green" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1.5 L 10 5 L 0 8.5 Z" fill="#38a169" /></marker></defs>`; 
             let fontL = 28; let fontM = 24; let fontS = 20; let lineW = 3; 
@@ -940,36 +983,62 @@
             svg += `<circle cx="${sXBok + 230}" cy="-120" r="5" fill="#2e7d32"/><text x="${sXBok + 245}" y="-112" font-size="${fontM}" fill="#555">Kołek / Konfirmat (Ø 8 mm)</text>`; 
  
             let innerX = sXCab + tBoard; let innerW = wBox - 2*tBoard; let centerX = sXCab + wBox/2; 
-            let yBottomWieniec = hBox - tBoard - cokol; 
-            if(kTyp === 'wpuszczane') { 
-                svg += `<rect x="${sXCab}" y="0" width="${tBoard}" height="${hBox}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/><rect x="${sXCab + wBox - tBoard}" y="0" width="${tBoard}" height="${hBox}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/><rect x="${innerX}" y="0" width="${innerW}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/><rect x="${innerX}" y="${yBottomWieniec}" width="${innerW}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/>`; 
-            } else { 
-                svg += `<rect x="${sXCab}" y="0" width="${wBox}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/><rect x="${sXCab}" y="${yBottomWieniec}" width="${wBox}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/><rect x="${sXCab}" y="${tBoard}" width="${tBoard}" height="${hBox - 2*tBoard - cokol}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/><rect x="${sXCab + wBox - tBoard}" y="${tBoard}" width="${tBoard}" height="${hBox - 2*tBoard - cokol}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/>`; 
-            } 
- 
-            let currentFloorSVG = yBottomWieniec;  
-            osie.forEach((data, i) => { 
-                let ySpodSVG = hBox - data.spod; let shelfColor = structuralShelves[i] ? "#2e7d32" : "#2F5597"; 
-                svg += `<rect x="${innerX}" y="${ySpodSVG - tBoard}" width="${innerW}" height="${tBoard}" fill="${shelfColor}" opacity="0.4" stroke="#1F4E79" stroke-width="2"/>`; 
-                if (sClearance) { 
-                    let isLocked = spaceLocks[i].locked; let strokeColor = isLocked ? "#d32f2f" : "#555"; let arrow = isLocked ? "url(#arrow-red)" : "url(#arrow)"; 
-                    svg += `<line x1="${centerX}" y1="${ySpodSVG}" x2="${centerX}" y2="${currentFloorSVG}" stroke="${strokeColor}" stroke-width="3" marker-start="${arrow}" marker-end="${arrow}"/><rect x="${centerX - 40}" y="${(currentFloorSVG + ySpodSVG)/2 - 20}" width="80" height="40" fill="#fff" opacity="0.9" rx="6"/><text x="${centerX}" y="${(currentFloorSVG + ySpodSVG)/2 + fontM/3}" font-size="${fontM}" font-weight="bold" fill="${strokeColor}" text-anchor="middle">${spaceLocks[i].currentVal}</text>`; 
-                    if(isLocked) svg += `<text x="${centerX + 50}" y="${(currentFloorSVG + ySpodSVG)/2 + fontM/3}" font-size="${fontM}" fill="#d32f2f">🔒</text>`; 
-                } 
-                currentFloorSVG = ySpodSVG - tBoard;  
-            }); 
-             
-            if (currentFloorSVG > tBoard && sClearance) { 
-                let isLocked = spaceLocks[qPol].locked; let strokeColor = isLocked ? "#d32f2f" : "#555"; let arrow = isLocked ? "url(#arrow-red)" : "url(#arrow)"; 
-                svg += `<line x1="${centerX}" y1="${tBoard}" x2="${centerX}" y2="${currentFloorSVG}" stroke="${strokeColor}" stroke-width="3" marker-start="${arrow}" marker-end="${arrow}"/><rect x="${centerX - 40}" y="${(currentFloorSVG + tBoard)/2 - 20}" width="80" height="40" fill="#fff" opacity="0.9" rx="6"/><text x="${centerX}" y="${(currentFloorSVG + tBoard)/2 + fontM/3}" font-size="${fontM}" font-weight="bold" fill="${strokeColor}" text-anchor="middle">${spaceLocks[qPol].currentVal}</text>`; 
-                if(isLocked) svg += `<text x="${centerX + 50}" y="${(currentFloorSVG + tBoard)/2 + fontM/3}" font-size="${fontM}" fill="#d32f2f">🔒</text>`; 
-            } 
- 
-            // --- OBLICZANIE OŚ X DLA OTWORÓW NA BOKU ---
+            
             let dystansTyl = (backType === 'nut') ? (nutDepth + grPlecy + 37) : 37;
             let hBackX = sXBok + dystansTyl; 
             let hFrontX = sXBok + dBox - 37; 
+            let plecyX_Bok = (backType === 'nut') ? (sXBok + nutDepth) : (sXBok - grPlecy);
+            let grFrontuWizualna = 18;
+            let frontX_Bok = sXBok + dBox;
+            let laneHingeHoles = sXBok + dBox + 40;  
+            let laneShelfHoles = sXBok + dBox + 150; 
+            let laneHingeAxis = sXBok + dBox + 150;  
+ 
+            let subCabinets = []; 
+            let curCab = { startY: sideBottom, endY: 0, visualGap: 0, localZero: sideBottom }; 
+            for(let i = 0; i < totalSpaces; i++) { 
+                let sb = spacesBoundary[i]; 
+                if (sb.visualGap !== curCab.visualGap) { 
+                    curCab.endY = sb.yStart; 
+                    subCabinets.push(curCab); 
+                    curCab = { startY: sb.yStart, endY: 0, visualGap: sb.visualGap, localZero: sb.localZero }; 
+                } 
+                if (i === totalSpaces - 1) { 
+                    curCab.endY = sideTop; 
+                } 
+            } 
+            subCabinets.push(curCab); 
             
+            subCabinets.forEach((cab, idx) => { 
+                let cH = cab.endY - cab.startY; 
+                let svgTopY = hBox - cab.endY - cab.visualGap; 
+                
+                // Głębokie elementy wnętrza 
+                if(kTyp === 'wpuszczane') { 
+                    svg += `<rect x="${sXCab}" y="${svgTopY}" width="${tBoard}" height="${cH}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/>`; 
+                    svg += `<rect x="${sXCab + wBox - tBoard}" y="${svgTopY}" width="${tBoard}" height="${cH}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/>`; 
+                    if (idx === 0) svg += `<rect x="${innerX}" y="${hBox - cokol - tBoard}" width="${innerW}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/>`; 
+                    if (idx === subCabinets.length - 1) svg += `<rect x="${innerX}" y="${svgTopY}" width="${innerW}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/>`; 
+                } else { 
+                    let sideH = cH; let sY = svgTopY; 
+                    if (idx === 0) { sideH -= tBoard; }  
+                    if (idx === subCabinets.length - 1) { sideH -= tBoard; sY += tBoard; } 
+                    svg += `<rect x="${sXCab}" y="${sY}" width="${tBoard}" height="${sideH}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/>`; 
+                    svg += `<rect x="${sXCab + wBox - tBoard}" y="${sY}" width="${tBoard}" height="${sideH}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/>`; 
+                    if (idx === 0) svg += `<rect x="${sXCab}" y="${hBox - cokol - tBoard}" width="${wBox}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/>`; 
+                    if (idx === subCabinets.length - 1) svg += `<rect x="${sXCab}" y="${svgTopY}" width="${wBox}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/>`; 
+                } 
+ 
+                // Formatki boku 
+                svg += `<rect x="${sXBok}" y="${svgTopY}" width="${dBox}" height="${cH}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/>`; 
+                svg += `<rect x="${plecyX_Bok}" y="${svgTopY}" width="${grPlecy}" height="${cH}" fill="#e0e0e0" stroke="#757575" stroke-width="1" class="hide-on-print"/>`; 
+                svg += `<rect x="${frontX_Bok}" y="${svgTopY}" width="${grFrontuWizualna}" height="${cH}" fill="#e2efda" stroke="#2e7d32" stroke-width="1" opacity="0.8" class="hide-on-print"/>`; 
+                
+                svg += `<line x1="${sXCab - 50}" y1="${hBox - cab.startY - cab.visualGap}" x2="${sXBok + dBox + 150}" y2="${hBox - cab.startY - cab.visualGap}" stroke="#333" stroke-width="2" stroke-dasharray="8,8" opacity="0.6"/><text x="${sXBok + dBox + 160}" y="${hBox - cab.startY - cab.visualGap + 8}" font-size="${fontL}" font-weight="bold" fill="#333" text-anchor="start">0 mm (Baza modułu)</text>`; 
+            }); 
+            
+            svg += `<text x="${sXBok - 20}" y="${hBox/2}" font-size="${fontM}" font-weight="bold" fill="#888" text-anchor="middle" transform="rotate(-90 ${sXBok - 20} ${hBox/2})">TYŁ BOKU</text><text x="${sXBok + dBox + 20}" y="${hBox/2}" font-size="${fontM}" font-weight="bold" fill="#888" text-anchor="middle" transform="rotate(90 ${sXBok + dBox + 20} ${hBox/2})">PRZÓD BOKU</text>`; 
+ 
             function drawStructuralHoles(yAxisSVG) { 
                 let hHtml = ""; let rW = 3; let rK = 5; 
                 hHtml += `<circle cx="${sXBok + dystansTyl}" cy="${yAxisSVG}" r="${rW}" fill="#333"/><circle cx="${sXBok + dystansTyl + 32}" cy="${yAxisSVG}" r="${rK}" fill="#2e7d32"/>`; 
@@ -979,64 +1048,46 @@
                 return hHtml; 
             } 
  
-            let sideBottom = (kTyp === 'nakladane') ? cokol + tBoard : 0; let sideTop = (kTyp === 'nakladane') ? hBox - tBoard : hBox; 
-            svg += `<rect x="${sXBok}" y="${hBox - sideTop}" width="${dBox}" height="${sideTop - sideBottom}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/>`; 
-            svg += `<text x="${sXBok - 20}" y="${hBox/2}" font-size="${fontM}" font-weight="bold" fill="#888" text-anchor="middle" transform="rotate(-90 ${sXBok - 20} ${hBox/2})">TYŁ BOKU</text><text x="${sXBok + dBox + 20}" y="${hBox/2}" font-size="${fontM}" font-weight="bold" fill="#888" text-anchor="middle" transform="rotate(90 ${sXBok + dBox + 20} ${hBox/2})">PRZÓD BOKU</text>`; 
-             
-            // --- RYSOWANIE PLECÓW I FRONTÓW NA WIDOKU BOKU (WIZUALIZACJA) ---
-            let plecyX_Bok = (backType === 'nut') ? (sXBok + nutDepth) : (sXBok - grPlecy);
-            svg += `<rect x="${plecyX_Bok}" y="${hBox - sideTop}" width="${grPlecy}" height="${sideTop - sideBottom}" fill="#e0e0e0" stroke="#757575" stroke-width="1" class="hide-on-print"/>`;
-
-            let grFrontuWizualna = 18;
-            let frontX_Bok = sXBok + dBox;
-            svg += `<rect x="${frontX_Bok}" y="${hBox - sideTop}" width="${grFrontuWizualna}" height="${sideTop - sideBottom}" fill="#e2efda" stroke="#2e7d32" stroke-width="1" opacity="0.8" class="hide-on-print"/>`;
-            
-            let laneHingeHoles = sXBok + dBox + 40;  
-            let laneShelfHoles = sXBok + dBox + 150; 
-            let laneHingeAxis = sXBok + dBox + 150;  
- 
             if (sShelfHoles) { 
-                let topHoleY = hBox - sideTop - 40; 
+                let topCab = subCabinets[subCabinets.length - 1]; 
+                let topHoleY = hBox - topCab.endY - topCab.visualGap - 40; 
                 svg += `<line x1="${sXBok}" y1="${topHoleY}" x2="${hBackX}" y2="${topHoleY}" stroke="#e53e3e" stroke-width="1.5" marker-start="url(#arrow-red)" marker-end="url(#arrow-red)"/><text x="${sXBok + dystansTyl/2}" y="${topHoleY - 10}" font-size="${fontS}" font-weight="bold" fill="#e53e3e" text-anchor="middle">${dystansTyl}</text>`; 
                 svg += `<line x1="${hFrontX}" y1="${topHoleY}" x2="${sXBok + dBox}" y2="${topHoleY}" stroke="#e53e3e" stroke-width="1.5" marker-start="url(#arrow-red)" marker-end="url(#arrow-red)"/><text x="${sXBok + dBox - 18.5}" y="${topHoleY - 10}" font-size="${fontS}" font-weight="bold" fill="#e53e3e" text-anchor="middle">37</text>`; 
             } 
  
-            svg += `<line x1="${sXCab - 50}" y1="${hBox - sideBottom}" x2="${sXBok + dBox + 150}" y2="${hBox - sideBottom}" stroke="#333" stroke-width="2" stroke-dasharray="8,8" opacity="0.6"/><text x="${sXBok + dBox + 160}" y="${hBox - sideBottom + 8}" font-size="${fontL}" font-weight="bold" fill="#333" text-anchor="start">0 mm (Baza formatki boku)</text>`; 
- 
             if(kTyp === 'wpuszczane') { 
-                svg += `<rect x="${sXBok}" y="0" width="${dBox}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" opacity="0.6" stroke-width="${lineW}"/><rect x="${sXBok}" y="${hBox - tBoard - cokol}" width="${dBox}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" opacity="0.6" stroke-width="${lineW}"/>`; 
                 if (cokol > 0) svg += `<line x1="${sXBok - 30}" y1="${hBox}" x2="${sXBok - 30}" y2="${hBox - cokol}" stroke="#1F4E79" stroke-width="2" marker-start="url(#arrow)" marker-end="url(#arrow)"/><text x="${sXBok - 40}" y="${hBox - cokol/2 + 8}" font-size="${fontL}" font-weight="bold" fill="#1F4E79" text-anchor="end">Cokół: ${cokol}</text>`; 
-                 
                 let svgOsWd = hBox - (cokol + tBoard / 2); svg += `<line x1="${sXBok - 130}" y1="${svgOsWd}" x2="${sXBok}" y2="${svgOsWd}" stroke="#1F4E79" stroke-dasharray="6,6" stroke-width="2"/><text x="${sXBok - 140}" y="${svgOsWd + 8}" font-size="${fontL}" font-weight="bold" fill="#1F4E79" text-anchor="end">Oś wieńca: ${Math.round(cokol + tBoard / 2 - sideBottom)}</text>`; 
-                let svgOsWg = tBoard / 2; svg += `<line x1="${sXBok - 130}" y1="${svgOsWg}" x2="${sXBok}" y2="${svgOsWg}" stroke="#1F4E79" stroke-dasharray="6,6" stroke-width="2"/><text x="${sXBok - 140}" y="${svgOsWg + 8}" font-size="${fontL}" font-weight="bold" fill="#1F4E79" text-anchor="end">Oś wieńca: ${Math.round(hBox - tBoard / 2 - sideBottom)}</text>`; 
+                let topCab = subCabinets[subCabinets.length - 1];
+                let svgOsWg = hBox - topCab.endY - topCab.visualGap + tBoard / 2; svg += `<line x1="${sXBok - 130}" y1="${svgOsWg}" x2="${sXBok}" y2="${svgOsWg}" stroke="#1F4E79" stroke-dasharray="6,6" stroke-width="2"/><text x="${sXBok - 140}" y="${svgOsWg + 8}" font-size="${fontL}" font-weight="bold" fill="#1F4E79" text-anchor="end">Oś wieńca: ${Math.round(topCab.endY - tBoard / 2 - topCab.localZero)}</text>`; 
                 if (sShelfHoles) { svg += drawStructuralHoles(svgOsWd); svg += drawStructuralHoles(svgOsWg); } 
             } 
  
             osie.forEach((data, i) => { 
-                let ySpodSVG = hBox - data.spod; let isStruct = structuralShelves[i]; 
+                let ySpodSVG = hBox - data.spod - data.visualGap; let isStruct = data.isStruct; 
                 svg += `<rect x="${sXBok}" y="${ySpodSVG - tBoard}" width="${dBox}" height="${tBoard}" fill="${isStruct ? "#2e7d32" : "#2F5597"}" opacity="${isStruct ? "0.25" : "0.15"}"/>`; 
                  
-                let yOsPolkiSVG = hBox - (data.spod + tBoard / 2); 
-                if (sShelfAxis) { svg += `<line x1="${sXBok - 130}" y1="${yOsPolkiSVG}" x2="${sXBok}" y2="${yOsPolkiSVG}" stroke="#1F4E79" stroke-dasharray="6,6" stroke-width="2"/><text x="${sXBok - 140}" y="${yOsPolkiSVG + 8}" font-size="${fontL}" font-weight="bold" fill="#1F4E79" text-anchor="end">Oś: ${Math.round(data.spod + tBoard / 2 - sideBottom)}</text>`; } 
+                let yOsPolkiSVG = hBox - (data.spod + tBoard / 2) - data.visualGap; 
+                if (sShelfAxis) { svg += `<line x1="${sXBok - 130}" y1="${yOsPolkiSVG}" x2="${sXBok}" y2="${yOsPolkiSVG}" stroke="#1F4E79" stroke-dasharray="6,6" stroke-width="2"/><text x="${sXBok - 140}" y="${yOsPolkiSVG + 8}" font-size="${fontL}" font-weight="bold" fill="#1F4E79" text-anchor="end">Oś: ${Math.round(data.spod + tBoard / 2 - data.localZero)}</text>`; } 
                  
                 if (sShelfHoles) { 
                     if (isStruct) svg += drawStructuralHoles(yOsPolkiSVG); 
                     else [-32, 0, 32].forEach(offset => { 
-                        let drillY = hBox - (data.os + offset); let isCenter = offset === 0; let color = isCenter ? "#e65100" : "#ffb74d"; 
-                        let absDist = Math.round(data.os + offset - sideBottom);
-                        let topDist = Math.round(sideTop - (data.os + offset));
+                        let drillY = hBox - (data.os + offset) - data.visualGap; let isCenter = offset === 0; let color = isCenter ? "#e65100" : "#ffb74d"; 
+                        let cab = subCabinets.find(c => c.visualGap === data.visualGap);
+                        let absDist = Math.round(data.os + offset - data.localZero);
+                        let topDist = Math.round(cab.endY - (data.os + offset));
                         let txtDisplay = `${absDist}`;
                         if (rcMode) txtDisplay += ` [M: ${absDist - 32}]`;
                         txtDisplay += ` (${topDist})`;
-
                         svg += `<circle cx="${hFrontX}" cy="${drillY}" r="${isCenter ? 5 : 4}" fill="${color}"/><circle cx="${hBackX}" cy="${drillY}" r="${isCenter ? 5 : 4}" fill="${color}"/><line x1="${hFrontX}" y1="${drillY}" x2="${laneShelfHoles - 10}" y2="${drillY}" stroke="${color}" stroke-dasharray="4,4" stroke-width="1.5"/><text x="${laneShelfHoles}" y="${drillY + 8}" font-size="${isCenter ? fontL : fontM}" font-weight="${isCenter ? "bold" : "normal"}" fill="${color}" text-anchor="start">${txtDisplay}</text>`; 
                     }); 
                 } 
                  
                 if (sDistances && !isStruct) { 
                     let isFirst = (i === 0 || structuralShelves[i-1]);
-                    let yPrevHoleSVG = isFirst ? (hBox - sideBottom) : (hBox - osie[i-1].os); 
-                    let yCurrHoleSVG = hBox - data.os; 
+                    let yPrevHoleSVG = isFirst ? (hBox - data.localZero - data.visualGap) : (hBox - osie[i-1].os - osie[i-1].visualGap); 
+                    let yCurrHoleSVG = hBox - data.os - data.visualGap; 
                     let actualDist = Math.abs(Math.round(yPrevHoleSVG - yCurrHoleSVG));
                     let freeDimLineX = hFrontX - 35; 
                      
@@ -1051,23 +1102,40 @@
                         boxW = 125;
                         fSize = fontS - 4;
                     }
-
                     svg += `<rect x="${freeDimLineX - boxW/2}" y="${(yPrevHoleSVG + yCurrHoleSVG)/2 - 14}" width="${boxW}" height="28" fill="#ffffff" stroke="#e65100" stroke-width="1" rx="4"/>`; 
                     svg += `<text x="${freeDimLineX}" y="${(yPrevHoleSVG + yCurrHoleSVG)/2 + 7}" font-size="${fSize}" font-weight="bold" fill="#e65100" text-anchor="middle">${displayTxt}</text>`; 
                 } 
             }); 
+            
+            // Render światła wewnętrznego
+            let currentFloorSVG = hBox - sideBottom;
+            for(let i = 0; i < totalSpaces; i++) {
+                let sb = spacesBoundary[i];
+                let isFirst = i === 0 || sb.isSplit;
+                if (isFirst) currentFloorSVG = hBox - sb.localZero - sb.visualGap;
+                
+                let ySpodSVG = hBox - sb.yEnd - sb.visualGap;
+                let shelfColor = structuralShelves[i] ? "#2e7d32" : "#2F5597"; 
+                svg += `<rect x="${innerX}" y="${ySpodSVG - tBoard}" width="${innerW}" height="${tBoard}" fill="${shelfColor}" opacity="0.4" stroke="#1F4E79" stroke-width="2"/>`; 
+                
+                if (sClearance && sb.yEnd > sb.yStart) { 
+                    let isLocked = spaceLocks[i].locked; let strokeColor = isLocked ? "#d32f2f" : "#555"; let arrow = isLocked ? "url(#arrow-red)" : "url(#arrow)"; 
+                    svg += `<line x1="${centerX}" y1="${ySpodSVG}" x2="${centerX}" y2="${currentFloorSVG}" stroke="${strokeColor}" stroke-width="3" marker-start="${arrow}" marker-end="${arrow}"/><rect x="${centerX - 40}" y="${(currentFloorSVG + ySpodSVG)/2 - 20}" width="80" height="40" fill="#fff" opacity="0.9" rx="6"/><text x="${centerX}" y="${(currentFloorSVG + ySpodSVG)/2 + fontM/3}" font-size="${fontM}" font-weight="bold" fill="${strokeColor}" text-anchor="middle">${spaceLocks[i].currentVal}</text>`; 
+                    if(isLocked) svg += `<text x="${centerX + 50}" y="${(currentFloorSVG + ySpodSVG)/2 + fontM/3}" font-size="${fontM}" fill="#d32f2f">🔒</text>`; 
+                } 
+                currentFloorSVG = ySpodSVG - tBoard;  
+            }
  
             drawerGuides.forEach((dg) => { 
-                let yT = hBox - dg.axisYTop; 
+                let yT = hBox - dg.axisYTop - dg.visualGap; 
                  
                 if (sDrawerTopHoles) { 
                     svg += `<rect x="${laneHingeAxis}" y="${yT - 20}" width="420" height="38" fill="#f0f4f8" stroke="#1F4E79" stroke-width="1.5" rx="6"/>`; 
                     
-                    let valAbs = Math.round(dg.axisYTop - sideBottom);
+                    let valAbs = Math.round(dg.axisYTop - dg.localZero);
                     let txtDisplay = `Oś prowadnicy: ${valAbs}`;
                     if (rcMode) txtDisplay += ` [M: ${valAbs - 32}]`;
                     txtDisplay += ` [NL: ${dg.currentNL}]`;
-
                     svg += `<text x="${laneHingeAxis + 15}" y="${yT + 7}" font-size="${fontM}" font-weight="bold" fill="#1F4E79" text-anchor="start">${txtDisplay}</text>`; 
                      
                     let holesArray = sysDB.yHolesMap[dg.currentNL] || []; 
@@ -1078,12 +1146,10 @@
                         svg += `<line x1="${sXBok + dBox}" y1="${yT - 25}" x2="${firstHoleX}" y2="${yT - 25}" stroke="#e53e3e" stroke-width="1.2" marker-end="url(#arrow-red)" marker-start="url(#arrow-red)"/>`; 
                         svg += `<text x="${firstHoleX + 18}" y="${yT - 33}" font-size="${fontS}" font-weight="bold" fill="#e53e3e" text-anchor="middle">37</text>`; 
                     } 
- 
                     let prevHoleX = firstHoleX; 
                     holesArray.forEach((step) => { 
                         let holeX = firstHoleX - step; 
                         svg += `<circle cx="${holeX}" cy="${yT}" r="4.5" fill="#1F4E79" stroke="#1F4E79" stroke-width="1.5"/>`; 
-                         
                         if (sDrawerYDim) { 
                             svg += `<line x1="${prevHoleX}" y1="${yT - 25}" x2="${holeX}" y2="${yT - 25}" stroke="#1F4E79" stroke-width="1.2" marker-end="url(#arrow)" marker-start="url(#arrow)"/>`; 
                             svg += `<text x="${(prevHoleX + holeX)/2}" y="${yT - 33}" font-size="${fontS}" font-weight="bold" fill="#1F4E79" text-anchor="middle">${step}</text>`; 
@@ -1095,44 +1161,47 @@
  
             if ((sHingeAxis || sHingeHoles) && (isAutoZaw || globalQZaw > 0)) { 
                 doorZawiasy.forEach(zaw => { 
-                    let drillY = hBox - zaw.bodyY; let color = zaw.shifted ? "#9c27b0" : "#0288d1";  
-                    let valAbs = Math.round(zaw.bodyY - sideBottom);
-                    let topAbs = Math.round(sideTop - zaw.bodyY);
+                    let drillY = hBox - zaw.bodyY - zaw.visualGap; let color = zaw.shifted ? "#9c27b0" : "#0288d1";  
+                    let valAbs = Math.round(zaw.bodyY - zaw.localZero);
+                    let cab = subCabinets.find(c => c.visualGap === zaw.visualGap);
+                    let topAbs = Math.round(cab.endY - zaw.bodyY);
                     let txtDisplay = `Prowadnik: ${valAbs}`;
                     if (rcMode) txtDisplay += ` [M: ${valAbs - 32}]`;
                     txtDisplay += ` (${topAbs})${zaw.shifted ? " [KOREKTA]" : ""}`;
-
                     if (sHingeAxis) svg += `<line x1="${hFrontX - 20}" y1="${drillY}" x2="${laneHingeAxis - 10}" y2="${drillY}" stroke="${color}" stroke-dasharray="2,2" stroke-width="2"/><text x="${laneHingeAxis}" y="${drillY + 8}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">${txtDisplay}</text>`; 
                     if (sHingeHoles) [-16, 16].forEach(off => { 
-                        let hy = hBox - (zaw.bodyY + off); 
-                        svg += `<circle cx="${hFrontX}" cy="${hy}" r="4" fill="${color}"/><line x1="${hFrontX}" y1="${hy}" x2="${laneHingeHoles - 10}" y2="${hy}" stroke="${color}" stroke-dasharray="1,2" stroke-width="1.5"/><text x="${laneHingeHoles}" y="${hy + 8}" font-size="${fontM}" fill="${color}" text-anchor="start">${Math.round(zaw.bodyY + off - sideBottom)}</text>`; 
+                        let hy = hBox - (zaw.bodyY + off) - zaw.visualGap; 
+                        svg += `<circle cx="${hFrontX}" cy="${hy}" r="4" fill="${color}"/><line x1="${hFrontX}" y1="${hy}" x2="${laneHingeHoles - 10}" y2="${hy}" stroke="${color}" stroke-dasharray="1,2" stroke-width="1.5"/><text x="${laneHingeHoles}" y="${hy + 8}" font-size="${fontM}" fill="${color}" text-anchor="start">${Math.round(zaw.bodyY + off - zaw.localZero)}</text>`; 
                     }); 
                 }); 
             } 
  
             if (sFront) { 
                 svg += `<text x="${sXFront + wBox/2}" y="-80" font-size="36" font-weight="bold" fill="#2e7d32" text-anchor="middle">FRONT (Podział zewnętrzny)</text>`; 
-                let baseF = hBox - cokol - fLuzD;  
-                svg += `<line x1="${sXFront - 50}" y1="${baseF}" x2="${sXFront + wBox + 150}" y2="${baseF}" stroke="#2e7d32" stroke-width="3" stroke-dasharray="8,8" opacity="0.6"/><text x="${sXFront + wBox + 160}" y="${baseF + 8}" font-size="${fontL}" font-weight="bold" fill="#2e7d32" text-anchor="start">0 mm (DÓŁ FRONTU)</text>`; 
+                subCabinets.forEach((cab, i) => {
+                    let baseF = hBox - cab.startY - cab.visualGap;
+                    if (i === 0) baseF -= fLuzD;
+                    svg += `<line x1="${sXFront - 50}" y1="${baseF}" x2="${sXFront + wBox + 150}" y2="${baseF}" stroke="#2e7d32" stroke-width="3" stroke-dasharray="8,8" opacity="0.6"/><text x="${sXFront + wBox + 160}" y="${baseF + 8}" font-size="${fontL}" font-weight="bold" fill="#2e7d32" text-anchor="start">0 mm (DÓŁ FRONTU${subCabinets.length > 1 ? ` MODUŁU ${i+1}` : ''})</text>`; 
+                });
                  
                 frontBlocks.forEach(fb => { 
-                    let rectTopY = hBox - fb.yEnd; let rectH = fb.yEnd - fb.yStart; 
+                    let rectTopY = hBox - fb.yEnd - fb.visualGap; let rectH = fb.yEnd - fb.yStart; 
                     if(fb.type === 'door') { 
                         svg += `<rect x="${sXFront}" y="${rectTopY}" width="${wBox}" height="${rectH}" fill="#e2efda" stroke="#2e7d32" stroke-width="${lineW}"/><text x="${sXFront + wBox/2}" y="${rectTopY + rectH/2 + 8}" font-size="${fontM}" font-weight="bold" fill="#2e7d32" text-anchor="middle">Front: ${Math.round(rectH)} mm${fb.actualZawCount > 0 ? ` (${fb.actualZawCount} szt. zawiasów)` : ``}</text>`; 
                         fb.hinges.forEach(zaw => { 
-                            let cy = hBox - zaw.bodyY; let color = zaw.shifted ? "#9c27b0" : "#2e7d32"; let puszkaX = sXFront + 22;  
+                            let cy = hBox - zaw.bodyY - zaw.visualGap; let color = zaw.shifted ? "#9c27b0" : "#2e7d32"; let puszkaX = sXFront + 22;  
                             svg += `<circle cx="${puszkaX}" cy="${cy}" r="17.5" fill="none" stroke="${color}" stroke-width="3"/><circle cx="${puszkaX}" cy="${cy}" r="3" fill="${color}"/><line x1="${puszkaX}" y1="${cy}" x2="${sXFront + wBox + 60}" y2="${cy}" stroke="${color}" stroke-dasharray="4,4" stroke-width="2"/><text x="${sXFront + wBox + 70}" y="${cy + 8}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">${Math.round(zaw.frontY)} (${Math.round(rectH - zaw.frontY)})${zaw.shifted ? " [KOREKTA]" : ""}</text>`; 
                         }); 
                     } else if(fb.type === 'drawers') { 
                         fb.drawers.forEach((dr, idx) => { 
                             let drH = dr.yEnd - dr.yStart; 
-                            svg += `<rect x="${sXFront}" y="${hBox - dr.yEnd}" width="${wBox}" height="${drH}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/>`; 
+                            svg += `<rect x="${sXFront}" y="${hBox - dr.yEnd - fb.visualGap}" width="${wBox}" height="${drH}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/>`; 
                             let drTypeLabel = ""; 
                             if (fb.drawerMode === 'manual' && fb.manualFronts[idx]) { 
                                 let tObj = sysDB.types.find(t => t.id === fb.manualFronts[idx].type); 
                                 if(tObj) drTypeLabel = ` [Typ: ${tObj.label}]`; 
                             } 
-                            svg += `<text x="${sXFront + wBox/2}" y="${hBox - dr.yEnd + drH/2 + 8}" font-size="${fontM}" font-weight="bold" fill="#1F4E79" text-anchor="middle">Szuflada ${idx+1} (F: ${Math.round(drH)}mm)${drTypeLabel} [NL: ${dr.currentNL}mm]</text>`; 
+                            svg += `<text x="${sXFront + wBox/2}" y="${hBox - dr.yEnd - fb.visualGap + drH/2 + 8}" font-size="${fontM}" font-weight="bold" fill="#1F4E79" text-anchor="middle">Szuflada ${idx+1} (F: ${Math.round(drH)}mm)${drTypeLabel} [NL: ${dr.currentNL}mm]</text>`; 
                         }); 
                     } 
                 }); 
