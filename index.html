@@ -1372,20 +1372,46 @@ function closeCutList() {
  
             if (sFront) { 
                 svg += `<text x="${sXFront + wBox/2}" y="-80" font-size="36" font-weight="bold" fill="#2e7d32" text-anchor="middle">FRONT (Podział zewnętrzny)</text>`; 
+                
+                // 1. Główne wymiarowanie (Suma frontów i szczelin dla całego modułu)
                 subCabinets.forEach((cab, i) => {
                     let baseF = hBox - cab.startY - cab.visualGap;
                     if (i === 0) baseF -= fLuzD;
                     svg += `<line x1="${sXFront - 50}" y1="${baseF}" x2="${sXFront + wBox + 150}" y2="${baseF}" stroke="#2e7d32" stroke-width="3" stroke-dasharray="8,8" opacity="0.6"/><text x="${sXFront + wBox + 160}" y="${baseF + 8}" font-size="${fontL}" font-weight="bold" fill="#2e7d32" text-anchor="start">0 mm (DÓŁ FRONTU${subCabinets.length > 1 ? ` MODUŁU ${i+1}` : ''})</text>`; 
+                    
+                    let blocksInCab = frontBlocks.filter(fb => fb.visualGap === cab.visualGap);
+                    if (blocksInCab.length > 0) {
+                        let minStart = Math.min(...blocksInCab.map(b => b.yStart));
+                        let maxEnd = Math.max(...blocksInCab.map(b => b.yEnd));
+                        let totalFacadeH = maxEnd - minStart;
+                        let topY = hBox - maxEnd - cab.visualGap;
+                        let bottomY = hBox - minStart - cab.visualGap;
+                        
+                        let dimTotalX = sXFront - 110;
+                        svg += `<line x1="${dimTotalX}" y1="${topY}" x2="${dimTotalX}" y2="${bottomY}" stroke="#1b5e20" stroke-width="2" marker-start="url(#arrow-green)" marker-end="url(#arrow-green)"/>`;
+                        svg += `<rect x="${dimTotalX - 35}" y="${topY + totalFacadeH/2 - 16}" width="70" height="32" fill="#ffffff" stroke="#1b5e20" stroke-width="1.5" rx="4"/>`;
+                        svg += `<text x="${dimTotalX}" y="${topY + totalFacadeH/2 + 7}" font-size="${fontM}" font-weight="bold" fill="#1b5e20" text-anchor="middle">${Math.round(totalFacadeH)}</text>`;
+                    }
                 });
                  
+                // 2. Wymiarowanie poszczególnych bloków i rysowanie formatek frontowych
                 frontBlocks.forEach(fb => { 
                     let rectTopY = hBox - fb.yEnd - fb.visualGap; let rectH = fb.yEnd - fb.yStart; 
+                    
+                    // Linia wymiarowa dla konkretnego bloku (suma szuflad + szczelin)
+                    let dimX = sXFront - 45;
+                    svg += `<line x1="${dimX}" y1="${rectTopY}" x2="${dimX}" y2="${rectTopY + rectH}" stroke="#2e7d32" stroke-width="1.5" marker-start="url(#arrow-green)" marker-end="url(#arrow-green)"/>`;
+                    svg += `<rect x="${dimX - 30}" y="${rectTopY + rectH/2 - 14}" width="60" height="28" fill="#ffffff" stroke="#2e7d32" stroke-width="1" rx="4"/>`;
+                    svg += `<text x="${dimX}" y="${rectTopY + rectH/2 + 6}" font-size="${fontS}" font-weight="bold" fill="#2e7d32" text-anchor="middle">${Math.round(rectH)}</text>`;
+
+                    // Rysowanie drzwi
                     if(fb.type === 'door') { 
                         svg += `<rect x="${sXFront}" y="${rectTopY}" width="${wBox}" height="${rectH}" fill="#e2efda" stroke="#2e7d32" stroke-width="${lineW}"/><text x="${sXFront + wBox/2}" y="${rectTopY + rectH/2 + 8}" font-size="${fontM}" font-weight="bold" fill="#2e7d32" text-anchor="middle">Front: ${Math.round(rectH)} mm${fb.actualZawCount > 0 ? ` (${fb.actualZawCount} szt. zawiasów)` : ``}</text>`; 
                         fb.hinges.forEach(zaw => { 
                             let cy = hBox - zaw.bodyY - zaw.visualGap; let color = zaw.shifted ? "#9c27b0" : "#2e7d32"; let puszkaX = sXFront + 22;  
                             svg += `<circle cx="${puszkaX}" cy="${cy}" r="17.5" fill="none" stroke="${color}" stroke-width="3"/><circle cx="${puszkaX}" cy="${cy}" r="3" fill="${color}"/><line x1="${puszkaX}" y1="${cy}" x2="${sXFront + wBox + 60}" y2="${cy}" stroke="${color}" stroke-dasharray="4,4" stroke-width="2"/><text x="${sXFront + wBox + 70}" y="${cy + 8}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">${Math.round(zaw.frontY)} (${Math.round(rectH - zaw.frontY)})${zaw.shifted ? " [KOREKTA]" : ""}</text>`; 
                         }); 
+                    // Rysowanie szuflad
                     } else if(fb.type === 'drawers') { 
                         fb.drawers.forEach((dr, idx) => { 
                             let drH = dr.yEnd - dr.yStart; 
@@ -1399,10 +1425,7 @@ function closeCutList() {
                         }); 
                     } 
                 }); 
-            } 
- 
-            svg += `</svg>`; document.getElementById('svgWrapper').innerHTML = svg; 
-        } 
+            }
  
         window.onload = () => { initZoomPan(); run(); renderSavedCabinets(); toggleAutoZaw(); toggleBackFields(); }; 
     </script> 
