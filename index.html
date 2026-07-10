@@ -624,20 +624,43 @@
             spaceLocks[spaceIdx].manualDrawerNL[drawerIdx] = value; 
             run(); 
         } 
- 
-        function updateFrontHeight(spaceIdx, frontIdx, value) { 
-            let v = parseFloat(value); if(isNaN(v) || v <= 0) return; 
-             
-            let sys = DRAWER_DB[document.getElementById('drawerSystem').value]; 
-            let front = spaceLocks[spaceIdx].manualFronts[frontIdx]; 
-            front.height = v; 
-             
-            let fittingTypes = sys.types.filter(t => t.minFront <= v); 
-            if (fittingTypes.length > 0) front.type = fittingTypes[fittingTypes.length - 1].id; 
-            else { front.height = sys.types[0].minFront; front.type = sys.types[0].id; } 
-             
-            run(); 
-        } 
+ function updateFrontHeight(spaceIdx, frontIdx, value) { 
+    let v = parseFloat(value); if(isNaN(v) || v <= 0) return; 
+    spaceLocks[spaceIdx].manualFronts[frontIdx].height = v; 
+    run(); // Skrypt sam złapie zmianę i w razie kolizji zredukuje typ szuflady
+} 
+
+function updateDrawerType(spaceIdx, frontIdx, typeVal) { 
+    spaceLocks[spaceIdx].manualFronts[frontIdx].type = typeVal; 
+    run(); 
+} 
+
+function shrinkFront(spaceIdx, frontIdx) { 
+    let sys = DRAWER_DB[document.getElementById('drawerSystem').value]; 
+    let front = spaceLocks[spaceIdx].manualFronts[frontIdx]; 
+    let typeObj = sys.types.find(t => t.id === front.type); 
+    
+    if (typeObj) { 
+        let i = spaceIdx; let fIdx = frontIdx;
+        let tBoard = val('tBoard'); let fLuzD = val('fLuzD'); let fLuzG = val('fLuzG'); let luzFrontow = val('luzFrontow');
+        let bottomOverlap = 0; let topOverlap = 0;
+        let totalSpaces = val('qPol') + 1;
+        
+        let isAbsoluteBottom = (i === 0 && fIdx === 0);
+        let isAbsoluteTop = (i === totalSpaces - 1 && fIdx === spaceLocks[i].manualFronts.length - 1);
+        
+        if (isAbsoluteBottom) bottomOverlap = tBoard - fLuzD;
+        else if (fIdx === 0 && structuralShelves[i-1]) bottomOverlap = (tBoard / 2) - (luzFrontow / 2);
+        
+        if (isAbsoluteTop) topOverlap = tBoard - fLuzG;
+        else if (fIdx === spaceLocks[i].manualFronts.length - 1 && structuralShelves[i]) topOverlap = (tBoard / 2) - (luzFrontow / 2);
+        
+        // Wyliczamy minimalny bezpieczny front z uwzględnieniem pożeraczy przestrzeni
+        let requiredFrontHeight = typeObj.minFront + bottomOverlap + topOverlap - (!isAbsoluteTop ? luzFrontow : 0);
+        front.height = Math.max(requiredFrontHeight, 10);
+    } 
+    run(); 
+}
  
         function updateDrawerType(spaceIdx, frontIdx, typeVal) { 
             let sys = DRAWER_DB[document.getElementById('drawerSystem').value]; 
@@ -981,15 +1004,43 @@
                             let lbl = (fIdx === 0) ? `F${fIdx+1} (Dół)` : `F${fIdx+1}`; 
                             let optionsHtml = ''; 
                              
-                            let tObj = sysDB.types.find(t => t.id === mf.type); 
-                            let minReq = tObj ? tObj.minFront : 0; 
-                            let canShrink = mf.height > minReq; 
- 
-                            sysDB.types.forEach(t => { 
-                                let isDisabled = mf.height < t.minFront ? 'disabled' : ''; 
-                                let isSelected = mf.type === t.id ? 'selected' : ''; 
-                                optionsHtml += `<option value="${t.id}" ${isDisabled} ${isSelected}>${t.label} (min.${t.minFront})${isDisabled ? ' ⚠️' : ''}</option>`; 
-                            }); 
+                            // --- NOWA LOGIKA: Prawdziwe światło wewnętrzne dla konkretnej szuflady ---
+let bottomOverlap = 0; let topOverlap = 0;
+let isAbsoluteBottom = (i === 0 && fIdx === 0);
+let isAbsoluteTop = (i === totalSpaces - 1 && fIdx === spaceLocks[i].manualFronts.length - 1);
+
+// Obliczanie naddatku frontu na wieniec dolny lub półkę konstrukcyjną
+if (isAbsoluteBottom) bottomOverlap = tBoard - fLuzD;
+else if (fIdx === 0 && structuralShelves[i-1]) bottomOverlap = (tBoard / 2) - (luzFrontow / 2);
+
+// Obliczanie naddatku frontu na wieniec górny lub półkę konstrukcyjną
+if (isAbsoluteTop) topOverlap = tBoard - fLuzG;
+else if (fIdx === spaceLocks[i].manualFronts.length - 1 && structuralShelves[i]) topOverlap = (tBoard / 2) - (luzFrontow / 2);
+
+// Rzeczywiste, fizyczne miejsce w środku dla hardware'u szuflady
+let availableH = mf.height - bottomOverlap - topOverlap;
+if (!isAbsoluteTop) availableH += luzFrontow; // Szczelina nad frontem to też puste światło dla szuflady poniżej
+
+// Auto-korekta (downgrade): jeśli po wpisaniu wysokości szuflada fizycznie nie wchodzi, zbij ją na maksa, który wejdzie
+let currentTypeObj = sysDB.types.find(t => t.id === mf.type);
+if (currentTypeObj && availableH < currentTypeObj.minFront) {
+    let fittingTypes = sysDB.types.filter(t => t.minFront <= availableH);
+    mf.type = fittingTypes.length > 0 ? fittingTypes[fittingTypes.length - 1].id : sysDB.types[0].id;
+    currentTypeObj = sysDB.types.find(t => t.id === mf.type);
+}
+
+let minReq = currentTypeObj ? currentTypeObj.minFront : 0; 
+
+// Odwrócona kalkulacja dla przycisku "Ściśnij" (uwzględnia nachodzenie na wieńce)
+let requiredFrontHeight = minReq + bottomOverlap + topOverlap - (!isAbsoluteTop ? luzFrontow : 0);
+let canShrink = mf.height > requiredFrontHeight; 
+
+sysDB.types.forEach(t => { 
+    let isDisabled = availableH < t.minFront ? 'disabled' : ''; 
+    let isSelected = mf.type === t.id ? 'selected' : ''; 
+    optionsHtml += `<option value="${t.id}" ${isDisabled} ${isSelected}>${t.label} (wewn. ${t.minFront})${isDisabled ? ' 🚫' : ''}</option>`; 
+});
+// -------------------------------------------------------------------------
                              
                             let shrinkBtnHtml = canShrink ? `<button type="button" class="btn-shrink" onclick="shrinkFront(${i}, ${fIdx})" title="Ściśnij front do ${minReq}mm" style="padding:2px 6px; font-size:0.8rem; background:#e8f0fe; border:1px solid #1F4E79; color:#1F4E79; border-radius:4px; cursor:pointer;">>< Ściśnij</button>` : ''; 
  
