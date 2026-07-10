@@ -1426,7 +1426,9 @@ function closeCutList() {
                     } 
                 }); 
             }
- 
+ svg += `</svg>`; 
+            document.getElementById('svgWrapper').innerHTML = svg; 
+        } //
         window.onload = () => { initZoomPan(); run(); renderSavedCabinets(); toggleAutoZaw(); toggleBackFields(); }; 
     </script> 
 </body> 
