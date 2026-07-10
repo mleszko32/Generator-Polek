@@ -4,46 +4,12 @@
     <meta charset="UTF-8"> 
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
     <title>Generator Stolarski</title> 
-    <style>
-    
-    /* OKNO MODALNE Z LISTĄ FORMATEK */
-.modal-overlay {
-    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.6); z-index: 1000; justify-content: center; align-items: center;
-}
-.modal-content {
-    background: #fff; padding: 20px 30px; border-radius: 8px; width: 90%; max-width: 800px;
-    max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-}
-.modal-header {
-    display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1F4E79; padding-bottom: 10px; margin-bottom: 20px;
-}
-.modal-header h2 { margin: 0; border: none; padding: 0; }
-.btn-close {
-    background: #d32f2f; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold;
-}
-.btn-close:hover { background: #b71c1c; }
-
-/* TABELA FORMATEK */
-.cut-table {
-    width: 100%; border-collapse: collapse; margin-bottom: 20px; text-align: center;
-}
-.cut-table th {
-    background: #e8f0fe; color: #1F4E79; padding: 10px; border: 1px solid #ddd;
-}
-.cut-table td {
-    padding: 8px; border: 1px solid #ddd; color: #333;
-}
-.cut-table tr:nth-child(even) { background: #f9fbfd; }
-.table-group-header {
-    background: #1F4E79 !important; color: white !important; font-weight: bold; text-align: left !important;
-} 
+    <style> 
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f4f7f6; padding: 20px; color: #333; margin: 0; } 
         .container { max-width: 98%; margin: auto; display: flex; gap: 20px; flex-wrap: wrap; align-items: stretch; } 
         .panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #eee; display: flex; flex-direction: column; } 
         .panel-left { flex: 1.2; min-width: 440px; max-width: 520px; } 
          
-        /* RESPONSYWNOŚĆ CSS DLA PC ORAZ TABLETÓW/TELEFONÓW */ 
         .panel-right { flex: 2.5; min-width: 600px; position: sticky; top: 20px; align-self: flex-start; height: calc(100vh - 40px); } 
         .panel-bottom { flex: 100%; width: 100%; margin-top: 10px; } 
          
@@ -100,7 +66,40 @@
         .svg-wrapper { width: 100%; height: 100%; transform-origin: center center; transition: transform 0.05s linear; pointer-events: none; } 
          
         #printArea { display: none; } 
- 
+        
+        /* OKNO MODALNE Z LISTĄ FORMATEK */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); z-index: 1000; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: #fff; padding: 20px 30px; border-radius: 8px; width: 90%; max-width: 800px;
+            max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1F4E79; padding-bottom: 10px; margin-bottom: 20px;
+        }
+        .modal-header h2 { margin: 0; border: none; padding: 0; }
+        .btn-close {
+            background: #d32f2f; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold;
+        }
+        .btn-close:hover { background: #b71c1c; }
+        
+        /* TABELA FORMATEK */
+        .cut-table {
+            width: 100%; border-collapse: collapse; margin-bottom: 20px; text-align: center;
+        }
+        .cut-table th {
+            background: #e8f0fe; color: #1F4E79; padding: 10px; border: 1px solid #ddd;
+        }
+        .cut-table td {
+            padding: 8px; border: 1px solid #ddd; color: #333;
+        }
+        .cut-table tr:nth-child(even) { background: #f9fbfd; }
+        .table-group-header {
+            background: #1F4E79 !important; color: white !important; font-weight: bold; text-align: left !important;
+        }
+
         @media print { 
             body { background: white; margin: 0; padding: 0; } 
             .container { display: none !important; } 
@@ -125,13 +124,13 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script> 
 </head> 
 <body> 
-    
     <div class="container"> 
         <div class="panel panel-left"> 
             <h2>Opcje i Widoki</h2> 
-             <div style="margin-bottom: 15px;">
-    <button class="btn-primary" style="background:#2e7d32; border-color:#1b5e20;" onclick="showCutList()">📋 Wygeneruj Listę Formatek</button>
-</div>
+            <div style="margin-bottom: 15px;">
+                <button class="btn-primary" style="background:#2e7d32; border-color:#1b5e20;" onclick="showCutList()">📋 Wygeneruj Listę Formatek</button>
+            </div>
+             
             <div class="view-options"> 
                 <label><input type="checkbox" id="sClearance" checked onchange="run()"> Światło (Wymiar)</label> 
                 <label><input type="checkbox" id="sShelfAxis" checked onchange="run()"> Oś półki</label> 
@@ -245,166 +244,18 @@
     </div> 
  
     <div id="printArea"></div> 
- <div id="cutListModal" class="modal-overlay">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2>Lista Formatek</h2>
-            <button class="btn-close" onclick="closeCutList()">Zamknij (X)</button>
+    
+    <div id="cutListModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Lista Formatek</h2>
+                <button class="btn-close" onclick="closeCutList()">Zamknij (X)</button>
+            </div>
+            <div id="cutListContainer"></div>
         </div>
-        <div id="cutListContainer"></div>
     </div>
-</div>
-    <script>
-    function showCutList() {
-    // 1. Zbieranie parametrów
-    let kTyp = document.getElementById('kTyp').value; 
-    let hBox = val('hBox'); let wBox = val('wBox'); let dBox = val('dBox'); let tBoard = val('tBoard'); 
-    let qPol = val('qPol'); let offsetPodporki = val('offsetPodporki'); let cokol = val('cokol'); 
-    let backType = document.getElementById('backType').value; 
-    let nutDepth = val('nutDepth'); let grPlecy = val('grPlecy');
-    let luzFrontow = val('luzFrontow');
-
-    // Odtworzenie geometrii podziału (podobnie jak w run())
-    let totalSpaces = qPol + 1;
-    let offsetOdDolu = (kTyp === 'nakladane') ? cokol : tBoard + cokol;
-    let currentBottom = offsetOdDolu;
-    let sideBottom = (kTyp === 'nakladane') ? cokol + tBoard : 0; 
-    let sideTop = (kTyp === 'nakladane') ? hBox - tBoard : hBox;
-    
-    let subCabinetsLocal = [];
-    let curCab = { startY: sideBottom, endY: 0, hasFronts: false };
-    let polkiRuchome = [];
-
-    for(let i = 0; i < totalSpaces; i++) { 
-        let h = spaceLocks[i].currentVal; 
-        let isSplit = (h === 0 && i > 0 && i < qPol && structuralShelves[i-1] && structuralShelves[i]); 
-        
-        if (isSplit) { 
-            curCab.endY = currentBottom; 
-            subCabinetsLocal.push(curCab); 
-            curCab = { startY: currentBottom, endY: 0 }; 
-        } 
-        currentBottom += h;  
-        if (i < qPol) {
-            if (!structuralShelves[i]) polkiRuchome.push({ os: currentBottom - offsetPodporki });
-            currentBottom += tBoard;
-        }
-    } 
-    curCab.endY = sideTop; 
-    subCabinetsLocal.push(curCab);
-
-    // 2. Generowanie listy części
-    let parts = [];
-
-    subCabinetsLocal.forEach((cab, i) => {
-        let cabH = cab.endY - cab.startY;
-        let sideH = cabH;
-        
-        let wDno = wBox; let wGora = wBox;
-
-        if (kTyp === 'nakladane') {
-            if (i === 0) sideH -= tBoard; 
-            if (i === subCabinetsLocal.length - 1) sideH -= tBoard; 
-            wDno = (i === 0) ? wBox : wBox - 2*tBoard;
-            wGora = (i === subCabinetsLocal.length - 1) ? wBox : wBox - 2*tBoard;
-        } else {
-            wDno = wBox - 2*tBoard; wGora = wBox - 2*tBoard;
-        }
-
-        // BOKI
-        parts.push({ gr: tBoard, mat: "Płyta", nazwa: `Bok (Moduł ${i+1})`, l: Math.round(sideH), w: dBox, szt: 2 });
-        // WIEŃCE
-        parts.push({ gr: tBoard, mat: "Płyta", nazwa: (i===0?"Wieniec Dolny":`Dno konstrukcyjne (M${i+1})`), l: Math.round(wDno), w: dBox, szt: 1 });
-        parts.push({ gr: tBoard, mat: "Płyta", nazwa: (i===subCabinetsLocal.length-1?"Wieniec Górny":`Góra konstrukcyjna (M${i+1})`), l: Math.round(wGora), w: dBox, szt: 1 });
-        
-        // COKÓŁ
-        if (i === 0 && cokol > 0) {
-            parts.push({ gr: tBoard, mat: "Płyta", nazwa: "Cokół (Front/Tył)", l: wBox, w: cokol, szt: 2 });
-        }
-
-        // PLECY
-        let backW = 0; let backH = 0;
-        if (backType === 'nut') {
-            backW = wBox - 2*tBoard + 2*nutDepth - 2; 
-            backH = cabH - 2*tBoard + 2*nutDepth - 2; 
-        } else {
-            backW = wBox - 2;
-            backH = cabH - 2;
-        }
-        if (backH > 0) {
-            parts.push({ gr: grPlecy, mat: "HDF", nazwa: `Plecy (Moduł ${i+1})`, l: Math.round(backH), w: Math.round(backW), szt: 1 });
-        }
-    });
-
-    // PÓŁKI RUCHOME
-    if (polkiRuchome.length > 0) {
-        parts.push({ gr: tBoard, mat: "Płyta", nazwa: "Półka ruchoma", l: wBox - 2*tBoard - 1, w: dBox - offsetPodporki, szt: polkiRuchome.length });
-    }
-
-    // FRONTY (Obliczanie z przestrzeni)
-    let fW = wBox - luzFrontow; // np. po 1.5mm luzu z lewej i prawej strony
-    for(let i = 0; i < totalSpaces; i++) {
-        if(spaceLocks[i].hasDrawers) {
-            if(spaceLocks[i].drawerMode === 'manual') {
-                spaceLocks[i].manualFronts.forEach((mf, idx) => {
-                    parts.push({ gr: 18, mat: "Płyta", nazwa: `Front szuflady ${idx+1} (Moduł ${i+1})`, l: Math.round(mf.height), w: Math.round(fW), szt: 1 });
-                });
-            } else {
-                let fH_total = spaceLocks[i].currentVal; // To jest uproszczenie na potrzeby wyliczenia z 'auto'
-                let qD = spaceLocks[i].qDrawers;
-                let dFrontH = (fH_total - ((qD - 1) * luzFrontow)) / qD;
-                parts.push({ gr: 18, mat: "Płyta", nazwa: `Front szuflady Auto (Moduł ${i+1})`, l: Math.round(dFrontH), w: Math.round(fW), szt: qD });
-            }
-        } else if(spaceLocks[i].currentVal > 0) {
-            // Fronty drzwiowe - uproszczenie do wyciągnięcia z samej wysokości przestrzeni + nakrycie wieńców
-            // Bardziej precyzyjnie jest to pobierać z frontBlocks (jak w oryginalnym run)
-        }
-    }
-    
-    // Uzupełnienie frontów drzwiowych z globalnego DOM lub dokładnego przeliczenia (Tutaj dla uproszczenia fronty pełne i szuflady)
-    // Z uwagi na złożoność frontów drzwiowych (nakładanie, szczeliny) zalecam pobranie ich z `window.lastFrontBlocks`, jeśli je wyeksportujesz.
-    
-    // 3. Render Tabeli w HTML
-    let tableHtml = `<table class="cut-table">
-        <thead>
-            <tr>
-                <th>Nazwa Elementu</th>
-                <th>Długość (wymiar po usłojeniu)</th>
-                <th>Szerokość</th>
-                <th>Grubość</th>
-                <th>Ilość sztuk</th>
-            </tr>
-        </thead>
-        <tbody>`;
-
-    // Sortowanie by pogrupować Płytę 18mm od HDF
-    parts.sort((a,b) => b.gr - a.gr);
-
-    let currentGr = 0;
-    parts.forEach(p => {
-        if (p.gr !== currentGr) {
-            tableHtml += `<tr><td colspan="5" class="table-group-header">MATERIAŁ: ${p.mat} ${p.gr} mm</td></tr>`;
-            currentGr = p.gr;
-        }
-        tableHtml += `
-            <tr>
-                <td style="text-align:left; font-weight:bold;">${p.nazwa}</td>
-                <td>${p.l} mm</td>
-                <td>${p.w} mm</td>
-                <td>${p.gr} mm</td>
-                <td>${p.szt}</td>
-            </tr>
-        `;
-    });
-    tableHtml += `</tbody></table>`;
-
-    document.getElementById('cutListContainer').innerHTML = tableHtml;
-    document.getElementById('cutListModal').style.display = 'flex';
-}
-
-function closeCutList() {
-    document.getElementById('cutListModal').style.display = 'none';
-} 
+ 
+    <script> 
         const firebaseConfig = { 
             apiKey: "AIzaSyAYIhS-8GDN8K3hXZLelH-B0OoXOzlyFIo", 
             authDomain: "generator-stolarski.firebaseapp.com", 
@@ -629,7 +480,8 @@ function closeCutList() {
                     locked: s.locked || false, 
                     manualVal: s.manualVal || 0, 
                     currentVal: s.currentVal || 0, 
-                    hasDrawers: s.hasDrawers || false, 
+                    hasDrawers: s.hasDrawers || false,
+                    frontType: s.frontType || (s.hasDrawers ? 'drawers' : 'merged'),
                     drawerMode: s.drawerMode || 'auto', 
                     qDrawers: s.qDrawers || 3, 
                     manualFronts: mFronts, 
@@ -676,7 +528,6 @@ function closeCutList() {
             let hBox = val('hBox'); let wBox = val('wBox'); let dBox = val('dBox'); 
             let sXBok = wBox + 300; let sXFront = sXBok + dBox + 1200;  
  
-            // Ukrywanie elementów bocznych wyłączonych z wydruku
             svgNode.querySelectorAll('.hide-on-print').forEach(el => el.remove());
 
             if (type === 'interior') svgNode.setAttribute('viewBox', `-100 -120 ${wBox + 200} ${hBox + 250}`); 
@@ -697,7 +548,7 @@ function closeCutList() {
             for(let i = 0; i < totalSpaces; i++) { 
                 spaceLocks.push({  
                     locked: false, manualVal: 0, currentVal: 0, 
-                    hasDrawers: false, drawerMode: 'auto', qDrawers: 3, 
+                    hasDrawers: false, frontType: 'merged', drawerMode: 'auto', qDrawers: 3, 
                     manualFronts: [ 
                         { height: 200, type: dbSys.default }, 
                         { height: 200, type: dbSys.default }, 
@@ -722,7 +573,17 @@ function closeCutList() {
             run(); 
         } 
          
-        function toggleDrawers(index) { spaceLocks[index].hasDrawers = !spaceLocks[index].hasDrawers; run(); } 
+        function changeFrontType(index, type) { 
+            if (type === 'drawers') { 
+                spaceLocks[index].hasDrawers = true; 
+                spaceLocks[index].frontType = 'drawers'; 
+            } else { 
+                spaceLocks[index].hasDrawers = false; 
+                spaceLocks[index].frontType = type; 
+            } 
+            run(); 
+        }
+         
         function toggleStructural(index) { structuralShelves[index] = !structuralShelves[index]; run(); } 
          
         function changeDrawerMode(index, mode) { 
@@ -816,6 +677,142 @@ function closeCutList() {
  
             spaceLocks[index].locked = true; spaceLocks[index].manualVal = num; run(); 
         } 
+        
+        function showCutList() {
+            let kTyp = document.getElementById('kTyp').value; 
+            let hBox = val('hBox'); let wBox = val('wBox'); let dBox = val('dBox'); let tBoard = val('tBoard'); 
+            let qPol = val('qPol'); let offsetPodporki = val('offsetPodporki'); let cokol = val('cokol'); 
+            let backType = document.getElementById('backType').value; 
+            let nutDepth = val('nutDepth'); let grPlecy = val('grPlecy');
+            let luzFrontow = val('luzFrontow');
+
+            let totalSpaces = qPol + 1;
+            let offsetOdDolu = (kTyp === 'nakladane') ? cokol : tBoard + cokol;
+            let currentBottom = offsetOdDolu;
+            let sideBottom = (kTyp === 'nakladane') ? cokol + tBoard : 0; 
+            let sideTop = (kTyp === 'nakladane') ? hBox - tBoard : hBox;
+            
+            let subCabinetsLocal = [];
+            let curCab = { startY: sideBottom, endY: 0, hasFronts: false };
+            let polkiRuchome = [];
+
+            for(let i = 0; i < totalSpaces; i++) { 
+                let h = spaceLocks[i].currentVal; 
+                let isSplit = (h === 0 && i > 0 && i < qPol && structuralShelves[i-1] && structuralShelves[i]); 
+                
+                if (isSplit) { 
+                    curCab.endY = currentBottom; 
+                    subCabinetsLocal.push(curCab); 
+                    curCab = { startY: currentBottom, endY: 0 }; 
+                } 
+                currentBottom += h;  
+                if (i < qPol) {
+                    if (!structuralShelves[i]) polkiRuchome.push({ os: currentBottom - offsetPodporki });
+                    currentBottom += tBoard;
+                }
+            } 
+            curCab.endY = sideTop; 
+            subCabinetsLocal.push(curCab);
+
+            let parts = [];
+
+            subCabinetsLocal.forEach((cab, i) => {
+                let cabH = cab.endY - cab.startY;
+                let sideH = cabH;
+                
+                let wDno = wBox; let wGora = wBox;
+
+                if (kTyp === 'nakladane') {
+                    if (i === 0) sideH -= tBoard; 
+                    if (i === subCabinetsLocal.length - 1) sideH -= tBoard; 
+                    wDno = (i === 0) ? wBox : wBox - 2*tBoard;
+                    wGora = (i === subCabinetsLocal.length - 1) ? wBox : wBox - 2*tBoard;
+                } else {
+                    wDno = wBox - 2*tBoard; wGora = wBox - 2*tBoard;
+                }
+
+                parts.push({ gr: tBoard, mat: "Płyta", nazwa: `Bok (Moduł ${i+1})`, l: Math.round(sideH), w: dBox, szt: 2 });
+                parts.push({ gr: tBoard, mat: "Płyta", nazwa: (i===0?"Wieniec Dolny":`Dno konstrukcyjne (M${i+1})`), l: Math.round(wDno), w: dBox, szt: 1 });
+                parts.push({ gr: tBoard, mat: "Płyta", nazwa: (i===subCabinetsLocal.length-1?"Wieniec Górny":`Góra konstrukcyjna (M${i+1})`), l: Math.round(wGora), w: dBox, szt: 1 });
+                
+                if (i === 0 && cokol > 0) {
+                    parts.push({ gr: tBoard, mat: "Płyta", nazwa: "Cokół (Front/Tył)", l: wBox, w: cokol, szt: 2 });
+                }
+
+                let backW = 0; let backH = 0;
+                if (backType === 'nut') {
+                    backW = wBox - 2*tBoard + 2*nutDepth - 2; 
+                    backH = cabH - 2*tBoard + 2*nutDepth - 2; 
+                } else {
+                    backW = wBox - 2;
+                    backH = cabH - 2;
+                }
+                if (backH > 0) {
+                    parts.push({ gr: grPlecy, mat: "HDF", nazwa: `Plecy (Moduł ${i+1})`, l: Math.round(backH), w: Math.round(backW), szt: 1 });
+                }
+            });
+
+            if (polkiRuchome.length > 0) {
+                parts.push({ gr: tBoard, mat: "Płyta", nazwa: "Półka ruchoma", l: wBox - 2*tBoard - 1, w: dBox - offsetPodporki, szt: polkiRuchome.length });
+            }
+
+            let fW = wBox - luzFrontow; 
+            for(let i = 0; i < totalSpaces; i++) {
+                if(spaceLocks[i].hasDrawers) {
+                    if(spaceLocks[i].drawerMode === 'manual') {
+                        spaceLocks[i].manualFronts.forEach((mf, idx) => {
+                            parts.push({ gr: 18, mat: "Płyta", nazwa: `Front szuflady ${idx+1} (Wnęka ${i+1})`, l: Math.round(mf.height), w: Math.round(fW), szt: 1 });
+                        });
+                    } else {
+                        let fH_total = spaceLocks[i].currentVal; 
+                        let qD = spaceLocks[i].qDrawers;
+                        let dFrontH = (fH_total - ((qD - 1) * luzFrontow)) / qD;
+                        parts.push({ gr: 18, mat: "Płyta", nazwa: `Front szuflady (Wnęka ${i+1})`, l: Math.round(dFrontH), w: Math.round(fW), szt: qD });
+                    }
+                } else if(spaceLocks[i].frontType === 'single') {
+                    parts.push({ gr: 18, mat: "Płyta", nazwa: `Front osobny (Wnęka ${i+1})`, l: Math.round(spaceLocks[i].currentVal), w: Math.round(fW), szt: 1 });
+                }
+            }
+            
+            let tableHtml = `<table class="cut-table">
+                <thead>
+                    <tr>
+                        <th>Nazwa Elementu</th>
+                        <th>Długość (wymiar po usłojeniu)</th>
+                        <th>Szerokość</th>
+                        <th>Grubość</th>
+                        <th>Ilość sztuk</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            parts.sort((a,b) => b.gr - a.gr);
+
+            let currentGr = 0;
+            parts.forEach(p => {
+                if (p.gr !== currentGr) {
+                    tableHtml += `<tr><td colspan="5" class="table-group-header">MATERIAŁ: ${p.mat} ${p.gr} mm</td></tr>`;
+                    currentGr = p.gr;
+                }
+                tableHtml += `
+                    <tr>
+                        <td style="text-align:left; font-weight:bold;">${p.nazwa}</td>
+                        <td>${p.l} mm</td>
+                        <td>${p.w} mm</td>
+                        <td>${p.gr} mm</td>
+                        <td>${p.szt}</td>
+                    </tr>
+                `;
+            });
+            tableHtml += `</tbody></table>`;
+
+            document.getElementById('cutListContainer').innerHTML = tableHtml;
+            document.getElementById('cutListModal').style.display = 'flex';
+        }
+
+        function closeCutList() {
+            document.getElementById('cutListModal').style.display = 'none';
+        }
  
         function run() { 
             let kTyp = document.getElementById('kTyp').value; 
@@ -848,7 +845,7 @@ function closeCutList() {
             while(spaceLocks.length < totalSpaces) {
                 spaceLocks.push({  
                     locked: false, manualVal: 0, currentVal: 0, 
-                    hasDrawers: false, drawerMode: 'auto', qDrawers: 3, 
+                    hasDrawers: false, frontType: 'merged', drawerMode: 'auto', qDrawers: 3, 
                     manualFronts: [ 
                         { height: 200, type: sysDB.default }, 
                         { height: 200, type: sysDB.default }, 
@@ -921,13 +918,18 @@ function closeCutList() {
  
                 let drawerHtml = ` 
                     <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 4px; background: #fff; padding: 6px; border-radius: 4px; border: 1px solid #ddd;"> 
-                        <div style="display:flex; align-items:center; gap: 10px;"> 
-                            <label style="cursor:pointer; display:flex; align-items:center; gap:4px; margin:0; font-weight:normal; color:#1F4E79;"> 
-                                <input type="checkbox" ${isDrawers ? 'checked' : ''} onchange="toggleDrawers(${i})"> <b>Moduł Szuflad</b> 
-                            </label> 
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap: 10px;"> 
+                            <div style="display:flex; align-items:center; gap: 6px;">
+                                <span style="font-size:0.8rem; font-weight:bold; color:#1F4E79;">Typ frontu:</span>
+                                <select onchange="changeFrontType(${i}, this.value)" style="padding: 2px 4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px; outline:none; background:#f9fbfd;">
+                                    <option value="merged" ${spaceLocks[i].frontType === 'merged' || (!spaceLocks[i].frontType && !spaceLocks[i].hasDrawers) ? 'selected' : ''}>🚪 Razem (Drzwi)</option>
+                                    <option value="single" ${spaceLocks[i].frontType === 'single' ? 'selected' : ''}>🚪 Osobny (Drzwi)</option>
+                                    <option value="drawers" ${spaceLocks[i].hasDrawers ? 'selected' : ''}>🗄️ Szuflady</option>
+                                </select>
+                            </div>
                             ${isDrawers ? `<select onchange="changeDrawerMode(${i}, this.value)" style="padding: 2px 5px; font-size:0.8rem; width:auto;"> 
                                     <option value="auto" ${drawerMode==='auto'?'selected':''}>Równomiernie (Auto)</option> 
-                                    <option value="manual" ${drawerMode==='manual'?'selected':''}>Własne fronty (Bottom-Up)</option> 
+                                    <option value="manual" ${drawerMode==='manual'?'selected':''}>Własne (Bottom-Up)</option> 
                                 </select>` : ''} 
                         </div>`; 
  
@@ -1037,12 +1039,11 @@ function closeCutList() {
             for(let i = 0; i < totalSpaces; i++) { 
                 let h = spaceLocks[i].currentVal; 
                 let isSplit = false; 
-                // Wykrywanie wirtualnego szwu (podziału)
                 if (h === 0 && i > 0 && i < qPol && structuralShelves[i-1] && structuralShelves[i]) { 
                     isSplit = true; 
                 } 
                 if (isSplit) { 
-                    currentVisualGap += 60; // Dystans wizualny w SVG miedzy korpusami 
+                    currentVisualGap += 60; 
                     currentZero = currentBottom; 
                 } 
                 localZeros.push(currentZero); 
@@ -1076,6 +1077,7 @@ function closeCutList() {
                 } 
                 
                 let defaultEndY = isTop ? hBox - fLuzG : sb.yEnd + (tBoard/2) - (luzFrontow/2); 
+                
                 if (sb.hasDrawers) { 
                     if (currentDoorBlock) { frontBlocks.push(currentDoorBlock); currentDoorBlock = null; } 
                     let blockEndY = defaultEndY; 
@@ -1087,9 +1089,20 @@ function closeCutList() {
                     }); 
                     facadeY = blockEndY + luzFrontow; 
                 } else { 
-                    if (!currentDoorBlock) currentDoorBlock = { type: 'door', yStart: facadeY, yEnd: defaultEndY, visualGap: sb.visualGap, localZero: sb.localZero }; 
-                    else currentDoorBlock.yEnd = defaultEndY; 
-                    facadeY = defaultEndY + luzFrontow; 
+                    let frontType = spaceLocks[i].frontType || 'merged';
+
+                    if (frontType === 'single') {
+                        if (currentDoorBlock) { 
+                            frontBlocks.push(currentDoorBlock); 
+                            currentDoorBlock = null; 
+                        } 
+                        frontBlocks.push({ type: 'door', yStart: facadeY, yEnd: defaultEndY, visualGap: sb.visualGap, localZero: sb.localZero });
+                        facadeY = defaultEndY + luzFrontow;
+                    } else {
+                        if (!currentDoorBlock) currentDoorBlock = { type: 'door', yStart: facadeY, yEnd: defaultEndY, visualGap: sb.visualGap, localZero: sb.localZero }; 
+                        else currentDoorBlock.yEnd = defaultEndY; 
+                        facadeY = defaultEndY + luzFrontow; 
+                    }
                 } 
             } 
             if(currentDoorBlock) frontBlocks.push(currentDoorBlock); 
@@ -1207,7 +1220,6 @@ function closeCutList() {
                 let cH = cab.endY - cab.startY; 
                 let svgTopY = hBox - cab.endY - cab.visualGap; 
                 
-                // Głębokie elementy wnętrza 
                 if(kTyp === 'wpuszczane') { 
                     svg += `<rect x="${sXCab}" y="${svgTopY}" width="${tBoard}" height="${cH}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/>`; 
                     svg += `<rect x="${sXCab + wBox - tBoard}" y="${svgTopY}" width="${tBoard}" height="${cH}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/>`; 
@@ -1223,7 +1235,6 @@ function closeCutList() {
                     if (idx === subCabinets.length - 1) svg += `<rect x="${sXCab}" y="${svgTopY}" width="${wBox}" height="${tBoard}" fill="#e8f0fe" stroke="#1F4E79" stroke-width="${lineW}"/>`; 
                 } 
  
-                // Formatki boku 
                 svg += `<rect x="${sXBok}" y="${svgTopY}" width="${dBox}" height="${cH}" fill="#f9fbfd" stroke="#333" stroke-width="${lineW}"/>`; 
                 svg += `<rect x="${plecyX_Bok}" y="${svgTopY}" width="${grPlecy}" height="${cH}" fill="#e0e0e0" stroke="#757575" stroke-width="1" class="hide-on-print"/>`; 
                 svg += `<rect x="${frontX_Bok}" y="${svgTopY}" width="${grFrontuWizualna}" height="${cH}" fill="#e2efda" stroke="#2e7d32" stroke-width="1" opacity="0.8" class="hide-on-print"/>`; 
@@ -1301,7 +1312,6 @@ function closeCutList() {
                 } 
             }); 
             
-            // Render światła wewnętrznego
             let currentFloorSVG = hBox - sideBottom;
             for(let i = 0; i < totalSpaces; i++) {
                 let sb = spacesBoundary[i];
@@ -1373,7 +1383,6 @@ function closeCutList() {
             if (sFront) { 
                 svg += `<text x="${sXFront + wBox/2}" y="-80" font-size="36" font-weight="bold" fill="#2e7d32" text-anchor="middle">FRONT (Podział zewnętrzny)</text>`; 
                 
-                // 1. Główne wymiarowanie (Suma frontów i szczelin dla całego modułu)
                 subCabinets.forEach((cab, i) => {
                     let baseF = hBox - cab.startY - cab.visualGap;
                     if (i === 0) baseF -= fLuzD;
@@ -1394,24 +1403,20 @@ function closeCutList() {
                     }
                 });
                  
-                // 2. Wymiarowanie poszczególnych bloków i rysowanie formatek frontowych
                 frontBlocks.forEach(fb => { 
                     let rectTopY = hBox - fb.yEnd - fb.visualGap; let rectH = fb.yEnd - fb.yStart; 
                     
-                    // Linia wymiarowa dla konkretnego bloku (suma szuflad + szczelin)
                     let dimX = sXFront - 45;
                     svg += `<line x1="${dimX}" y1="${rectTopY}" x2="${dimX}" y2="${rectTopY + rectH}" stroke="#2e7d32" stroke-width="1.5" marker-start="url(#arrow-green)" marker-end="url(#arrow-green)"/>`;
                     svg += `<rect x="${dimX - 30}" y="${rectTopY + rectH/2 - 14}" width="60" height="28" fill="#ffffff" stroke="#2e7d32" stroke-width="1" rx="4"/>`;
                     svg += `<text x="${dimX}" y="${rectTopY + rectH/2 + 6}" font-size="${fontS}" font-weight="bold" fill="#2e7d32" text-anchor="middle">${Math.round(rectH)}</text>`;
 
-                    // Rysowanie drzwi
                     if(fb.type === 'door') { 
                         svg += `<rect x="${sXFront}" y="${rectTopY}" width="${wBox}" height="${rectH}" fill="#e2efda" stroke="#2e7d32" stroke-width="${lineW}"/><text x="${sXFront + wBox/2}" y="${rectTopY + rectH/2 + 8}" font-size="${fontM}" font-weight="bold" fill="#2e7d32" text-anchor="middle">Front: ${Math.round(rectH)} mm${fb.actualZawCount > 0 ? ` (${fb.actualZawCount} szt. zawiasów)` : ``}</text>`; 
                         fb.hinges.forEach(zaw => { 
                             let cy = hBox - zaw.bodyY - zaw.visualGap; let color = zaw.shifted ? "#9c27b0" : "#2e7d32"; let puszkaX = sXFront + 22;  
                             svg += `<circle cx="${puszkaX}" cy="${cy}" r="17.5" fill="none" stroke="${color}" stroke-width="3"/><circle cx="${puszkaX}" cy="${cy}" r="3" fill="${color}"/><line x1="${puszkaX}" y1="${cy}" x2="${sXFront + wBox + 60}" y2="${cy}" stroke="${color}" stroke-dasharray="4,4" stroke-width="2"/><text x="${sXFront + wBox + 70}" y="${cy + 8}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">${Math.round(zaw.frontY)} (${Math.round(rectH - zaw.frontY)})${zaw.shifted ? " [KOREKTA]" : ""}</text>`; 
                         }); 
-                    // Rysowanie szuflad
                     } else if(fb.type === 'drawers') { 
                         fb.drawers.forEach((dr, idx) => { 
                             let drH = dr.yEnd - dr.yStart; 
@@ -1426,9 +1431,11 @@ function closeCutList() {
                     } 
                 }); 
             }
- svg += `</svg>`; 
+
+            svg += `</svg>`; 
             document.getElementById('svgWrapper').innerHTML = svg; 
-        } //
+        } 
+ 
         window.onload = () => { initZoomPan(); run(); renderSavedCabinets(); toggleAutoZaw(); toggleBackFields(); }; 
     </script> 
 </body> 
