@@ -1087,16 +1087,21 @@
                     currentBottom += tBoard; 
                 } 
             } 
- 
-            let frontBlocks = []; let currentDoorBlock = null; let doorZawiasy = []; let drawerGuides = []; let facadeY = cokol + fLuzD; 
+ let frontBlocks = []; let currentDoorBlock = null; let doorZawiasy = []; let drawerGuides = []; let facadeY = cokol + fLuzD; 
             for(let i = 0; i < totalSpaces; i++) { 
                 let sb = spacesBoundary[i]; let isTop = (i === totalSpaces - 1); 
                 
-                if (sb.isSplit && currentDoorBlock) { 
-                    currentDoorBlock.yEnd = sb.yStart - luzFrontow/2; 
-                    frontBlocks.push(currentDoorBlock); 
-                    currentDoorBlock = null; 
+                // Obsługa wirtualnego szwu (światło = 0 mm)
+                if (sb.isSplit) { 
+                    if (currentDoorBlock) { 
+                        currentDoorBlock.yEnd = sb.yStart - luzFrontow/2; 
+                        frontBlocks.push(currentDoorBlock); 
+                        currentDoorBlock = null; 
+                    } 
                     facadeY = sb.yStart + luzFrontow/2; 
+                    
+                    // KLUCZOWE: Pomijamy generowanie frontu dla tej "pustej" przestrzeni
+                    continue; 
                 } 
                 
                 let defaultEndY = isTop ? hBox - fLuzG : sb.yEnd + (tBoard/2) - (luzFrontow/2); 
