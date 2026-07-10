@@ -190,11 +190,12 @@
                 <div style="grid-column: span 2;"> 
                     <label>System prowadnic szuflad</label> 
                     <select id="drawerSystem" onchange="updateDrawerFields(); updateAllDrawersToDefault(); run();"> 
-                        <option value="44">GTV Axis Pro / Modern Box (Górny: 44mm)</option> 
-                        <option value="54">Blum Merivobox (Górny: 54mm)</option> 
-                        <option value="33">Blum Antaro / Tandembox (Górny: 33mm)</option> 
-                        <option value="custom">Inne (Własny wymiar górnego otworu)</option> 
-                    </select> 
+    <option value="44">GTV Axis Pro / Modern Box (Dno 16mm)</option> 
+    <option value="44_18">GTV Axis Pro (Dno 18mm)</option> 
+    <option value="54">Blum Merivobox (Górny: 54mm)</option> 
+    <option value="33">Blum Antaro / Tandembox (Górny: 33mm)</option> 
+    <option value="custom">Inne (Własny wymiar górnego otworu)</option> 
+</select> 
                 </div> 
                 <div id="customDrawerField" style="grid-column: span 2; display:none;"> 
                     <label>Własna wysokość otworu górnego (mm)</label> 
@@ -289,6 +290,21 @@
                 ], 
                 default: "C" 
             }, 
+            "44_18": { 
+                name: "GTV Axis Pro (Dno 18mm)", 
+                lengths: [250, 300, 350, 400, 450, 500, 550, 600], 
+                ltRequired: 5, 
+                yHolesMap: { 
+                    250: [96], 300: [128], 350: [128], 400: [192], 450: [192], 500: [224], 550: [224], 600: [224, 352] 
+                }, 
+                types: [ 
+                    { id: "A", label: "A (H=86)", minFront: 115 }, 
+                    { id: "B", label: "B (H=120)", minFront: 147 }, 
+                    { id: "C", label: "C (H=168)", minFront: 198 }, 
+                    { id: "D", label: "D (H=200)", minFront: 230 } 
+                ], 
+                default: "C" 
+            },
             "54": { 
                 name: "Blum Merivobox", 
                 lengths: [270, 300, 350, 400, 450, 500, 550, 600], 
@@ -1106,7 +1122,7 @@
                 
                 let defaultEndY = isTop ? hBox - fLuzG : sb.yEnd + (tBoard/2) - (luzFrontow/2); 
                 let layout = spaceLocks[i].frontLayout || 'full';
-                
+
                 if (sb.hasDrawers) { 
                     if (currentDoorBlock) { frontBlocks.push(currentDoorBlock); currentDoorBlock = null; } 
                     let blockEndY = defaultEndY; 
