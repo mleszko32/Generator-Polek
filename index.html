@@ -1031,36 +1031,60 @@
             for(let i = 0; i < totalSpaces; i++) { 
                 let sb = spacesBoundary[i]; let isTop = (i === totalSpaces - 1); 
                 
-                // --- NAPRAWIONA LOGIKA SZWU ---
+                // --- TWARDY RESET NA LINII CIĘCIA (WIRTUALNY SZEW) ---
                 if (sb.isSplit) { 
+                    let splitLineY = sb.yStart; // Prawdziwa oś łączenia korpusów
+                    
                     if (currentDoorBlock) { 
-                        currentDoorBlock.yEnd = sb.yStart - luzFrontow/2; // Zamykamy moduł przed szwem
+                        // Zamykamy front poniżej szwu (odsuwamy w dół o połowę globalnej szczeliny i ew. ręczny Luz Góra)
+                        let prevGapTop = spaceLocks[i-1] ? (spaceLocks[i-1].gapTop || 0) : 0;
+                        currentDoorBlock.yEnd = splitLineY - (luzFrontow/2) - prevGapTop; 
                         frontBlocks.push(currentDoorBlock); 
                         currentDoorBlock = null; 
                     } 
-                    // RESETUJEMY BAZĘ STARTOWĄ dla następnego modułu
-                    // Startujemy od yStart nowego modułu + jego indywidualny Luz Dół
-                    facadeY = sb.yStart + (spaceLocks[i].gapBottom || 0); 
+                    
+                    // Nowy front powyżej szwu zaczyna się od osi + połowa szczeliny (Luz Dół dodamy na starcie kolejnego modułu)
+                    facadeY = splitLineY + (luzFrontow/2); 
                     continue; 
                 } 
                 
-                // Używamy luzów zdefiniowanych dla danego modułu
                 let gapTop = spaceLocks[i].gapTop || 0;
                 let gapBottom = spaceLocks[i].gapBottom || 0;
                 
+                let isFirstInModule = (i === 0) || (i > 0 && spacesBoundary[i-1].isSplit);
                 let localStartY = facadeY;
-                if (!currentDoorBlock || spaceLocks[i].frontType === 'single' || sb.hasDrawers) {
-                     localStartY = Math.max(facadeY, sb.yStart + gapBottom);
+                
+                // Aplikujemy Luz Dół na starcie modułu
+                if (isFirstInModule) {
+                    localStartY += gapBottom; 
+                } else if (!currentDoorBlock || spaceLocks[i].frontType === 'single' || sb.hasDrawers) {
+                    localStartY = Math.max(facadeY, sb.yStart + (tBoard/2) + (luzFrontow/2) + gapBottom);
                 }
 
-                // Obliczamy koniec bloku frontów
-                let defaultEndY = isTop ? hBox - fLuzG - gapTop : sb.yEnd - gapTop + (tBoard/2) - (luzFrontow/2); 
+                let isLastInModule = isTop || (spacesBoundary[i+1] && spacesBoundary[i+1].isSplit);
+                let defaultEndY;
+                
+                // Obliczamy koniec frontów
+                if (isLastInModule) {
+                    if (isTop) {
+                        defaultEndY = hBox - fLuzG - gapTop;
+                    } else {
+                        let splitLineY = spacesBoundary[i+1].yStart;
+                        defaultEndY = splitLineY - (luzFrontow/2) - gapTop;
+                    }
+                } else {
+                    defaultEndY = sb.yEnd + (tBoard/2) - (luzFrontow/2) - gapTop; 
+                }
+
                 let layout = spaceLocks[i].frontLayout || 'full';
 
+                // --- OBSŁUGA SZUFLAD I DRZWI ---
                 if (sb.hasDrawers) { 
                     if (currentDoorBlock) { frontBlocks.push(currentDoorBlock); currentDoorBlock = null; } 
                     let blockEndY = defaultEndY; 
-                    if (sb.drawerMode === 'manual') blockEndY = localStartY + sb.manualFronts.reduce((a,b) => a + b.height, 0) + ((sb.manualFronts.length - 1) * luzFrontow); 
+                    if (sb.drawerMode === 'manual' || sb.drawerMode === 'manual_fixed') { 
+                        blockEndY = localStartY + sb.manualFronts.reduce((a,b) => a + b.height, 0) + ((sb.manualFronts.length - 1) * luzFrontow); 
+                    } 
                     frontBlocks.push({ 
                         type: 'drawers', drawerMode: sb.drawerMode, manualFronts: sb.manualFronts, qDrawers: sb.qDrawers, 
                         spaceIdx: i, yStart: localStartY, yEnd: blockEndY, interiorBottom: sb.yStart, 
@@ -1071,18 +1095,12 @@
                     let frontType = spaceLocks[i].frontType || 'merged';
 
                     if (frontType === 'single') {
-                        if (currentDoorBlock) { 
-                            frontBlocks.push(currentDoorBlock); 
-                            currentDoorBlock = null; 
-                        } 
+                        if (currentDoorBlock) { frontBlocks.push(currentDoorBlock); currentDoorBlock = null; } 
                         frontBlocks.push({ type: 'door', yStart: localStartY, yEnd: defaultEndY, visualGap: sb.visualGap, localZero: sb.localZero, layout: layout });
                         facadeY = defaultEndY + luzFrontow;
                     } else {
-                        if (!currentDoorBlock) {
-                            currentDoorBlock = { type: 'door', yStart: localStartY, yEnd: defaultEndY, visualGap: sb.visualGap, localZero: sb.localZero, layout: layout }; 
-                        } else {
-                            currentDoorBlock.yEnd = defaultEndY; 
-                        }
+                        if (!currentDoorBlock) currentDoorBlock = { type: 'door', yStart: localStartY, yEnd: defaultEndY, visualGap: sb.visualGap, localZero: sb.localZero, layout: layout }; 
+                        else currentDoorBlock.yEnd = defaultEndY; 
                         facadeY = defaultEndY + luzFrontow; 
                     }
                 } 
