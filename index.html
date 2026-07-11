@@ -133,6 +133,7 @@
                 </div> 
                 <div><label>Wysokość cokołu</label><input type="number" id="cokol" value="100" min="0" oninput="run()"></div> 
                 <div><label>Offset podpórki (Dół)</label><input type="number" id="offsetPodporki" value="0" oninput="run()"></div> 
+                <div><label>Luz boczny półki</label><input type="number" id="luzBocznyPolki" value="1" min="0" oninput="run()"></div>
                 <div><label>Grubość płyty (korpus)</label><input type="number" id="tBoard" value="18" min="0" oninput="run()"></div> 
                 <div><label>Konstrukcja pleców</label> 
                     <select id="backType" onchange="toggleBackFields(); run();"> 
@@ -316,6 +317,12 @@
         function val(id) { return parseFloat(document.getElementById(id).value) || 0; } 
         function isChecked(id) { return document.getElementById(id).checked; } 
  
+        function formatDim(val) {
+            let num = Number(val);
+            // Jeśli liczba jest całkowita, zwróć ją normalnie. Jeśli ma ułamek, zostaw max 1 miejsce po przecinku.
+            return Number.isInteger(num) ? num : parseFloat(num.toFixed(1));
+        }
+
         function toggleBackFields() { 
             document.getElementById('nutDepthField').style.display = document.getElementById('backType').value === 'nut' ? 'block' : 'none'; 
         } 
@@ -384,6 +391,7 @@
                 name: document.getElementById('cabName').value || `Szafka ${val('hBox')}x${val('wBox')}`, 
                 kTyp: document.getElementById('kTyp').value, 
                 hBox: val('hBox'), wBox: val('wBox'), dBox: val('dBox'), 
+                luzBocznyPolki: val('luzBocznyPolki'),
                 qPol: val('qPol'), tBoard: val('tBoard'), offsetPodporki: val('offsetPodporki'), cokol: val('cokol'), 
                 qZaw: val('qZaw'), autoZaw: document.getElementById('autoZaw').checked, zOffD: val('zOffD'), zOffG: val('zOffG'), 
                 fLuzD: val('fLuzD'), fLuzG: val('fLuzG'), cMargin: val('cMargin'), 
@@ -402,6 +410,7 @@
                 name: document.getElementById('cabName').value || `Szafka ${val('hBox')}x${val('wBox')}`, 
                 kTyp: document.getElementById('kTyp').value, 
                 hBox: val('hBox'), wBox: val('wBox'), dBox: val('dBox'), 
+                luzBocznyPolki: val('luzBocznyPolki'),
                 qPol: val('qPol'), tBoard: val('tBoard'), offsetPodporki: val('offsetPodporki'), cokol: val('cokol'), 
                 qZaw: val('qZaw'), autoZaw: document.getElementById('autoZaw').checked, zOffD: val('zOffD'), zOffG: val('zOffG'), 
                 fLuzD: val('fLuzD'), fLuzG: val('fLuzG'), cMargin: val('cMargin'), 
@@ -421,6 +430,7 @@
             ['hBox','wBox','dBox','qPol','tBoard','offsetPodporki','qZaw','zOffD','zOffG','fLuzG'].forEach(id => { document.getElementById(id).value = cab[id]; }); 
             document.getElementById('cokol').value = cab.cokol !== undefined ? cab.cokol : 100; 
             document.getElementById('autoZaw').checked = cab.autoZaw !== undefined ? cab.autoZaw : true; 
+            document.getElementById('luzBocznyPolki').value = cab.luzBocznyPolki !== undefined ? cab.luzBocznyPolki : 1;
             document.getElementById('qZaw').disabled = document.getElementById('autoZaw').checked; 
             document.getElementById('fLuzD').value = cab.fLuzD !== undefined ? cab.fLuzD : 0; 
             document.getElementById('cMargin').value = cab.cMargin !== undefined ? cab.cMargin : 35; 
@@ -619,6 +629,7 @@
             let backType = document.getElementById('backType').value; 
             let nutDepth = val('nutDepth'); let grPlecy = val('grPlecy');
             let luzFrontow = val('luzFrontow');
+            let luzBocznyPolki = val('luzBocznyPolki');
 
             let totalSpaces = qPol + 1;
             let offsetOdDolu = (kTyp === 'nakladane') ? cokol : tBoard + cokol;
@@ -665,12 +676,12 @@
                     wDno = wBox - 2*tBoard; wGora = wBox - 2*tBoard;
                 }
 
-                parts.push({ gr: tBoard, mat: "Płyta", nazwa: `Bok (Moduł ${i+1})`, l: Math.round(sideH), w: dBox, szt: 2 });
-                parts.push({ gr: tBoard, mat: "Płyta", nazwa: (i===0?"Wieniec Dolny":`Dno konstrukcyjne (M${i+1})`), l: Math.round(wDno), w: dBox, szt: 1 });
-                parts.push({ gr: tBoard, mat: "Płyta", nazwa: (i===subCabinetsLocal.length-1?"Wieniec Górny":`Góra konstrukcyjna (M${i+1})`), l: Math.round(wGora), w: dBox, szt: 1 });
+                parts.push({ gr: tBoard, mat: "Płyta", nazwa: `Bok (Moduł ${i+1})`, l: formatDim(sideH), w: formatDim(dBox), szt: 2 });
+                parts.push({ gr: tBoard, mat: "Płyta", nazwa: (i===0?"Wieniec Dolny":`Dno konstrukcyjne (M${i+1})`), l: formatDim(wDno), w: formatDim(dBox), szt: 1 });
+                parts.push({ gr: tBoard, mat: "Płyta", nazwa: (i===subCabinetsLocal.length-1?"Wieniec Górny":`Góra konstrukcyjna (M${i+1})`), l: formatDim(wGora), w: formatDim(dBox), szt: 1 });
                 
                 if (i === 0 && cokol > 0) {
-                    parts.push({ gr: tBoard, mat: "Płyta", nazwa: "Cokół (Front/Tył)", l: wBox, w: cokol, szt: 2 });
+                    parts.push({ gr: tBoard, mat: "Płyta", nazwa: "Cokół (Front/Tył)", l: formatDim(wBox), w: formatDim(cokol), szt: 2 });
                 }
 
                 let backW = 0; let backH = 0;
@@ -682,12 +693,12 @@
                     backH = cabH - 2;
                 }
                 if (backH > 0) {
-                    parts.push({ gr: grPlecy, mat: "HDF", nazwa: `Plecy (Moduł ${i+1})`, l: Math.round(backH), w: Math.round(backW), szt: 1 });
+                    parts.push({ gr: grPlecy, mat: "HDF", nazwa: `Plecy (Moduł ${i+1})`, l: formatDim(backH), w: formatDim(backW), szt: 1 });
                 }
             });
 
             if (polkiRuchome.length > 0) {
-                parts.push({ gr: tBoard, mat: "Płyta", nazwa: "Półka ruchoma", l: wBox - 2*tBoard - 1, w: dBox - offsetPodporki, szt: polkiRuchome.length });
+                parts.push({ gr: tBoard, mat: "Płyta", nazwa: "Półka ruchoma", l: formatDim(wBox - 2*tBoard - luzBocznyPolki), w: formatDim(dBox - offsetPodporki), szt: polkiRuchome.length });
             }
 
             if (window.lastFrontBlocks) {
@@ -701,11 +712,11 @@
 
                     if (fb.type === 'door') {
                         let rectH = fb.yEnd - fb.yStart;
-                        parts.push({ gr: 18, mat: "Płyta", nazwa: `Front Drzwi${layoutText}`, l: Math.round(rectH), w: Math.round(fW), szt: 1 * qtyMult });
+                        parts.push({ gr: 18, mat: "Płyta", nazwa: `Front Drzwi${layoutText}`, l: formatDim(rectH), w: formatDim(fW), szt: 1 * qtyMult });
                     } else if (fb.type === 'drawers') {
                         fb.drawers.forEach((dr, dIdx) => {
                             let drH = dr.yEnd - dr.yStart;
-                            parts.push({ gr: 18, mat: "Płyta", nazwa: `Front Szuflady ${dIdx+1}${layoutText}`, l: Math.round(drH), w: Math.round(fW), szt: 1 * qtyMult });
+                            parts.push({ gr: 18, mat: "Płyta", nazwa: `Front Szuflady ${dIdx+1}${layoutText}`, l: formatDim(drH), w: formatDim(fW), szt: 1 * qtyMult });
                         });
                     }
                 });
@@ -1402,7 +1413,7 @@
                         let dimTotalX = sXFront - 110;
                         svg += `<line x1="${dimTotalX}" y1="${topY}" x2="${dimTotalX}" y2="${bottomY}" stroke="#1b5e20" stroke-width="2" marker-start="url(#arrow-green)" marker-end="url(#arrow-green)"/>`;
                         svg += `<rect x="${dimTotalX - 35}" y="${topY + totalFacadeH/2 - 16}" width="70" height="32" fill="#ffffff" stroke="#1b5e20" stroke-width="1.5" rx="4"/>`;
-                        svg += `<text x="${dimTotalX}" y="${topY + totalFacadeH/2 + 7}" font-size="${fontM}" font-weight="bold" fill="#1b5e20" text-anchor="middle">${Math.round(totalFacadeH)}</text>`;
+                        svg += `<text x="${dimTotalX}" y="${topY + totalFacadeH/2 + 7}" font-size="${fontM}" font-weight="bold" fill="#1b5e20" text-anchor="middle">${formatDim(totalFacadeH)}</text>`;
                     }
                 });
                  
@@ -1415,7 +1426,7 @@
                     let dimX = sXFront - 45;
                     svg += `<line x1="${dimX}" y1="${rectTopY}" x2="${dimX}" y2="${rectTopY + rectH}" stroke="#2e7d32" stroke-width="1.5" marker-start="url(#arrow-green)" marker-end="url(#arrow-green)"/>`;
                     svg += `<rect x="${dimX - 30}" y="${rectTopY + rectH/2 - 14}" width="60" height="28" fill="#ffffff" stroke="#2e7d32" stroke-width="1" rx="4"/>`;
-                    svg += `<text x="${dimX}" y="${rectTopY + rectH/2 + 6}" font-size="${fontS}" font-weight="bold" fill="#2e7d32" text-anchor="middle">${Math.round(rectH)}</text>`;
+                    svg += `<text x="${dimX}" y="${rectTopY + rectH/2 + 6}" font-size="${fontS}" font-weight="bold" fill="#2e7d32" text-anchor="middle">${formatDim(rectH)}</text>`;
 
                     if(fb.type === 'door') { 
                         let rects = [];
@@ -1430,7 +1441,7 @@
                         rects.forEach(r => {
                             svg += `<rect x="${r.x}" y="${rectTopY}" width="${r.w}" height="${rectH}" fill="#e2efda" stroke="#2e7d32" stroke-width="${lineW}"/>`;
                             let zawInfo = fb.actualZawCount > 0 ? ` (${fb.actualZawCount} zaw.)` : ``;
-                            svg += `<text x="${r.x + r.w/2}" y="${rectTopY + rectH/2 + 8}" font-size="${fontM}" font-weight="bold" fill="#2e7d32" text-anchor="middle">Front: ${Math.round(rectH)} mm${zawInfo}</text>`;
+                            svg += `<text x="${r.x + r.w/2}" y="${rectTopY + rectH/2 + 8}" font-size="${fontM}" font-weight="bold" fill="#2e7d32" text-anchor="middle">Front: ${formatDim(rectH)} mm${zawInfo}</text>`;
                         });
 
                         fb.hinges.forEach(zaw => { 
@@ -1441,14 +1452,14 @@
                                 svg += `<circle cx="${puszkaX}" cy="${cy}" r="17.5" fill="none" stroke="${color}" stroke-width="3"/><circle cx="${puszkaX}" cy="${cy}" r="3" fill="${color}"/>`;
                                 svg += `<line x1="${puszkaX}" y1="${cy}" x2="${sXFront + wBox + 60}" y2="${cy}" stroke="${color}" stroke-dasharray="4,4" stroke-width="2"/>`;
                                 if (fb.layout !== 'double') {
-                                    svg += `<text x="${sXFront + wBox + 70}" y="${cy + 8}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">${Math.round(zaw.frontY)} (${Math.round(rectH - zaw.frontY)})${zaw.shifted ? " [KOREKTA]" : ""}</text>`; 
+                                    svg += `<text x="${sXFront + wBox + 70}" y="${cy + 8}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">${formatDim(zaw.frontY)} (${formatDim(rectH - zaw.frontY)})${zaw.shifted ? " [KOREKTA]" : ""}</text>`; 
                                 }
                             }
                             if (fb.layout === 'right' || fb.layout === 'double') {
                                 let puszkaX = sXFront + wBox - 22;
                                 svg += `<circle cx="${puszkaX}" cy="${cy}" r="17.5" fill="none" stroke="${color}" stroke-width="3"/><circle cx="${puszkaX}" cy="${cy}" r="3" fill="${color}"/>`;
                                 svg += `<line x1="${puszkaX}" y1="${cy}" x2="${sXFront + wBox + 60}" y2="${cy}" stroke="${color}" stroke-dasharray="4,4" stroke-width="2"/>`;
-                                svg += `<text x="${sXFront + wBox + 70}" y="${cy + 8}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">${Math.round(zaw.frontY)} (${Math.round(rectH - zaw.frontY)})${zaw.shifted ? " [KOREKTA]" : ""}</text>`;
+                                svg += `<text x="${sXFront + wBox + 70}" y="${cy + 8}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">${formatDim(zaw.frontY)} (${formatDim(rectH - zaw.frontY)})${zaw.shifted ? " [KOREKTA]" : ""}</text>`;
                             }
                         }); 
                     } else if(fb.type === 'drawers') { 
@@ -1471,7 +1482,7 @@
                                     let tObj = sysDB.types.find(t => t.id === fb.manualFronts[idx].type); 
                                     if(tObj) drTypeLabel = ` [Typ: ${tObj.label}]`; 
                                 } 
-                                svg += `<text x="${r.x + r.w/2}" y="${hBox - dr.yEnd - fb.visualGap + drH/2 + 8}" font-size="${fontS}" font-weight="bold" fill="#1F4E79" text-anchor="middle">Szuf. ${idx+1} (F: ${Math.round(drH)}mm)${drTypeLabel}</text>`; 
+                                svg += `<text x="${r.x + r.w/2}" y="${hBox - dr.yEnd - fb.visualGap + drH/2 + 8}" font-size="${fontS}" font-weight="bold" fill="#1F4E79" text-anchor="middle">Szuf. ${idx+1} (F: ${formatDim(drH)}mm)${drTypeLabel}</text>`; 
                             });
                         }); 
                     } 
