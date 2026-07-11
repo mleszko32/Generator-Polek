@@ -66,16 +66,14 @@
         .svg-wrapper { width: 100%; height: 100%; transform-origin: center center; transition: transform 0.05s linear; pointer-events: none; } 
          
         #printArea { display: none; } 
-        
-        /* OKNO MODALNE Z LISTĄ FORMATEK */
+         
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 1000; justify-content: center; align-items: center; }
         .modal-content { background: #fff; padding: 20px 30px; border-radius: 8px; width: 90%; max-width: 800px; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1F4E79; padding-bottom: 10px; margin-bottom: 20px; }
         .modal-header h2 { margin: 0; border: none; padding: 0; }
         .btn-close { background: #d32f2f; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         .btn-close:hover { background: #b71c1c; }
-        
-        /* TABELA FORMATEK */
+         
         .cut-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; text-align: center; }
         .cut-table th { background: #e8f0fe; color: #1F4E79; padding: 10px; border: 1px solid #ddd; }
         .cut-table td { padding: 8px; border: 1px solid #ddd; color: #333; }
@@ -145,13 +143,13 @@
                 <div id="nutDepthField" style="display:none; grid-column: span 2;"><label>Głębokość nutu (mm)</label><input type="number" id="nutDepth" value="12" min="0" oninput="run()"></div> 
             </div> 
  
-            <h3>Fronty, Zawiasy i Okucia</h3> 
+            <h3>Fronty (Główne domyślne nałożenia)</h3> 
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;"> 
                 <div> 
                     <label style="display:flex; justify-content:space-between; align-items:center;"> 
                         Ilość zaw. / drzwi 
                         <span style="font-weight:normal; font-size:0.8rem; display:flex; align-items:center; gap:4px; color:#1F4E79; cursor:pointer;"> 
-                            <input type="checkbox" id="autoZaw" checked onchange="toggleAutoZaw()" style="width:auto; margin:0; cursor:pointer;"> Auto (z wys.) 
+                            <input type="checkbox" id="autoZaw" checked onchange="toggleAutoZaw()" style="width:auto; margin:0; cursor:pointer;"> Auto 
                         </span> 
                     </label> 
                     <input type="number" id="qZaw" value="4" min="0" max="8" disabled oninput="run()"> 
@@ -159,9 +157,12 @@
                 <div><label>Strefa ochrony zawiasu</label><input type="number" id="cMargin" value="35" min="0" oninput="run()"></div> 
                 <div><label>Puszka (od dołu drzwi)</label><input type="number" id="zOffD" value="100" min="0" oninput="run()"></div> 
                 <div><label>Puszka (od góry drzwi)</label><input type="number" id="zOffG" value="100" min="0" oninput="run()"></div> 
-                <div><label>Luz frontu (Dół)</label><input type="number" id="fLuzD" value="0" min="0" oninput="run()"></div> 
-                <div><label>Luz frontu (Góra)</label><input type="number" id="fLuzG" value="3" min="0" oninput="run()"></div> 
-                <div style="grid-column: span 2;"><label>Szczelina między frontami</label><input type="number" id="luzFrontow" value="3" min="0" oninput="run()"></div> 
+                
+                <div><label>Nałożenie - Góra (Top)</label><input type="number" id="nTop" value="15" oninput="run()"></div> 
+                <div><label>Nałożenie - Dół (Bottom)</label><input type="number" id="nBottom" value="15" oninput="run()"></div> 
+                <div><label>Nałożenie - Lewo (Left)</label><input type="number" id="nLeft" value="15" oninput="run()"></div> 
+                <div><label>Nałożenie - Prawo (Right)</label><input type="number" id="nRight" value="15" oninput="run()"></div> 
+                <div style="grid-column: span 2;"><label>Nałożenie - Wewnętrzne (Półki/Styki)</label><input type="number" id="nWewnetrzne" value="8" oninput="run()"></div> 
                  
                 <div style="grid-column: span 2;"> 
                     <label>System prowadnic szuflad</label> 
@@ -222,7 +223,6 @@
  
     <div id="printArea"></div> 
     
-    <!-- Modal dla Listy Formatek -->
     <div id="cutListModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -256,12 +256,7 @@
                 lengths: [250, 300, 350, 400, 450, 500, 550, 600], 
                 ltRequired: 5, 
                 yHolesMap: { 250: [96], 300: [128], 350: [128], 400: [192], 450: [192], 500: [224], 550: [224], 600: [224, 352] }, 
-                types: [ 
-                    { id: "A", label: "A (Niska)", minFront: 105 }, 
-                    { id: "B", label: "B (Średnia)", minFront: 160 }, 
-                    { id: "C", label: "C (Wysoka)", minFront: 192 }, 
-                    { id: "D", label: "D (B. Wysoka)", minFront: 224 } 
-                ], 
+                types: [ { id: "A", label: "A (Niska)", minFront: 105 }, { id: "B", label: "B (Średnia)", minFront: 160 }, { id: "C", label: "C (Wysoka)", minFront: 192 }, { id: "D", label: "D (B. Wysoka)", minFront: 224 } ], 
                 default: "C" 
             }, 
             "44_18": { 
@@ -269,12 +264,7 @@
                 lengths: [250, 300, 350, 400, 450, 500, 550, 600], 
                 ltRequired: 5, 
                 yHolesMap: { 250: [96], 300: [128], 350: [128], 400: [192], 450: [192], 500: [224], 550: [224], 600: [224, 352] }, 
-                types: [ 
-                    { id: "A", label: "A (H=86)", minFront: 115 }, 
-                    { id: "B", label: "B (H=120)", minFront: 147 }, 
-                    { id: "C", label: "C (H=168)", minFront: 198 }, 
-                    { id: "D", label: "D (H=200)", minFront: 230 } 
-                ], 
+                types: [ { id: "A", label: "A (H=86)", minFront: 115 }, { id: "B", label: "B (H=120)", minFront: 147 }, { id: "C", label: "C (H=168)", minFront: 198 }, { id: "D", label: "D (H=200)", minFront: 230 } ], 
                 default: "C" 
             },
             "54": { 
@@ -282,12 +272,7 @@
                 lengths: [270, 300, 350, 400, 450, 500, 550, 600], 
                 ltRequired: 3, 
                 yHolesMap: { 270: [96], 300: [128], 350: [128], 400: [192], 450: [192, 256], 500: [224, 288], 550: [224, 352], 600: [224, 384] }, 
-                types: [ 
-                    { id: "N", label: "N (B. Niska)", minFront: 85.5 }, 
-                    { id: "M", label: "M (Niska)", minFront: 108 }, 
-                    { id: "K", label: "K (Średnia)", minFront: 146 }, 
-                    { id: "E", label: "E (Wysoka)", minFront: 209 } 
-                ], 
+                types: [ { id: "N", label: "N (B. Niska)", minFront: 85.5 }, { id: "M", label: "M (Niska)", minFront: 108 }, { id: "K", label: "K (Średnia)", minFront: 146 }, { id: "E", label: "E (Wysoka)", minFront: 209 } ], 
                 default: "K" 
             }, 
             "33": { 
@@ -295,13 +280,7 @@
                 lengths: [270, 300, 350, 400, 450, 500, 550, 600, 650], 
                 ltRequired: 3, 
                 yHolesMap: { 270: [96], 300: [128], 350: [128], 400: [192], 450: [192, 288], 500: [224, 288], 550: [224, 384], 600: [224, 384], 650: [224, 384, 480] }, 
-                types: [ 
-                    { id: "N", label: "N (B. Niska)", minFront: 82.5 }, 
-                    { id: "M", label: "M (Niska)", minFront: 98.5 }, 
-                    { id: "K", label: "K (Średnia)", minFront: 130.5 }, 
-                    { id: "C", label: "C (Wysoka)", minFront: 192 }, 
-                    { id: "D", label: "D (B. Wysoka)", minFront: 224 } 
-                ], 
+                types: [ { id: "N", label: "N (B. Niska)", minFront: 82.5 }, { id: "M", label: "M (Niska)", minFront: 98.5 }, { id: "K", label: "K (Średnia)", minFront: 130.5 }, { id: "C", label: "C (Wysoka)", minFront: 192 }, { id: "D", label: "D (B. Wysoka)", minFront: 224 } ], 
                 default: "D" 
             }, 
             "custom": { 
@@ -319,7 +298,6 @@
  
         function formatDim(val) {
             let num = Number(val);
-            // Jeśli liczba jest całkowita, zwróć ją normalnie. Jeśli ma ułamek, zostaw max 1 miejsce po przecinku.
             return Number.isInteger(num) ? num : parseFloat(num.toFixed(1));
         }
 
@@ -394,8 +372,8 @@
                 luzBocznyPolki: val('luzBocznyPolki'),
                 qPol: val('qPol'), tBoard: val('tBoard'), offsetPodporki: val('offsetPodporki'), cokol: val('cokol'), 
                 qZaw: val('qZaw'), autoZaw: document.getElementById('autoZaw').checked, zOffD: val('zOffD'), zOffG: val('zOffG'), 
-                fLuzD: val('fLuzD'), fLuzG: val('fLuzG'), cMargin: val('cMargin'), 
-                luzFrontow: val('luzFrontow'), drawerSystem: document.getElementById('drawerSystem').value, 
+                nTop: val('nTop'), nBottom: val('nBottom'), nLeft: val('nLeft'), nRight: val('nRight'), nWewnetrzne: val('nWewnetrzne'), cMargin: val('cMargin'), 
+                drawerSystem: document.getElementById('drawerSystem').value, 
                 customDrawerAxis: val('customDrawerAxis'), backType: document.getElementById('backType').value, 
                 grPlecy: val('grPlecy'), nutDepth: val('nutDepth'), 
                 spaceLocks: JSON.parse(JSON.stringify(spaceLocks)), 
@@ -413,8 +391,8 @@
                 luzBocznyPolki: val('luzBocznyPolki'),
                 qPol: val('qPol'), tBoard: val('tBoard'), offsetPodporki: val('offsetPodporki'), cokol: val('cokol'), 
                 qZaw: val('qZaw'), autoZaw: document.getElementById('autoZaw').checked, zOffD: val('zOffD'), zOffG: val('zOffG'), 
-                fLuzD: val('fLuzD'), fLuzG: val('fLuzG'), cMargin: val('cMargin'), 
-                luzFrontow: val('luzFrontow'), drawerSystem: document.getElementById('drawerSystem').value, 
+                nTop: val('nTop'), nBottom: val('nBottom'), nLeft: val('nLeft'), nRight: val('nRight'), nWewnetrzne: val('nWewnetrzne'), cMargin: val('cMargin'), 
+                drawerSystem: document.getElementById('drawerSystem').value, 
                 customDrawerAxis: val('customDrawerAxis'), backType: document.getElementById('backType').value, 
                 grPlecy: val('grPlecy'), nutDepth: val('nutDepth'), 
                 spaceLocks: JSON.parse(JSON.stringify(spaceLocks)), 
@@ -427,14 +405,21 @@
             let cab = cloudCabinets.find(c => c.docId === docId); 
             if(!cab) return; 
             document.getElementById('cabName').value = cab.name; document.getElementById('kTyp').value = cab.kTyp; 
-            ['hBox','wBox','dBox','qPol','tBoard','offsetPodporki','qZaw','zOffD','zOffG','fLuzG'].forEach(id => { document.getElementById(id).value = cab[id]; }); 
+            ['hBox','wBox','dBox','qPol','tBoard','offsetPodporki','qZaw','zOffD','zOffG'].forEach(id => { document.getElementById(id).value = cab[id]; }); 
             document.getElementById('cokol').value = cab.cokol !== undefined ? cab.cokol : 100; 
             document.getElementById('autoZaw').checked = cab.autoZaw !== undefined ? cab.autoZaw : true; 
             document.getElementById('luzBocznyPolki').value = cab.luzBocznyPolki !== undefined ? cab.luzBocznyPolki : 1;
             document.getElementById('qZaw').disabled = document.getElementById('autoZaw').checked; 
-            document.getElementById('fLuzD').value = cab.fLuzD !== undefined ? cab.fLuzD : 0; 
             document.getElementById('cMargin').value = cab.cMargin !== undefined ? cab.cMargin : 35; 
-            document.getElementById('luzFrontow').value = cab.luzFrontow !== undefined ? cab.luzFrontow : 3; 
+            
+            // Wsteczna kompatybilność z dawnym formatem "Luz" i jednym nałożeniem skrajnym
+            let defaultOuter = cab.nSkrajne !== undefined ? cab.nSkrajne : (cab.fLuzD !== undefined ? (cab.tBoard - cab.fLuzD) : 15);
+            document.getElementById('nTop').value = cab.nTop !== undefined ? cab.nTop : defaultOuter;
+            document.getElementById('nBottom').value = cab.nBottom !== undefined ? cab.nBottom : defaultOuter;
+            document.getElementById('nLeft').value = cab.nLeft !== undefined ? cab.nLeft : defaultOuter;
+            document.getElementById('nRight').value = cab.nRight !== undefined ? cab.nRight : defaultOuter;
+            document.getElementById('nWewnetrzne').value = cab.nWewnetrzne !== undefined ? cab.nWewnetrzne : (cab.luzFrontow !== undefined ? (cab.tBoard - cab.luzFrontow)/2 : 8);
+            
             document.getElementById('backType').value = cab.backType !== undefined ? cab.backType : 'nakladane'; 
             document.getElementById('grPlecy').value = cab.grPlecy !== undefined ? cab.grPlecy : 3;
             document.getElementById('nutDepth').value = cab.nutDepth !== undefined ? cab.nutDepth : 12; 
@@ -458,6 +443,7 @@
                     frontLayout: s.frontLayout || 'full', drawerMode: s.drawerMode || 'auto', qDrawers: s.qDrawers || 3, 
                     manualFronts: mFronts, topGapToAxis: s.topGapToAxis !== undefined ? s.topGapToAxis : 12,
                     gapTop: s.gapTop || 0, gapBottom: s.gapBottom || 0,
+                    nT: s.nT, nB: s.nB, nL: s.nL, nR: s.nR, gap: s.gap, // Load specific overlays
                     manualDrawerNL: s.manualDrawerNL || {} 
                 }; 
             }); 
@@ -553,6 +539,11 @@
             spaceLocks[spaceIdx].manualDrawerNL[drawerIdx] = value; run(); 
         } 
         function updateGap(index, type, val) { spaceLocks[index][type] = parseFloat(val) || 0; run(); }
+        function updateSpaceVal(index, key, val) {
+            if (val === '') delete spaceLocks[index][key];
+            else spaceLocks[index][key] = parseFloat(val);
+            run();
+        }
 
         function updateFrontHeight(spaceIdx, frontIdx, value) { 
             let v = parseFloat(value); if(isNaN(v) || v <= 0) return; 
@@ -571,20 +562,25 @@
             let typeObj = sys.types.find(t => t.id === front.type); 
             if (typeObj) { 
                 let i = spaceIdx; let fIdx = frontIdx;
-                let tBoard = val('tBoard'); let fLuzD = val('fLuzD'); let fLuzG = val('fLuzG'); let luzFrontow = val('luzFrontow');
-                let bottomOverlap = 0; let topOverlap = 0;
-                let totalSpaces = val('qPol') + 1;
+                let tBoard = val('tBoard'); let nTop = val('nTop'); let nBottom = val('nBottom'); let nWewnetrzne = val('nWewnetrzne');
                 
-                let isAbsoluteBottom = (i === 0 && fIdx === 0);
-                let isAbsoluteTop = (i === totalSpaces - 1 && fIdx === spaceLocks[i].manualFronts.length - 1);
+                let isSplitArr = [];
+                let qPol = val('qPol'); let totalSpaces = qPol + 1;
+                for(let k = 0; k < totalSpaces; k++) {
+                    isSplitArr[k] = (spaceLocks[k].currentVal === 0 && k > 0 && k < qPol && structuralShelves[k-1] && structuralShelves[k]);
+                }
                 
-                if (isAbsoluteBottom) bottomOverlap = tBoard - fLuzD;
-                else if (fIdx === 0 && structuralShelves[i-1]) bottomOverlap = (tBoard / 2) - (luzFrontow / 2);
+                let isFirstInModule = (i === 0) || (i > 0 && isSplitArr[i-1]);
+                let isLastInModule = (i === totalSpaces - 1) || (i < totalSpaces - 1 && isSplitArr[i+1]);
                 
-                if (isAbsoluteTop) topOverlap = tBoard - fLuzG;
-                else if (fIdx === spaceLocks[i].manualFronts.length - 1 && structuralShelves[i]) topOverlap = (tBoard / 2) - (luzFrontow / 2);
+                let sl = spaceLocks[i];
+                let local_nB = sl.nB !== undefined ? sl.nB : (isFirstInModule ? nBottom : nWewnetrzne);
+                let local_nT = sl.nT !== undefined ? sl.nT : (isLastInModule ? nTop : nWewnetrzne);
+
+                let bottomOvl = (fIdx === 0) ? local_nB : 0;
+                let topOvl = (fIdx === spaceLocks[i].manualFronts.length - 1) ? local_nT : 0;
                 
-                let requiredFrontHeight = typeObj.minFront + bottomOverlap + topOverlap - (!isAbsoluteTop ? luzFrontow : 0);
+                let requiredFrontHeight = typeObj.minFront + bottomOvl + topOvl;
                 front.height = Math.max(requiredFrontHeight, 10);
             } 
             run(); 
@@ -628,7 +624,6 @@
             let qPol = val('qPol'); let offsetPodporki = val('offsetPodporki'); let cokol = val('cokol'); 
             let backType = document.getElementById('backType').value; 
             let nutDepth = val('nutDepth'); let grPlecy = val('grPlecy');
-            let luzFrontow = val('luzFrontow');
             let luzBocznyPolki = val('luzBocznyPolki');
 
             let totalSpaces = qPol + 1;
@@ -706,7 +701,14 @@
                     let layout = fb.layout || 'full';
                     if (layout === 'none') return;
                     
-                    let fW = (layout === 'double' || layout === 'left' || layout === 'right') ? (wBox - 2*luzFrontow) / 2 : wBox - luzFrontow;
+                    let fW_full = (wBox - 2*tBoard) + fb.nL + fb.nR;
+                    let fW;
+                    if (layout === 'double' || layout === 'left' || layout === 'right') {
+                        fW = (fW_full - fb.gap) / 2;
+                    } else {
+                        fW = fW_full;
+                    }
+                    
                     let qtyMult = (layout === 'double') ? 2 : 1;
                     let layoutText = layout === 'left' ? " (Lewy)" : (layout === 'right' ? " (Prawy)" : (layout === 'double' ? " (L+P)" : ""));
 
@@ -775,7 +777,14 @@
             let sDrawerYDim = isChecked('sDrawerYDim'); 
  
             let topHoleOffset = getTopHoleOffset(); 
-            let fLuzD = val('fLuzD'); let fLuzG = val('fLuzG'); let luzFrontow = val('luzFrontow'); 
+            
+            // Konfigurowalne nałożenia z każdej strony
+            let nTopGlobal = val('nTop'); 
+            let nBottomGlobal = val('nBottom'); 
+            let nLeftGlobal = val('nLeft'); 
+            let nRightGlobal = val('nRight'); 
+            let nWewGlobal = val('nWewnetrzne');
+            let gapGlobal = tBoard - 2 * nWewGlobal;
              
             let globalQZaw = val('qZaw'); 
             let isAutoZaw = isChecked('autoZaw'); 
@@ -802,20 +811,36 @@
             if (spaceLocks.length > totalSpaces) spaceLocks = spaceLocks.slice(0, totalSpaces);
             while(structuralShelves.length < qPol) structuralShelves.push(false);
             if (structuralShelves.length > qPol) structuralShelves = structuralShelves.slice(0, qPol);
- 
-            let facadeShift = 0; 
+            
+            // Definiujemy tablice Split, aby uzywac jej globalnie
+            let isSplitArr = [];
+            for(let i = 0; i < totalSpaces; i++) {
+                isSplitArr[i] = (spaceLocks[i].currentVal === 0 && i > 0 && i < qPol && structuralShelves[i-1] && structuralShelves[i]);
+            }
+            
             for(let i = 0; i < totalSpaces; i++) { 
                 if(spaceLocks[i].hasDrawers && spaceLocks[i].drawerMode === 'manual') { 
-                    let sumFronts = spaceLocks[i].manualFronts.reduce((a,b) => a + b.height, 0); 
-                    let totalLuz = (spaceLocks[i].manualFronts.length - 1) * luzFrontow; 
-                    let reqSpace = (i === 0)  
-                        ? fLuzD + sumFronts + totalLuz + spaceLocks[i].topGapToAxis - 1.5 * tBoard 
-                        : facadeShift + sumFronts + totalLuz + spaceLocks[i].topGapToAxis + (luzFrontow/2) - tBoard; 
+                    let sl = spaceLocks[i];
+                    let isFirstInModule = (i === 0) || (i > 0 && isSplitArr[i-1]);
+                    let isLastInModule = (i === totalSpaces - 1) || (i < totalSpaces - 1 && isSplitArr[i+1]);
+
+                    let def_nB = isFirstInModule ? nBottomGlobal : nWewGlobal;
+                    let def_nT = isLastInModule ? nTopGlobal : nWewGlobal;
+                    let def_gap = gapGlobal;
+
+                    let local_nB = sl.nB !== undefined ? sl.nB : def_nB;
+                    let local_nT = sl.nT !== undefined ? sl.nT : def_nT;
+                    let local_gap = sl.gap !== undefined ? sl.gap : def_gap;
+
+                    let sumFronts = sl.manualFronts.reduce((a,b) => a + b.height, 0); 
+                    let totalLuz = (sl.manualFronts.length - 1) * local_gap; 
+                    let targetFhTotal = sumFronts + totalLuz; 
+
+                    let reqSpace = targetFhTotal - local_nB - local_nT;
                      
                     spaceLocks[i].locked = true; 
                     spaceLocks[i].manualVal = Math.round(reqSpace * 10) / 10; 
-                    facadeShift = (luzFrontow / 2) - spaceLocks[i].topGapToAxis; 
-                } else facadeShift = 0;  
+                } 
             } 
  
             let innerSpace = hBox - 2*tBoard - cokol; 
@@ -881,9 +906,17 @@
                                     <option value="manual" ${drawerMode==='manual'?'selected':''}>Własne (Bottom-Up)</option> 
                                 </select>` : ''} 
                         </div>
+                        <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:5px; font-size:0.75rem; background:#fff3e0; padding:6px; border-radius:4px; border:1px solid #ffcc80;">
+                            <span style="font-weight:bold; color:#e65100; width:100%;">Nadpisz domyślne nałożenia i szczelinę dla tej przestrzeni:</span>
+                            <label style="margin:0; display:flex; align-items:center; gap:4px;">Góra: <input type="number" placeholder="Auto" value="${spaceLocks[i].nT !== undefined ? spaceLocks[i].nT : ''}" onchange="updateSpaceVal(${i}, 'nT', this.value)" style="width:50px; padding:2px; text-align:center;"></label>
+                            <label style="margin:0; display:flex; align-items:center; gap:4px;">Dół: <input type="number" placeholder="Auto" value="${spaceLocks[i].nB !== undefined ? spaceLocks[i].nB : ''}" onchange="updateSpaceVal(${i}, 'nB', this.value)" style="width:50px; padding:2px; text-align:center;"></label>
+                            <label style="margin:0; display:flex; align-items:center; gap:4px;">Lewo: <input type="number" placeholder="Auto" value="${spaceLocks[i].nL !== undefined ? spaceLocks[i].nL : ''}" onchange="updateSpaceVal(${i}, 'nL', this.value)" style="width:50px; padding:2px; text-align:center;"></label>
+                            <label style="margin:0; display:flex; align-items:center; gap:4px;">Prawo: <input type="number" placeholder="Auto" value="${spaceLocks[i].nR !== undefined ? spaceLocks[i].nR : ''}" onchange="updateSpaceVal(${i}, 'nR', this.value)" style="width:50px; padding:2px; text-align:center;"></label>
+                            <label style="margin:0; display:flex; align-items:center; gap:4px; margin-left:auto; border-left:1px solid #ffb74d; padding-left:10px;">Szczelina L+P/Szuf: <input type="number" placeholder="Auto" value="${spaceLocks[i].gap !== undefined ? spaceLocks[i].gap : ''}" onchange="updateSpaceVal(${i}, 'gap', this.value)" style="width:50px; padding:2px; text-align:center;"></label>
+                        </div>
                         <div style="display:flex; gap:10px; margin-top:5px; font-size:0.75rem; background:#f0f4f8; padding:4px; border-radius:4px;">
-                            <label style="margin:0; display:flex; align-items:center; gap:4px;">Luz Góra: <input type="number" value="${spaceLocks[i].gapTop || 0}" onchange="updateGap(${i}, 'gapTop', this.value)" style="width:40px; padding:2px; text-align:center;"></label>
-                            <label style="margin:0; display:flex; align-items:center; gap:4px;">Luz Dół: <input type="number" value="${spaceLocks[i].gapBottom || 0}" onchange="updateGap(${i}, 'gapBottom', this.value)" style="width:40px; padding:2px; text-align:center;"></label>
+                            <label style="margin:0; display:flex; align-items:center; gap:4px;">Dodatkowy Luz Góra: <input type="number" value="${spaceLocks[i].gapTop || 0}" onchange="updateGap(${i}, 'gapTop', this.value)" style="width:40px; padding:2px; text-align:center;"></label>
+                            <label style="margin:0; display:flex; align-items:center; gap:4px;">Dodatkowy Luz Dół: <input type="number" value="${spaceLocks[i].gapBottom || 0}" onchange="updateGap(${i}, 'gapBottom', this.value)" style="width:40px; padding:2px; text-align:center;"></label>
                         </div>`; 
  
                 if (isDrawers) { 
@@ -891,22 +924,28 @@
                         drawerHtml += `<div style="display:flex; gap: 8px; align-items:center; margin-top:4px;"><span style="font-size:0.8rem;">Ilość:</span><input type="number" value="${spaceLocks[i].qDrawers}" min="1" onchange="updateDrawerCount(${i}, this.value)" style="width: 50px; padding: 2px; text-align:center;"><span style="font-size:0.8rem;">szt.</span></div>`; 
                     } else { 
                         drawerHtml += `<div style="font-size:0.8rem; margin-top:6px; border-top: 1px dashed #eee; padding-top:6px;">`; 
+                        
+                        let isFirstInModule = (i === 0) || (i > 0 && isSplitArr[i-1]);
+                        let isLastInModule = (i === totalSpaces - 1) || (i < totalSpaces - 1 && isSplitArr[i+1]);
+
+                        let sl = spaceLocks[i];
+                        let local_nB = sl.nB !== undefined ? sl.nB : (isFirstInModule ? nBottomGlobal : nWewGlobal);
+                        let local_nT = sl.nT !== undefined ? sl.nT : (isLastInModule ? nTopGlobal : nWewGlobal);
+                        let local_gap = sl.gap !== undefined ? sl.gap : gapGlobal;
+
                         spaceLocks[i].manualFronts.forEach((mf, fIdx) => { 
                             let lbl = (fIdx === 0) ? `F${fIdx+1} (Dół)` : `F${fIdx+1}`; 
                             let optionsHtml = ''; 
                              
                             let bottomOverlap = 0; let topOverlap = 0;
-                            let isAbsoluteBottom = (i === 0 && fIdx === 0);
-                            let isAbsoluteTop = (i === totalSpaces - 1 && fIdx === spaceLocks[i].manualFronts.length - 1);
+                            let isAbsoluteBottom = (fIdx === 0);
+                            let isAbsoluteTop = (fIdx === spaceLocks[i].manualFronts.length - 1);
 
-                            if (isAbsoluteBottom) bottomOverlap = tBoard - fLuzD;
-                            else if (fIdx === 0 && structuralShelves[i-1]) bottomOverlap = (tBoard / 2) - (luzFrontow / 2);
-
-                            if (isAbsoluteTop) topOverlap = tBoard - fLuzG;
-                            else if (fIdx === spaceLocks[i].manualFronts.length - 1 && structuralShelves[i]) topOverlap = (tBoard / 2) - (luzFrontow / 2);
+                            if (isAbsoluteBottom) bottomOverlap = local_nB;
+                            if (isAbsoluteTop) topOverlap = local_nT;
 
                             let availableH = mf.height - bottomOverlap - topOverlap;
-                            if (!isAbsoluteTop) availableH += luzFrontow; 
+                            if (!isAbsoluteTop) availableH += local_gap; 
 
                             let currentTypeObj = sysDB.types.find(t => t.id === mf.type);
                             if (currentTypeObj && availableH < currentTypeObj.minFront) {
@@ -916,7 +955,7 @@
                             }
 
                             let minReq = currentTypeObj ? currentTypeObj.minFront : 0; 
-                            let requiredFrontHeight = minReq + bottomOverlap + topOverlap - (!isAbsoluteTop ? luzFrontow : 0);
+                            let requiredFrontHeight = minReq + bottomOverlap + topOverlap - (!isAbsoluteTop ? local_gap : 0);
                             let canShrink = mf.height > requiredFrontHeight; 
 
                             sysDB.types.forEach(t => { 
@@ -985,17 +1024,13 @@
                                 <button type="button" onclick="addManualFront(${i})" style="flex:1; padding:2px;">+ Dodaj front</button> 
                                 <button type="button" onclick="removeManualFront(${i})" style="flex:1; padding:2px;">- Usuń</button> 
                             </div> 
-                            <div style="display:flex; justify-content:space-between; align-items:center; background:#e8f0fe; padding:4px; border-radius:4px;"> 
-                                <span>Luz do osi półki:</span> 
-                                <div><input type="number" value="${spaceLocks[i].topGapToAxis}" onchange="updateTopGap(${i}, this.value)" style="width: 50px; padding: 2px; text-align:center;"> mm</div> 
-                            </div> 
                         </div>`; 
                     } 
                 } 
                 drawerHtml += `</div>`; 
                 controlsHtml += `<div class="${rowClass}"><div class="space-header"><div style="flex:1;"><label class="main-label">${label}</label>${drawerHtml}</div><div class="space-input-group" style="align-self: flex-start; margin-top:5px;"><input type="number" value="${spaceLocks[i].currentVal}" onchange="handleSpaceInput(${i}, this.value)" ${inputProps}><button class="${btnClass}" ${btnProps}>${btnText}</button></div></div></div>`; 
                 if (i < totalSpaces - 1) { 
-                    controlsHtml += `<div class="structural-divider"><label><input type="checkbox" ${structuralShelves[i] ? 'checked' : ''} onchange="toggleStructural(${i})"> 🔩 Półka konstrukcyjna</label></div>`; 
+                    controlsHtml += `<div class="structural-divider"><label><input type="checkbox" ${structuralShelves[i] ? 'checked' : ''} onchange="toggleStructural(${i})"> 🔩 Półka konstrukcyjna (Wirtualne cięcie modułu)</label></div>`; 
                 } 
             } 
             document.getElementById('spaceControls').innerHTML = controlsHtml; 
@@ -1011,10 +1046,7 @@
             
             for(let i = 0; i < totalSpaces; i++) { 
                 let h = spaceLocks[i].currentVal; 
-                let isSplit = false; 
-                if (h === 0 && i > 0 && i < qPol && structuralShelves[i-1] && structuralShelves[i]) { 
-                    isSplit = true; 
-                } 
+                let isSplit = isSplitArr[i];
                 if (isSplit) { 
                     currentVisualGap += 60; 
                     currentZero = currentBottom; 
@@ -1038,90 +1070,57 @@
                 } 
             } 
  
-            let frontBlocks = []; let currentDoorBlock = null; let doorZawiasy = []; let drawerGuides = []; let facadeY = cokol + fLuzD; 
+            let frontBlocks = []; let currentDoorBlock = null; let doorZawiasy = []; let drawerGuides = [];
+            
             for(let i = 0; i < totalSpaces; i++) { 
-                let sb = spacesBoundary[i]; let isTop = (i === totalSpaces - 1); 
+                let sb = spacesBoundary[i]; 
                 
-                // --- TWARDY RESET NA LINII CIĘCIA (WIRTUALNY SZEW) ---
                 if (sb.isSplit) { 
-                    let splitLineY = sb.yStart; // Prawdziwa oś łączenia korpusów
-                    
-                    let prevGapTop = spaceLocks[i-1] ? (spaceLocks[i-1].gapTop || 0) : 0;
-                    let nextGapBottom = spaceLocks[i+1] ? (spaceLocks[i+1].gapBottom || 0) : 0;
-                    let jointShift = -prevGapTop + nextGapBottom; 
-
-                    if (currentDoorBlock) { 
-                        currentDoorBlock.yEnd = splitLineY - (luzFrontow/2) + jointShift; 
-                        frontBlocks.push(currentDoorBlock); 
-                        currentDoorBlock = null; 
-                        // Zaktualizuj facadeY TYLKO jeśli domykamy górne drzwi.
-                        // Jeśli na dole były szuflady, facadeY ma już poprawny wymiar!
-                        facadeY = splitLineY + (luzFrontow/2) + jointShift; 
-                    } 
+                    if (currentDoorBlock) { frontBlocks.push(currentDoorBlock); currentDoorBlock = null; } 
                     continue; 
                 } 
                 
-                let gapTop = spaceLocks[i].gapTop || 0;
-                let gapBottom = spaceLocks[i].gapBottom || 0;
-                
                 let isFirstInModule = (i === 0) || (i > 0 && spacesBoundary[i-1].isSplit);
-                let localStartY = facadeY;
+                let isLastInModule = (i === totalSpaces - 1) || (i < totalSpaces - 1 && spacesBoundary[i+1].isSplit);
                 
-                // Aplikujemy Luz Dół na starcie modułu, lub na półce wewnętrznej
-                if (isFirstInModule) {
-                    if (i === 0) localStartY += gapBottom; 
-                } else if (!currentDoorBlock || spaceLocks[i].frontType === 'single' || sb.hasDrawers) {
-                    let prevGapTop = spaceLocks[i-1] ? (spaceLocks[i-1].gapTop || 0) : 0;
-                    let jointShift = -prevGapTop + gapBottom;
-                    // POPRAWKA: Właściwa oś półki poniżej to (yStart - tBoard/2)
-                    localStartY = Math.max(facadeY, sb.yStart - (tBoard/2) + (luzFrontow/2) + jointShift);
-                }
-
-                let isLastInModule = isTop || (spacesBoundary[i+1] && spacesBoundary[i+1].isSplit);
-                let defaultEndY;
+                let sl = spaceLocks[i];
                 
-                // Obliczamy koniec frontów
-                if (isLastInModule) {
-                    if (isTop) {
-                        defaultEndY = hBox - fLuzG - gapTop;
-                    } else {
-                        let splitLineY = spacesBoundary[i+1].yStart;
-                        let nextGapBottom = spaceLocks[i+2] ? (spaceLocks[i+2].gapBottom || 0) : 0; 
-                        let jointShift = -gapTop + nextGapBottom;
-                        defaultEndY = splitLineY - (luzFrontow/2) + jointShift;
-                    }
-                } else {
-                    let nextGapBottom = spaceLocks[i+1] ? (spaceLocks[i+1].gapBottom || 0) : 0;
-                    let jointShift = -gapTop + nextGapBottom;
-                    defaultEndY = sb.yEnd + (tBoard/2) - (luzFrontow/2) + jointShift; 
-                }
+                // Lokalna kalkulacja dla tego konkretnego frontu
+                let def_nB = isFirstInModule ? nBottomGlobal : nWewGlobal;
+                let def_nT = isLastInModule ? nTopGlobal : nWewGlobal;
+                let def_nL = nLeftGlobal;
+                let def_nR = nRightGlobal;
+                let def_gap = gapGlobal;
 
+                let nB = sl.nB !== undefined ? sl.nB : def_nB;
+                let nT = sl.nT !== undefined ? sl.nT : def_nT;
+                let nL = sl.nL !== undefined ? sl.nL : def_nL;
+                let nR = sl.nR !== undefined ? sl.nR : def_nR;
+                let gap = sl.gap !== undefined ? sl.gap : def_gap;
+
+                let localStartY = sb.yStart - nB + (spaceLocks[i].gapBottom || 0);
+                let localEndY = sb.yEnd + nT - (spaceLocks[i].gapTop || 0);
                 let layout = spaceLocks[i].frontLayout || 'full';
 
-                // --- OBSŁUGA SZUFLAD I DRZWI ---
                 if (sb.hasDrawers) { 
                     if (currentDoorBlock) { frontBlocks.push(currentDoorBlock); currentDoorBlock = null; } 
-                    let blockEndY = defaultEndY; 
-                    if (sb.drawerMode === 'manual' || sb.drawerMode === 'manual_fixed') { 
-                        blockEndY = localStartY + sb.manualFronts.reduce((a,b) => a + b.height, 0) + ((sb.manualFronts.length - 1) * luzFrontow); 
-                    } 
                     frontBlocks.push({ 
-                        type: 'drawers', drawerMode: sb.drawerMode, manualFronts: sb.manualFronts, qDrawers: sb.qDrawers, 
-                        spaceIdx: i, yStart: localStartY, yEnd: blockEndY, interiorBottom: sb.yStart, 
-                        visualGap: sb.visualGap, localZero: sb.localZero, layout: layout 
+                        type: 'drawers', drawerMode: sl.drawerMode, manualFronts: sl.manualFronts, qDrawers: sl.qDrawers, 
+                        spaceIdx: i, yStart: localStartY, yEnd: localEndY, interiorBottom: sb.yStart, 
+                        visualGap: sb.visualGap, localZero: sb.localZero, layout: layout,
+                        nL: nL, nR: nR, gap: gap
                     }); 
-                    facadeY = blockEndY + luzFrontow; 
                 } else { 
                     let frontType = spaceLocks[i].frontType || 'merged';
-
                     if (frontType === 'single') {
                         if (currentDoorBlock) { frontBlocks.push(currentDoorBlock); currentDoorBlock = null; } 
-                        frontBlocks.push({ type: 'door', yStart: localStartY, yEnd: defaultEndY, visualGap: sb.visualGap, localZero: sb.localZero, layout: layout });
-                        facadeY = defaultEndY + luzFrontow;
+                        frontBlocks.push({ type: 'door', yStart: localStartY, yEnd: localEndY, visualGap: sb.visualGap, localZero: sb.localZero, layout: layout, nL: nL, nR: nR, gap: gap });
                     } else {
-                        if (!currentDoorBlock) currentDoorBlock = { type: 'door', yStart: localStartY, yEnd: defaultEndY, visualGap: sb.visualGap, localZero: sb.localZero, layout: layout }; 
-                        else currentDoorBlock.yEnd = defaultEndY; 
-                        facadeY = defaultEndY + luzFrontow; 
+                        if (!currentDoorBlock) {
+                            currentDoorBlock = { type: 'door', yStart: localStartY, yEnd: localEndY, visualGap: sb.visualGap, localZero: sb.localZero, layout: layout, nL: nL, nR: nR, gap: gap }; 
+                        } else {
+                            currentDoorBlock.yEnd = localEndY; 
+                        }
                     }
                 } 
             } 
@@ -1133,9 +1132,16 @@
                 if(fb.type === 'drawers') { 
                     fb.drawers = []; 
                     if (fb.drawerMode === 'manual') { 
+                        let sumTargetFronts = fb.manualFronts.reduce((a,b) => a + b.height, 0); 
+                        let totalLuz = (fb.manualFronts.length - 1) * fb.gap; 
+                        let targetFhTotal = sumTargetFronts + totalLuz; 
+                        let diff = fH_total - targetFhTotal; 
+                        let adjustmentPerDrawer = diff / fb.manualFronts.length; 
+
                         let currY = fb.yStart; 
                         for(let j=0; j < fb.manualFronts.length; j++) { 
-                            let fH = fb.manualFronts[j].height; let dTop = currY + fH; 
+                            let fH = fb.manualFronts[j].height + adjustmentPerDrawer; 
+                            let dTop = currY + fH; 
                             let guideTopY = currY + topHoleOffset; 
                             if (j === 0) { guideTopY = Math.max(guideTopY, fb.interiorBottom + topHoleOffset); } 
                              
@@ -1148,10 +1154,10 @@
  
                             fb.drawers.push({ yStart: currY, yEnd: dTop, guideTop: guideTopY, currentNL: activeNL }); 
                             drawerGuides.push({ axisYTop: guideTopY, currentNL: activeNL, visualGap: fb.visualGap, localZero: fb.localZero }); 
-                            currY = dTop + luzFrontow; 
+                            currY = dTop + fb.gap; 
                         } 
                     } else {  
-                        let dFrontH = (fH_total - ((fb.qDrawers - 1) * luzFrontow)) / fb.qDrawers; 
+                        let dFrontH = (fH_total - ((fb.qDrawers - 1) * fb.gap)) / fb.qDrawers; 
                         let currY = fb.yStart; 
                         for(let j=0; j < fb.qDrawers; j++) { 
                             let dTop = currY + dFrontH; let guideTopY = currY + topHoleOffset; 
@@ -1164,7 +1170,7 @@
  
                             fb.drawers.push({ yStart: currY, yEnd: dTop, guideTop: guideTopY, currentNL: autoSelectedNL }); 
                             drawerGuides.push({ axisYTop: guideTopY, currentNL: autoSelectedNL, visualGap: fb.visualGap, localZero: fb.localZero }); 
-                            currY = dTop + luzFrontow; 
+                            currY = dTop + fb.gap; 
                         } 
                     } 
                 }  
@@ -1408,8 +1414,8 @@
                 
                 subCabinets.forEach((cab, i) => {
                     let baseF = hBox - cab.startY - cab.visualGap;
-                    if (i === 0) baseF -= fLuzD;
-                    svg += `<line x1="${sXFront - 50}" y1="${baseF}" x2="${sXFront + wBox + 150}" y2="${baseF}" stroke="#2e7d32" stroke-width="3" stroke-dasharray="8,8" opacity="0.6"/><text x="${sXFront + wBox + 160}" y="${baseF + 8}" font-size="${fontL}" font-weight="bold" fill="#2e7d32" text-anchor="start">0 mm (DÓŁ FRONTU${subCabinets.length > 1 ? ` MODUŁU ${i+1}` : ''})</text>`; 
+                    
+                    svg += `<line x1="${sXFront - 50}" y1="${baseF}" x2="${sXFront + wBox + 150}" y2="${baseF}" stroke="#2e7d32" stroke-width="3" stroke-dasharray="8,8" opacity="0.6"/><text x="${sXFront + wBox + 160}" y="${baseF + 8}" font-size="${fontL}" font-weight="bold" fill="#2e7d32" text-anchor="start">0 mm (BAZA WNĘTRZA${subCabinets.length > 1 ? ` MODUŁU ${i+1}` : ''})</text>`; 
                     
                     let blocksInCab = frontBlocks.filter(fb => fb.visualGap === cab.visualGap && fb.layout !== 'none');
                     if (blocksInCab.length > 0) {
@@ -1430,23 +1436,26 @@
                     if (fb.layout === 'none') return; 
 
                     let rectTopY = hBox - fb.yEnd - fb.visualGap; let rectH = fb.yEnd - fb.yStart; 
-                    let halfW = (wBox - luzFrontow) / 2;
                     
                     let dimX = sXFront - 45;
                     svg += `<line x1="${dimX}" y1="${rectTopY}" x2="${dimX}" y2="${rectTopY + rectH}" stroke="#2e7d32" stroke-width="1.5" marker-start="url(#arrow-green)" marker-end="url(#arrow-green)"/>`;
                     svg += `<rect x="${dimX - 30}" y="${rectTopY + rectH/2 - 14}" width="60" height="28" fill="#ffffff" stroke="#2e7d32" stroke-width="1" rx="4"/>`;
                     svg += `<text x="${dimX}" y="${rectTopY + rectH/2 + 6}" font-size="${fontS}" font-weight="bold" fill="#2e7d32" text-anchor="middle">${formatDim(rectH)}</text>`;
 
-                    if(fb.type === 'door') { 
-                        let rects = [];
-                        if (fb.layout === 'full') rects.push({ x: sXFront, w: wBox, hinge: 'left' });
-                        else if (fb.layout === 'left') rects.push({ x: sXFront, w: halfW, hinge: 'left' });
-                        else if (fb.layout === 'right') rects.push({ x: sXFront + halfW + luzFrontow, w: halfW, hinge: 'right' });
-                        else if (fb.layout === 'double') {
-                            rects.push({ x: sXFront, w: halfW, hinge: 'left' });
-                            rects.push({ x: sXFront + halfW + luzFrontow, w: halfW, hinge: 'right' });
-                        }
+                    let fFullW = (wBox - 2*tBoard) + fb.nL + fb.nR;
+                    let leftX = sXFront + tBoard - fb.nL;
+                    let halfW = (fFullW - fb.gap) / 2;
 
+                    let rects = [];
+                    if (fb.layout === 'full') rects.push({ x: leftX, w: fFullW, hinge: 'left' });
+                    else if (fb.layout === 'left') rects.push({ x: leftX, w: halfW, hinge: 'left' });
+                    else if (fb.layout === 'right') rects.push({ x: leftX + halfW + fb.gap, w: halfW, hinge: 'right' });
+                    else if (fb.layout === 'double') {
+                        rects.push({ x: leftX, w: halfW, hinge: 'left' });
+                        rects.push({ x: leftX + halfW + fb.gap, w: halfW, hinge: 'right' });
+                    }
+
+                    if(fb.type === 'door') { 
                         rects.forEach(r => {
                             svg += `<rect x="${r.x}" y="${rectTopY}" width="${r.w}" height="${rectH}" fill="#e2efda" stroke="#2e7d32" stroke-width="${lineW}"/>`;
                             let zawInfo = fb.actualZawCount > 0 ? ` (${fb.actualZawCount} zaw.)` : ``;
@@ -1457,7 +1466,7 @@
                             let cy = hBox - zaw.bodyY - zaw.visualGap; let color = zaw.shifted ? "#9c27b0" : "#2e7d32"; 
                             
                             if (fb.layout === 'full' || fb.layout === 'left' || fb.layout === 'double') {
-                                let puszkaX = sXFront + 22;  
+                                let puszkaX = leftX + 22;  
                                 svg += `<circle cx="${puszkaX}" cy="${cy}" r="17.5" fill="none" stroke="${color}" stroke-width="3"/><circle cx="${puszkaX}" cy="${cy}" r="3" fill="${color}"/>`;
                                 svg += `<line x1="${puszkaX}" y1="${cy}" x2="${sXFront + wBox + 60}" y2="${cy}" stroke="${color}" stroke-dasharray="4,4" stroke-width="2"/>`;
                                 if (fb.layout !== 'double') {
@@ -1465,22 +1474,13 @@
                                 }
                             }
                             if (fb.layout === 'right' || fb.layout === 'double') {
-                                let puszkaX = sXFront + wBox - 22;
+                                let puszkaX = leftX + fFullW - 22;
                                 svg += `<circle cx="${puszkaX}" cy="${cy}" r="17.5" fill="none" stroke="${color}" stroke-width="3"/><circle cx="${puszkaX}" cy="${cy}" r="3" fill="${color}"/>`;
                                 svg += `<line x1="${puszkaX}" y1="${cy}" x2="${sXFront + wBox + 60}" y2="${cy}" stroke="${color}" stroke-dasharray="4,4" stroke-width="2"/>`;
                                 svg += `<text x="${sXFront + wBox + 70}" y="${cy + 8}" font-size="${fontL}" font-weight="bold" fill="${color}" text-anchor="start">${formatDim(zaw.frontY)} (${formatDim(rectH - zaw.frontY)})${zaw.shifted ? " [KOREKTA]" : ""}</text>`;
                             }
                         }); 
                     } else if(fb.type === 'drawers') { 
-                        let rects = [];
-                        if (fb.layout === 'full') rects.push({ x: sXFront, w: wBox });
-                        else if (fb.layout === 'left') rects.push({ x: sXFront, w: halfW });
-                        else if (fb.layout === 'right') rects.push({ x: sXFront + halfW + luzFrontow, w: halfW });
-                        else if (fb.layout === 'double') {
-                            rects.push({ x: sXFront, w: halfW });
-                            rects.push({ x: sXFront + halfW + luzFrontow, w: halfW });
-                        }
-
                         fb.drawers.forEach((dr, idx) => { 
                             let drH = dr.yEnd - dr.yStart; 
                             
