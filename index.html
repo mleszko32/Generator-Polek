@@ -237,15 +237,15 @@
                 <div id="svgWrapper" class="svg-wrapper"></div> 
             </div> 
         </div> 
+    </div> 
  
+    <!-- TWORZYMY NOWY KONTENER TYLKO DLA DOLNEGO PANELU --> 
+    <div class="container" style="margin-top: 20px;"> 
         <div class="panel panel-bottom"> 
             <h2>Baza zapisanych projektów</h2> 
             <div id="savedList" class="saved-list"></div> 
         </div> 
     </div> 
- 
-    <div id="printArea"></div> 
-    
     <div id="cutListModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -507,8 +507,15 @@
             svgNode.querySelectorAll('.hide-on-print').forEach(el => el.remove());
             if (type === 'interior') svgNode.setAttribute('viewBox', `-100 -120 ${wBox + 200} ${hBox + 250}`); 
             else if (type === 'side') svgNode.setAttribute('viewBox', `${sXBok - 200} -120 ${dBox + 900} ${hBox + 250}`); 
-            else if (type === 'front') svgNode.setAttribute('viewBox', `${sXFront - 100} -120 ${wBox + 300} ${hBox + 250}`); 
-            document.getElementById('printArea').innerHTML = ''; document.getElementById('printArea').appendChild(svgNode); window.print(); 
+            else if (type === 'front') svgNode.setAttribute('viewBox', `${sXFront - 100} -120 ${wBox + 300} ${hBox + 250}`);
+            
+            let printArea = document.getElementById('printArea');
+            if (!printArea) {
+                printArea = document.createElement('div');
+                printArea.id = 'printArea';
+                document.body.appendChild(printArea);
+            }
+            printArea.innerHTML = ''; printArea.appendChild(svgNode); window.print(); 
         } 
  
         function resetLocksAndRun() { 
