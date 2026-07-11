@@ -36,6 +36,29 @@
         .structural-divider { text-align: center; padding: 6px; background: #e2efda; border: 1px dashed #2e7d32; border-radius: 4px; margin-bottom: 8px; } 
         .structural-divider label { margin: 0; cursor: pointer; font-size: 0.8rem; color: #2e7d32; display: flex; justify-content: center; align-items: center; gap: 5px; } 
  
+        /* --- NOWE STYLE DLA PANELU PRZESTRZENI --- */
+        .space-panel-inner { margin-top: 8px; background: #fff; padding: 10px; border-radius: 6px; border: 1px solid #ddd; }
+        
+        .sp-header-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .sp-select-group { display: flex; align-items: center; gap: 5px; flex: 1; min-width: 140px; }
+        .sp-select-group span { font-size: 0.8rem; font-weight: bold; color: #1F4E79; white-space: nowrap; }
+        .sp-select-group select { flex: 1; padding: 4px; font-size: 0.8rem; border: 1px solid #ccc; border-radius: 4px; width: 100%; }
+
+        .sp-settings-card { border: 1px solid #e0e0e0; border-radius: 6px; padding: 8px; margin-bottom: 8px; background: #fafafa; }
+        .sp-settings-title { font-size: 0.75rem; font-weight: bold; color: #555; margin-bottom: 8px; display: block; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+        
+        .sp-grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 6px; }
+        .sp-input-label { display: flex; flex-direction: column; font-size: 0.75rem; color: #333; gap: 3px; }
+        .sp-input-label span { opacity: 0.8; }
+        .sp-input-label input { width: 100%; padding: 4px; text-align: center; border: 1px solid #ccc; border-radius: 4px; }
+        
+        .sp-drawer-item { background: #fff; border: 1px solid #ddd; padding: 8px; border-radius: 6px; margin-bottom: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+        .sp-drawer-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 6px; }
+        .sp-drawer-row select { max-width: 150px; }
+        
+        .btn-small-outline { padding: 3px 6px; font-size: 0.75rem; background: #fff; border: 1px solid #1F4E79; color: #1F4E79; border-radius: 4px; cursor: pointer; transition: 0.2s; white-space: nowrap;}
+        .btn-small-outline:hover { background: #e8f0fe; }
+
         button { background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 6px 12px; cursor: pointer; font-size: 0.85rem; font-weight: bold; color: #555; transition: 0.2s; } 
         button:hover:not([disabled]) { background: #f0f0f0; } 
         button.btn-shrink:hover { background: #dceafb; } 
@@ -864,13 +887,13 @@
             unlockedCount = spaceLocks.filter(s => !s.locked).length; 
  
             let controlsHtml = ''; 
-            for(let i = 0; i < totalSpaces; i++) { 
+            for(let i = 0; i < totalSpaces; i++) {
                 let isTop = (i === totalSpaces - 1); let isBottom = (i === 0); 
                 let label = `Światło ${i+1}` + (isBottom ? ` (Dół)` : (isTop ? ` (Góra)` : ``)); 
                 let isLocked = spaceLocks[i].locked; let isOnlyUnlocked = (!isLocked && unlockedCount === 1); 
                 let isDrawers = spaceLocks[i].hasDrawers; let drawerMode = spaceLocks[i].drawerMode; 
                 let isManual = isDrawers && drawerMode === 'manual'; 
-                 
+                
                 let rowClass = 'space-row' + (isLocked ? ' locked' : '') + (isDrawers ? ' drawer-active' : '') + (isOnlyUnlocked && !isDrawers ? ' resultant' : ''); 
                 let btnClass = isLocked ? 'lock-btn locked' : 'lock-btn'; 
                 let btnText = isLocked ? '🔒 Odblokuj' : '🔓 Zablokuj'; 
@@ -878,52 +901,59 @@
                 let inputProps = (isOnlyUnlocked || isManual) ? 'readonly' : ''; 
                 let btnProps = (isOnlyUnlocked || isManual) ? 'disabled' : `onclick="toggleLock(${i})"`; 
  
-                let drawerHtml = ` 
-                    <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 4px; background: #fff; padding: 6px; border-radius: 4px; border: 1px solid #ddd;"> 
-                        <div style="display:flex; align-items:center; justify-content:space-between; gap: 10px;"> 
-                            <div style="display:flex; align-items:center; gap: 15px;">
-                                <div style="display:flex; align-items:center; gap: 6px;">
-                                    <span style="font-size:0.8rem; font-weight:bold; color:#1F4E79;">Typ frontu:</span>
-                                    <select onchange="changeFrontType(${i}, this.value)" style="padding: 2px 4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px; outline:none; background:#f9fbfd;">
-                                        <option value="merged" ${spaceLocks[i].frontType === 'merged' || (!spaceLocks[i].frontType && !spaceLocks[i].hasDrawers) ? 'selected' : ''}>🚪 Razem (Sklej z góry/dołu)</option>
-                                        <option value="single" ${spaceLocks[i].frontType === 'single' ? 'selected' : ''}>🚪 Osobny (Tylko tu)</option>
-                                        <option value="drawers" ${spaceLocks[i].hasDrawers ? 'selected' : ''}>🗄️ Szuflady</option>
-                                    </select>
-                                </div>
-                                <div style="display:flex; align-items:center; gap: 6px;">
-                                    <span style="font-size:0.8rem; font-weight:bold; color:#1F4E79;">Układ:</span>
-                                    <select onchange="changeFrontLayout(${i}, this.value)" style="padding: 2px 4px; font-size:0.8rem; border:1px solid #ccc; border-radius:4px; outline:none; background:#f9fbfd;">
-                                        <option value="full" ${spaceLocks[i].frontLayout === 'full' || !spaceLocks[i].frontLayout ? 'selected' : ''}>Pełny (1 szt.)</option>
-                                        <option value="left" ${spaceLocks[i].frontLayout === 'left' ? 'selected' : ''}>Tylko Lewy</option>
-                                        <option value="right" ${spaceLocks[i].frontLayout === 'right' ? 'selected' : ''}>Tylko Prawy</option>
-                                        <option value="double" ${spaceLocks[i].frontLayout === 'double' ? 'selected' : ''}>Podwójny (L+P)</option>
-                                        <option value="none" ${spaceLocks[i].frontLayout === 'none' ? 'selected' : ''}>Brak frontu</option>
-                                    </select>
-                                </div>
-                            </div>
-                            ${isDrawers ? `<select onchange="changeDrawerMode(${i}, this.value)" style="padding: 2px 5px; font-size:0.8rem; width:auto;"> 
-                                    <option value="auto" ${drawerMode==='auto'?'selected':''}>Równomiernie (Auto)</option> 
-                                    <option value="manual" ${drawerMode==='manual'?'selected':''}>Własne (Bottom-Up)</option> 
-                                </select>` : ''} 
+                let drawerHtml = `<div class="space-panel-inner">`; 
+                
+                // 1. Górny pasek z selectami (Typ i Układ)
+                drawerHtml += `
+                    <div class="sp-header-row">
+                        <div class="sp-select-group">
+                            <span>Typ:</span>
+                            <select onchange="changeFrontType(${i}, this.value)">
+                                <option value="merged" ${spaceLocks[i].frontType === 'merged' || (!spaceLocks[i].frontType && !spaceLocks[i].hasDrawers) ? 'selected' : ''}>🚪 Razem (Sklej)</option>
+                                <option value="single" ${spaceLocks[i].frontType === 'single' ? 'selected' : ''}>🚪 Osobny</option>
+                                <option value="drawers" ${spaceLocks[i].hasDrawers ? 'selected' : ''}>🗄️ Szuflady</option>
+                            </select>
                         </div>
-                        <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:5px; font-size:0.75rem; background:#fff3e0; padding:6px; border-radius:4px; border:1px solid #ffcc80;">
-                            <span style="font-weight:bold; color:#e65100; width:100%;">Nadpisz domyślne nałożenia i szczelinę dla tej przestrzeni:</span>
-                            <label style="margin:0; display:flex; align-items:center; gap:4px;">Góra: <input type="number" placeholder="Auto" value="${spaceLocks[i].nT !== undefined ? spaceLocks[i].nT : ''}" onchange="updateSpaceVal(${i}, 'nT', this.value)" style="width:50px; padding:2px; text-align:center;"></label>
-                            <label style="margin:0; display:flex; align-items:center; gap:4px;">Dół: <input type="number" placeholder="Auto" value="${spaceLocks[i].nB !== undefined ? spaceLocks[i].nB : ''}" onchange="updateSpaceVal(${i}, 'nB', this.value)" style="width:50px; padding:2px; text-align:center;"></label>
-                            <label style="margin:0; display:flex; align-items:center; gap:4px;">Lewo: <input type="number" placeholder="Auto" value="${spaceLocks[i].nL !== undefined ? spaceLocks[i].nL : ''}" onchange="updateSpaceVal(${i}, 'nL', this.value)" style="width:50px; padding:2px; text-align:center;"></label>
-                            <label style="margin:0; display:flex; align-items:center; gap:4px;">Prawo: <input type="number" placeholder="Auto" value="${spaceLocks[i].nR !== undefined ? spaceLocks[i].nR : ''}" onchange="updateSpaceVal(${i}, 'nR', this.value)" style="width:50px; padding:2px; text-align:center;"></label>
-                            <label style="margin:0; display:flex; align-items:center; gap:4px; margin-left:auto; border-left:1px solid #ffb74d; padding-left:10px;">Szczelina L+P/Szuf: <input type="number" placeholder="Auto" value="${spaceLocks[i].gap !== undefined ? spaceLocks[i].gap : ''}" onchange="updateSpaceVal(${i}, 'gap', this.value)" style="width:50px; padding:2px; text-align:center;"></label>
+                        <div class="sp-select-group">
+                            <span>Układ:</span>
+                            <select onchange="changeFrontLayout(${i}, this.value)">
+                                <option value="full" ${spaceLocks[i].frontLayout === 'full' || !spaceLocks[i].frontLayout ? 'selected' : ''}>Pełny (1 szt.)</option>
+                                <option value="left" ${spaceLocks[i].frontLayout === 'left' ? 'selected' : ''}>Lewy</option>
+                                <option value="right" ${spaceLocks[i].frontLayout === 'right' ? 'selected' : ''}>Prawy</option>
+                                <option value="double" ${spaceLocks[i].frontLayout === 'double' ? 'selected' : ''}>Podwójny (L+P)</option>
+                                <option value="none" ${spaceLocks[i].frontLayout === 'none' ? 'selected' : ''}>Brak frontu</option>
+                            </select>
                         </div>
-                        <div style="display:flex; gap:10px; margin-top:5px; font-size:0.75rem; background:#f0f4f8; padding:4px; border-radius:4px;">
-                            <label style="margin:0; display:flex; align-items:center; gap:4px;">Dodatkowy Luz Góra: <input type="number" value="${spaceLocks[i].gapTop || 0}" onchange="updateGap(${i}, 'gapTop', this.value)" style="width:40px; padding:2px; text-align:center;"></label>
-                            <label style="margin:0; display:flex; align-items:center; gap:4px;">Dodatkowy Luz Dół: <input type="number" value="${spaceLocks[i].gapBottom || 0}" onchange="updateGap(${i}, 'gapBottom', this.value)" style="width:40px; padding:2px; text-align:center;"></label>
-                        </div>`; 
+                        ${isDrawers ? `
+                        <div class="sp-select-group" style="max-width: 120px;">
+                            <select onchange="changeDrawerMode(${i}, this.value)"> 
+                                <option value="auto" ${drawerMode==='auto'?'selected':''}>Auto</option> 
+                                <option value="manual" ${drawerMode==='manual'?'selected':''}>Własne</option> 
+                            </select>
+                        </div>` : ''} 
+                    </div>`;
+
+                // 2. Karta: Korekty i Luzy
+                drawerHtml += `
+                    <div class="sp-settings-card">
+                        <span class="sp-settings-title">🛠 Korekty nałożeń i luzów (Zostaw puste dla Auto)</span>
+                        <div class="sp-grid-4">
+                            <label class="sp-input-label"><span>Góra:</span> <input type="number" placeholder="Auto" value="${spaceLocks[i].nT !== undefined ? spaceLocks[i].nT : ''}" onchange="updateSpaceVal(${i}, 'nT', this.value)"></label>
+                            <label class="sp-input-label"><span>Dół:</span> <input type="number" placeholder="Auto" value="${spaceLocks[i].nB !== undefined ? spaceLocks[i].nB : ''}" onchange="updateSpaceVal(${i}, 'nB', this.value)"></label>
+                            <label class="sp-input-label"><span>Lewo:</span> <input type="number" placeholder="Auto" value="${spaceLocks[i].nL !== undefined ? spaceLocks[i].nL : ''}" onchange="updateSpaceVal(${i}, 'nL', this.value)"></label>
+                            <label class="sp-input-label"><span>Prawo:</span> <input type="number" placeholder="Auto" value="${spaceLocks[i].nR !== undefined ? spaceLocks[i].nR : ''}" onchange="updateSpaceVal(${i}, 'nR', this.value)"></label>
+                            
+                            <label class="sp-input-label"><span>Szczelina frontów:</span> <input type="number" placeholder="Auto" value="${spaceLocks[i].gap !== undefined ? spaceLocks[i].gap : ''}" onchange="updateSpaceVal(${i}, 'gap', this.value)"></label>
+                            <label class="sp-input-label"><span>Dodatkowy luz (Top):</span> <input type="number" value="${spaceLocks[i].gapTop || 0}" onchange="updateGap(${i}, 'gapTop', this.value)"></label>
+                            <label class="sp-input-label"><span>Dodatkowy luz (Dół):</span> <input type="number" value="${spaceLocks[i].gapBottom || 0}" onchange="updateGap(${i}, 'gapBottom', this.value)"></label>
+                        </div>
+                    </div>`; 
  
                 if (isDrawers) { 
                     if (drawerMode === 'auto') { 
-                        drawerHtml += `<div style="display:flex; gap: 8px; align-items:center; margin-top:4px;"><span style="font-size:0.8rem;">Ilość:</span><input type="number" value="${spaceLocks[i].qDrawers}" min="1" onchange="updateDrawerCount(${i}, this.value)" style="width: 50px; padding: 2px; text-align:center;"><span style="font-size:0.8rem;">szt.</span></div>`; 
+                        drawerHtml += `<div style="display:flex; gap: 8px; align-items:center; margin-top:8px;"><span style="font-size:0.8rem; font-weight:bold;">Ilość szuflad:</span><input type="number" value="${spaceLocks[i].qDrawers}" min="1" onchange="updateDrawerCount(${i}, this.value)" style="width: 60px; padding: 4px; text-align:center; border: 1px solid #ccc; border-radius: 4px;"></div>`; 
                     } else { 
-                        drawerHtml += `<div style="font-size:0.8rem; margin-top:6px; border-top: 1px dashed #eee; padding-top:6px;">`; 
+                        drawerHtml += `<div style="margin-top:10px;">`; 
                         
                         let isFirstInModule = (i === 0) || (i > 0 && isSplitArr[i-1]);
                         let isLastInModule = (i === totalSpaces - 1) || (i < totalSpaces - 1 && isSplitArr[i+1]);
@@ -964,7 +994,7 @@
                                 optionsHtml += `<option value="${t.id}" ${isDisabled} ${isSelected}>${t.label} (wewn. ${t.minFront})${isDisabled ? ' 🚫' : ''}</option>`; 
                             });
                              
-                            let shrinkBtnHtml = canShrink ? `<button type="button" class="btn-shrink" onclick="shrinkFront(${i}, ${fIdx})" title="Ściśnij front do ${minReq}mm" style="padding:2px 6px; font-size:0.8rem; background:#e8f0fe; border:1px solid #1F4E79; color:#1F4E79; border-radius:4px; cursor:pointer;">>< Ściśnij</button>` : ''; 
+                            let shrinkBtnHtml = canShrink ? `<button type="button" class="btn-small-outline" onclick="shrinkFront(${i}, ${fIdx})" title="Ściśnij front do ${minReq}mm">>< Ściśnij</button>` : ''; 
  
                             if(!spaceLocks[i].manualDrawerNL) spaceLocks[i].manualDrawerNL = {}; 
                             let currentSavedNL = spaceLocks[i].manualDrawerNL[fIdx]; 
@@ -976,7 +1006,7 @@
                              
                             let finalActiveNL = currentSavedNL === undefined || currentSavedNL === 'auto' ? autoSelectedNL : parseFloat(currentSavedNL); 
                              
-                            let selectNLHtml = `<select onchange="updateDrawerNL(${i}, ${fIdx}, this.value)" style="padding: 3px; font-size:0.8rem; border-color:#ccc; border-radius:4px; width:110px;">`; 
+                            let selectNLHtml = `<select onchange="updateDrawerNL(${i}, ${fIdx}, this.value)" style="padding: 4px; font-size:0.8rem; border: 1px solid #ccc; border-radius:4px; max-width: 140px;">`; 
                             selectNLHtml += `<option value="auto">Auto (${autoSelectedNL}mm)</option>`; 
                              
                             sysDB.lengths.forEach(len => { 
@@ -987,48 +1017,51 @@
  
                             let alertSpan = ''; 
                             if(currentLInternal < (finalActiveNL + sysDB.ltRequired)) { 
-                                alertSpan = `<span style="color:#d32f2f; font-weight:bold; display:block; font-size:0.75rem; margin-top:2px;">⚠️ Za długa! Wymaga min. ${finalActiveNL + sysDB.ltRequired}mm</span>`; 
+                                alertSpan = `<span style="color:#d32f2f; font-weight:bold; font-size:0.75rem;">⚠️ Wymaga min. ${finalActiveNL + sysDB.ltRequired}mm</span>`; 
                                 showError(`Błąd konfiguracji! Szuflada w świetle ${i+1} (F${fIdx+1}) jest zbyt długa dla wybranej głębokości korpusu.`); 
                             } else { 
                                 let freeSpace = currentLInternal - (finalActiveNL + sysDB.ltRequired); 
                                 if(freeSpace > 0) { 
-                                    alertSpan = `<span style="color:#2e7d32; display:block; font-size:0.75rem; margin-top:2px;">Luz z tyłu: +${Math.round(freeSpace)}mm</span>`; 
+                                    alertSpan = `<span style="color:#2e7d32; font-size:0.75rem;">Luz: +${Math.round(freeSpace)}mm</span>`; 
                                 } 
                             } 
  
+                            // 3. Wiersz pojedynczej szuflady
                             drawerHtml += ` 
-                                <div style="display:flex; flex-direction:column; margin-bottom:6px; background: #fdfdfd; padding: 6px; border: 1px solid #eee; border-radius: 4px;"> 
-                                    <div style="display:flex; justify-content:space-between; align-items:center;"> 
-                                        <div style="display:flex; align-items:center; gap: 5px;"> 
+                                <div class="sp-drawer-item"> 
+                                    <div class="sp-drawer-row"> 
+                                        <div style="display:flex; align-items:center; gap: 8px;"> 
                                             <span style="font-size:0.8rem; font-weight:bold; color:#555; width:55px;">${lbl}:</span> 
-                                            <input type="number" value="${mf.height}" onchange="updateFrontHeight(${i}, ${fIdx}, this.value)" style="width: 65px; padding: 4px; text-align:center; border: 1px solid #ccc; border-radius: 4px;"> 
+                                            <input type="number" value="${mf.height}" onchange="updateFrontHeight(${i}, ${fIdx}, this.value)" style="width: 60px; padding: 4px; text-align:center; border: 1px solid #ccc; border-radius: 4px;"> 
                                         </div> 
                                         <div style="display:flex; align-items:center; gap: 5px;"> 
-                                            <select onchange="updateDrawerType(${i}, ${fIdx}, this.value)" style="padding: 3px; font-size:0.8rem; border-color:#ccc; border-radius:4px; max-width: 140px;"> 
+                                            <select onchange="updateDrawerType(${i}, ${fIdx}, this.value)" class="sp-select-type" style="padding: 4px; font-size:0.8rem; border-color:#ccc; border-radius:4px;"> 
                                                 ${optionsHtml} 
                                             </select> 
                                             ${shrinkBtnHtml} 
                                         </div> 
                                     </div> 
-                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; border-top:1px dotted #eee; padding-top:4px;"> 
+                                    <div class="sp-drawer-row" style="margin-bottom:0; border-top:1px dashed #eee; padding-top:6px;"> 
                                         <span style="font-size:0.8rem; color:#666;">Prowadnica:</span> 
-                                        <div> 
+                                        <div style="display:flex; align-items:center; gap: 10px;"> 
+                                            ${alertSpan}
                                             ${selectNLHtml} 
-                                            ${alertSpan} 
                                         </div> 
                                     </div> 
                                 </div>`; 
                         }); 
                         drawerHtml += ` 
-                            <div style="display:flex; gap:5px; margin-bottom: 8px;"> 
-                                <button type="button" onclick="addManualFront(${i})" style="flex:1; padding:2px;">+ Dodaj front</button> 
-                                <button type="button" onclick="removeManualFront(${i})" style="flex:1; padding:2px;">- Usuń</button> 
+                            <div style="display:flex; gap:10px; margin-bottom: 4px;"> 
+                                <button type="button" class="btn-small-outline" onclick="addManualFront(${i})" style="flex:1;">+ Dodaj front</button> 
+                                <button type="button" class="btn-small-outline" onclick="removeManualFront(${i})" style="flex:1; color:#d32f2f; border-color:#fce8e8; background:#fce8e8;">- Usuń dolny</button> 
                             </div> 
                         </div>`; 
                     } 
                 } 
                 drawerHtml += `</div>`; 
-                controlsHtml += `<div class="${rowClass}"><div class="space-header"><div style="flex:1;"><label class="main-label">${label}</label>${drawerHtml}</div><div class="space-input-group" style="align-self: flex-start; margin-top:5px;"><input type="number" value="${spaceLocks[i].currentVal}" onchange="handleSpaceInput(${i}, this.value)" ${inputProps}><button class="${btnClass}" ${btnProps}>${btnText}</button></div></div></div>`; 
+                
+                // Przypięcie do struktury ControlsHtml - dodanie marginesu dla przycisku odblokuj
+                controlsHtml += `<div class="${rowClass}"><div class="space-header"><div style="flex:1;"><label class="main-label">${label}</label>${drawerHtml}</div><div class="space-input-group" style="align-self: flex-start; margin-top:5px; margin-left: 10px;"><input type="number" value="${spaceLocks[i].currentVal}" onchange="handleSpaceInput(${i}, this.value)" ${inputProps}><button class="${btnClass}" ${btnProps}>${btnText}</button></div></div></div>`; 
                 if (i < totalSpaces - 1) { 
                     controlsHtml += `<div class="structural-divider"><label><input type="checkbox" ${structuralShelves[i] ? 'checked' : ''} onchange="toggleStructural(${i})"> 🔩 Półka konstrukcyjna (Wirtualne cięcie modułu)</label></div>`; 
                 } 
