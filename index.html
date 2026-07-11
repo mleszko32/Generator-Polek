@@ -1031,16 +1031,20 @@
             for(let i = 0; i < totalSpaces; i++) { 
                 let sb = spacesBoundary[i]; let isTop = (i === totalSpaces - 1); 
                 
+                // --- NAPRAWIONA LOGIKA SZWU ---
                 if (sb.isSplit) { 
                     if (currentDoorBlock) { 
-                        currentDoorBlock.yEnd = sb.yStart - luzFrontow/2; 
+                        currentDoorBlock.yEnd = sb.yStart - luzFrontow/2; // Zamykamy moduł przed szwem
                         frontBlocks.push(currentDoorBlock); 
                         currentDoorBlock = null; 
                     } 
-                    facadeY = sb.yStart + fLuzD; 
+                    // RESETUJEMY BAZĘ STARTOWĄ dla następnego modułu
+                    // Startujemy od yStart nowego modułu + jego indywidualny Luz Dół
+                    facadeY = sb.yStart + (spaceLocks[i].gapBottom || 0); 
                     continue; 
                 } 
                 
+                // Używamy luzów zdefiniowanych dla danego modułu
                 let gapTop = spaceLocks[i].gapTop || 0;
                 let gapBottom = spaceLocks[i].gapBottom || 0;
                 
@@ -1049,6 +1053,7 @@
                      localStartY = Math.max(facadeY, sb.yStart + gapBottom);
                 }
 
+                // Obliczamy koniec bloku frontów
                 let defaultEndY = isTop ? hBox - fLuzG - gapTop : sb.yEnd - gapTop + (tBoard/2) - (luzFrontow/2); 
                 let layout = spaceLocks[i].frontLayout || 'full';
 
