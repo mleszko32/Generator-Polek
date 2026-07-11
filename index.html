@@ -144,7 +144,8 @@
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;"> 
                 <div><label>Wysokość (H)</label><input type="number" id="hBox" value="2000" min="0" oninput="run()"></div> 
                 <div><label>Szerokość (W)</label><input type="number" id="wBox" value="600" min="0" oninput="run()"></div> 
-                <div><label>Głębokość boku (D)</label><input type="number" id="dBox" value="510" min="0" oninput="run()"></div> 
+                <div><label>Głębokość boku (D)</label><input type="number" id="dBox" value="510" min="0" oninput="updateTotalDepth(); run();"></div> 
+                <div><label>Głębokość całkowita</label><input type="number" id="totalDepth" value="531" min="0" oninput="updateDBoxFromTotal(); run();"></div> 
                 <div><label>Ilość półek</label><input type="number" id="qPol" value="4" min="0" oninput="run()"></div> 
                 <div><label>Typ korpusu</label> 
                     <select id="kTyp" onchange="run()"> 
@@ -157,13 +158,13 @@
                 <div><label>Luz boczny półki</label><input type="number" id="luzBocznyPolki" value="0" min="0" oninput="run()"></div>
                 <div><label>Grubość płyty (korpus)</label><input type="number" id="tBoard" value="18" min="0" oninput="run()"></div> 
                 <div><label>Konstrukcja pleców</label> 
-                    <select id="backType" onchange="toggleBackFields(); run();"> 
+                    <select id="backType" onchange="toggleBackFields(); updateTotalDepth(); run();"> 
                         <option value="nakladane">Nakładane od tyłu</option> 
                         <option value="nut">Wpuszczane w nut</option> 
                     </select> 
-                </div> 
-                <div><label>Grubość pleców (mm)</label><input type="number" id="grPlecy" value="3" min="0" oninput="run()"></div>
-                <div id="nutDepthField" style="display:none; grid-column: span 2;"><label>Głębokość nutu (mm)</label><input type="number" id="nutDepth" value="12" min="0" oninput="run()"></div> 
+                </div>
+                <div><label>Grubość pleców (mm)</label><input type="number" id="grPlecy" value="3" min="0" oninput="updateTotalDepth(); run();"></div>
+                <div id="nutDepthField" style="display:none; grid-column: span 2;"><label>Głębokość nutu (mm)</label><input type="number" id="nutDepth" value="20" min="0" oninput="run()"></div> 
             </div> 
  
             <h3>Fronty (Główne domyślne nałożenia)</h3> 
@@ -272,6 +273,7 @@
         let zScale = 1; let panX = 0; let panY = 0; let isDragging = false; let startX = 0; let startY = 0; 
         let spaceLocks = []; 
         let structuralShelves = []; 
+        const FRONT_THICKNESS = 18; // Grubość frontu
  
         const DRAWER_DB = { 
             "44": { 
@@ -322,6 +324,30 @@
         function formatDim(val) {
             let num = Number(val);
             return Number.isInteger(num) ? num : parseFloat(num.toFixed(1));
+        }
+
+        function updateTotalDepth() {
+            const dBox = val('dBox');
+            const grPlecy = val('grPlecy');
+            const backType = document.getElementById('backType').value;
+            let totalDepthValue = dBox + FRONT_THICKNESS;
+            if (backType === 'nakladane') {
+                totalDepthValue += grPlecy;
+            }
+            document.getElementById('totalDepth').value = totalDepthValue;
+        }
+
+        function updateDBoxFromTotal() {
+            const totalDepth = val('totalDepth');
+            const grPlecy = val('grPlecy');
+            const backType = document.getElementById('backType').value;
+            let dBox = totalDepth - FRONT_THICKNESS;
+            if (backType === 'nakladane') {
+                dBox -= grPlecy;
+            }
+            if (dBox >= 0) {
+                document.getElementById('dBox').value = dBox;
+            }
         }
 
         function toggleBackFields() { 
@@ -472,6 +498,7 @@
             }); 
             structuralShelves = cab.structuralShelves || new Array(val('qPol')).fill(false); 
             currentLoadedDocId = docId; document.getElementById('btnUpdate').style.display = 'block'; 
+            updateTotalDepth();
             run(); window.scrollTo(0, 0);  
         } 
  
@@ -1352,7 +1379,7 @@
                         let absDist = Math.round(data.os + offset - data.localZero);
                         let topDist = Math.round(cab.endY - (data.os + offset));
                         let txtDisplay = `${absDist}`;
-                        if (rcMode) txtDisplay += ` [M: ${absDist - 32}]`;
+                        if (rcMode) txtDisplay += ` [Rc: ${absDist - 32}]`;
                         txtDisplay += ` (${topDist})`;
                         svg += `<circle cx="${hFrontX}" cy="${drillY}" r="${isCenter ? 5 : 4}" fill="${color}"/><circle cx="${hBackX}" cy="${drillY}" r="${isCenter ? 5 : 4}" fill="${color}"/><line x1="${hFrontX}" y1="${drillY}" x2="${laneShelfHoles - 10}" y2="${drillY}" stroke="${color}" stroke-dasharray="4,4" stroke-width="1.5"/><text x="${laneShelfHoles}" y="${drillY + 8}" font-size="${isCenter ? fontL : fontM}" font-weight="${isCenter ? "bold" : "normal"}" fill="${color}" text-anchor="start">${txtDisplay}</text>`; 
                     }); 
