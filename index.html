@@ -1046,16 +1046,20 @@
                 if (sb.isSplit) { 
                     let splitLineY = sb.yStart; // Prawdziwa oś łączenia korpusów
                     
+                    // Obliczamy wspólny wektor przesunięcia osi szczeliny na podstawie sąsiadów
+                    let prevGapTop = spaceLocks[i-1] ? (spaceLocks[i-1].gapTop || 0) : 0;
+                    let nextGapBottom = spaceLocks[i+1] ? (spaceLocks[i+1].gapBottom || 0) : 0;
+                    let jointShift = -prevGapTop + nextGapBottom; 
+
                     if (currentDoorBlock) { 
-                        // Zamykamy front poniżej szwu (odsuwamy w dół o połowę globalnej szczeliny i ew. ręczny Luz Góra)
-                        let prevGapTop = spaceLocks[i-1] ? (spaceLocks[i-1].gapTop || 0) : 0;
-                        currentDoorBlock.yEnd = splitLineY - (luzFrontow/2) - prevGapTop; 
+                        // Zamykamy front poniżej szwu z uwzględnieniem przesunięcia osi podziału
+                        currentDoorBlock.yEnd = splitLineY - (luzFrontow/2) + jointShift; 
                         frontBlocks.push(currentDoorBlock); 
                         currentDoorBlock = null; 
                     } 
                     
-                    // Nowy front powyżej szwu zaczyna się od osi + połowa szczeliny (Luz Dół dodamy na starcie kolejnego modułu)
-                    facadeY = splitLineY + (luzFrontow/2); 
+                    // Nowy front powyżej szwu twardo dziedziczy przesuniętą oś
+                    facadeY = splitLineY + (luzFrontow/2) + jointShift; 
                     continue; 
                 } 
                 
@@ -1065,11 +1069,14 @@
                 let isFirstInModule = (i === 0) || (i > 0 && spacesBoundary[i-1].isSplit);
                 let localStartY = facadeY;
                 
-                // Aplikujemy Luz Dół na starcie modułu
+                // Aplikujemy Luz Dół na samym dole szafki
                 if (isFirstInModule) {
-                    localStartY += gapBottom; 
+                    if (i === 0) localStartY += gapBottom; 
                 } else if (!currentDoorBlock || spaceLocks[i].frontType === 'single' || sb.hasDrawers) {
-                    localStartY = Math.max(facadeY, sb.yStart + (tBoard/2) + (luzFrontow/2) + gapBottom);
+                    let prevGapTop = spaceLocks[i-1] ? (spaceLocks[i-1].gapTop || 0) : 0;
+                    let jointShift = -prevGapTop + gapBottom;
+                    // Standardowy podział na półce - uwzględnia wektor przesunięcia
+                    localStartY = Math.max(facadeY, sb.yStart + (tBoard/2) + (luzFrontow/2) + jointShift);
                 }
 
                 let isLastInModule = isTop || (spacesBoundary[i+1] && spacesBoundary[i+1].isSplit);
@@ -1077,14 +1084,17 @@
                 
                 // Obliczamy koniec frontów
                 if (isLastInModule) {
-                    if (isTop) {
-                        defaultEndY = hBox - fLuzG - gapTop;
-                    } else {
+                    if (isTop) { defaultEndY = hBox - fLuzG - gapTop; } 
+                    else {
                         let splitLineY = spacesBoundary[i+1].yStart;
-                        defaultEndY = splitLineY - (luzFrontow/2) - gapTop;
+                        let nextGapBottom = spaceLocks[i+2] ? (spaceLocks[i+2].gapBottom || 0) : 0; // Przestrzeń i+2, bo i+1 to fizycznie linia cięcia (0 mm)
+                        let jointShift = -gapTop + nextGapBottom;
+                        defaultEndY = splitLineY - (luzFrontow/2) + jointShift;
                     }
                 } else {
-                    defaultEndY = sb.yEnd + (tBoard/2) - (luzFrontow/2) - gapTop; 
+                    let nextGapBottom = spaceLocks[i+1] ? (spaceLocks[i+1].gapBottom || 0) : 0;
+                    let jointShift = -gapTop + nextGapBottom;
+                    defaultEndY = sb.yEnd + (tBoard/2) - (luzFrontow/2) + jointShift; 
                 }
 
                 let layout = spaceLocks[i].frontLayout || 'full';
