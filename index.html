@@ -137,7 +137,7 @@
                 <label><input type="checkbox" id="sFront" checked onchange="run()"> Rzut Frontu</label> 
                 <label><input type="checkbox" id="sDrawerTopHoles" checked onchange="run()"> Szuflada - Otwór montażowy</label> 
                 <label><input type="checkbox" id="sDrawerYDim" checked onchange="run()"> Szuflada - Rozstawy w poziomie (Y)</label> 
-                <label style="color:#d32f2f; font-weight:bold; grid-column: span 2;"><input type="checkbox" id="rcMode" onchange="run()"> 🛠 Matryca RC (System 32) [Korekta Liniału]</label>
+                <label style="color:#d32f2f; font-weight:bold; grid-column: span 2;"><input type="checkbox" id="rcMode" onchange="run()"> 🛠  RCSystem</label>
             </div> 
  
             <h3>Parametry Korpusu</h3> 
@@ -153,8 +153,8 @@
                     </select> 
                 </div> 
                 <div><label>Wysokość cokołu</label><input type="number" id="cokol" value="100" min="0" oninput="run()"></div> 
-                <div><label>Offset podpórki (Dół)</label><input type="number" id="offsetPodporki" value="0" oninput="run()"></div> 
-                <div><label>Luz boczny półki</label><input type="number" id="luzBocznyPolki" value="1" min="0" oninput="run()"></div>
+                <div><label>Offset podpórki (Dół)</label><input type="number" id="offsetPodporki" value="3" oninput="run()"></div> 
+                <div><label>Luz boczny półki</label><input type="number" id="luzBocznyPolki" value="0" min="0" oninput="run()"></div>
                 <div><label>Grubość płyty (korpus)</label><input type="number" id="tBoard" value="18" min="0" oninput="run()"></div> 
                 <div><label>Konstrukcja pleców</label> 
                     <select id="backType" onchange="toggleBackFields(); run();"> 
@@ -181,20 +181,20 @@
                 <div><label>Puszka (od dołu drzwi)</label><input type="number" id="zOffD" value="100" min="0" oninput="run()"></div> 
                 <div><label>Puszka (od góry drzwi)</label><input type="number" id="zOffG" value="100" min="0" oninput="run()"></div> 
                 
-                <div><label>Nałożenie - Góra (Top)</label><input type="number" id="nTop" value="15" step="0.5" oninput="run()"></div> 
-                <div><label>Nałożenie - Dół (Bottom)</label><input type="number" id="nBottom" value="15" step="0.5" oninput="run()"></div> 
-                <div><label>Nałożenie - Lewo (Left)</label><input type="number" id="nLeft" value="15" step="0.5" oninput="run()"></div> 
-                <div><label>Nałożenie - Prawo (Right)</label><input type="number" id="nRight" value="15" step="0.5" oninput="run()"></div> 
-                <div style="grid-column: span 2;"><label>Nałożenie - Wewnętrzne (Półki/Styki)</label><input type="number" id="nWewnetrzne" value="8" step="0.5" oninput="run()"></div> 
+                <div><label>Nałożenie - Góra (Top)</label><input type="number" id="nTop" value="13" step="0.5" oninput="run()"></div> 
+                <div><label>Nałożenie - Dół (Bottom)</label><input type="number" id="nBottom" value="18" step="0.5" oninput="run()"></div> 
+                <div><label>Nałożenie - Lewo (Left)</label><input type="number" id="nLeft" value="16.5" step="0.5" oninput="run()"></div> 
+                <div><label>Nałożenie - Prawo (Right)</label><input type="number" id="nRight" value="16.5" step="0.5" oninput="run()"></div> 
+                <div style="grid-column: span 2;"><label>Nałożenie - Wewnętrzne (Półki/Styki)</label><input type="number" id="nWewnetrzne" value="7.5" step="0.5" oninput="run()"></div> 
                  
                 <div style="grid-column: span 2;"> 
                     <label>System prowadnic szuflad</label> 
                     <select id="drawerSystem" onchange="updateDrawerFields(); updateAllDrawersToDefault(); run();"> 
-                        <option value="44">GTV Axis Pro / Modern Box (Dno 16mm)</option> 
-                        <option value="44_18">GTV Axis Pro (Dno 18mm)</option> 
-                        <option value="54">Blum Merivobox (Górny: 54mm)</option> 
-                        <option value="33">Blum Antaro / Tandembox (Górny: 33mm)</option> 
-                        <option value="custom">Inne (Własny wymiar górnego otworu)</option> 
+                        <option value="44">GTV Axis Pro(Dno 16mm)</option> 
+                        <option value="44_18">GTV Axis Pro(Dno 18mm)</option> 
+                        <option value="54">Blum Merivobox</option> 
+                        <option value="33">Blum Antaro / Tandembox</option> 
+                        <option value="custom">Inne</option> 
                     </select> 
                 </div> 
                 <div id="customDrawerField" style="grid-column: span 2; display:none;"> 
